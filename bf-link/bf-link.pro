@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += network xml threads
+QT       += network xml thread
 
 QT       -= gui
 
