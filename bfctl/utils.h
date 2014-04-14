@@ -1,0 +1,10 @@
+#ifndef UTILS_H
+#define UTILS_H
+
+
+
+
+enum { CMD_NEW_RULE=1,CMD_PRINT_RULES,CMD_DEL_RULE,CMD_PRINT_HELP};
+enum { DIR_ALL,DIR_INPUT,DIR_OUTPUT};
+
+#endif // UTILS_H
