@@ -6,10 +6,11 @@
 #include <linux/if_ether.h>
 #include <linux/netlink.h>
 #include <string.h>
-#include "utils.h"
 
 #include "trx_data.h"
-namespace cmd_parse {
+#include "utils.h"
+
+namespace cmd_utils {
 int
 get_proto(char* proto) {
     if (strcmp(proto, "ALL") == 0) {
@@ -22,19 +23,19 @@ get_proto(char* proto) {
     return -1;
 }
 
-inline 	const char*
-get_proto_name(int proto) {
-    static const char* proto_names[]=
-    {"ALL","TCP","UDP"};
-    if (IPPROTO_NOTEXIST == proto) {
-        return proto_names[0];
-    } else if (IPPROTO_TCP == proto ) {
-        return proto_names[1];
-    } else if (IPPROTO_UDP == proto ) {
-        return proto_names[2];
-    }
-    return NULL;
-}
+//inline 	const char*
+//get_proto_name(int proto) {
+//    static const char* proto_names[]=
+//    {"ALL","TCP","UDP"};
+//    if (IPPROTO_NOTEXIST == proto) {
+//        return proto_names[0];
+//    } else if (IPPROTO_TCP == proto ) {
+//        return proto_names[1];
+//    } else if (IPPROTO_UDP == proto ) {
+//        return proto_names[2];
+//    }
+//    return NULL;
+//}
 
 int
 get_direction(char* dir) {

@@ -91,7 +91,7 @@ int NetlinkSocket::create(int proto,int buffsize)
     mBuffSize = buffsize;
     //mBuff.reset(new unsigned char[mBuffSize]);
     //memset(mBuff.get(),0,mBuffSize);
-    int ret;
+    int ret=0;
     if((ret = d->create())==0)
     {
        if((ret = d->connect(mProto))==0)
@@ -122,7 +122,7 @@ void NetlinkSocket::close()
 
 void NetlinkSocket::runListener()
 {
-    int ret;
+    int ret=0;
     unsigned char *nl_msg;
     while (mRunning)
     {
