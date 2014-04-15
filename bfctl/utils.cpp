@@ -14,13 +14,13 @@ namespace cmd_utils {
 int
 get_proto(char* proto) {
     if (strcmp(proto, "ALL") == 0) {
-        return IPPROTO_NOTEXIST;
+        return IPPROTO_ALL;
     } else if (strcmp(proto, "TCP") == 0) {
         return IPPROTO_TCP;
     } else if (strcmp(proto, "UDP") == 0) {
         return IPPROTO_UDP;
     }
-    return -1;
+    return IPPROTO_NOTEXIST;
 }
 
 //inline 	const char*
@@ -46,6 +46,7 @@ get_direction(char* dir) {
     } else if (strcmp(dir, "OUTPUT") == 0) {
         return DIR_OUTPUT;
     }
+    return DIR_NONE;
 }
 
 
@@ -56,16 +57,16 @@ get_policy(char* policy) {
     } else if (strcmp(policy, "ACCEPT") == 0) {
     return POLICY_ACCEPT;
     }
+    return POLICY_NONE;
 }
 
 int
-parse_cmd_args(int argc, char *argv[],filter_rule_t* td)
+parse_cmd_args(int argc, char *argv[],filter_rule_t* fr)
 {
     int c; int command = CMD_PRINT_HELP;
-    int tmp_in_out = 0;
     struct in_addr ipvalue;
 
-    memset(td,0,sizeof(filter_rule_t));
+    memset(fr,0,sizeof(filter_rule_t));
 
     while (1)
     {
@@ -97,18 +98,24 @@ parse_cmd_args(int argc, char *argv[],filter_rule_t* td)
               break;
             case 'L':
                 command = CMD_PRINT_RULES;
-        td->direction = get_direction(optarg);
-        printf("direction in_out = %d\n", td->direction);
+                fr->direction = get_direction(optarg);
+                if (fr->direction == DIR_NONE)
+                   command = CMD_PRINT_HELP;
+                printf("direction in_out = %d\n", fr->direction);
               break;
             case 'N':
                 command = CMD_NEW_RULE;
-        td->direction = get_direction(optarg);
-        printf("direction in_out = %d\n", td->direction);
+                fr->direction = get_direction(optarg);
+                if (fr->direction == DIR_NONE)
+                   command = CMD_PRINT_HELP;
+                printf("direction in_out = %d\n", fr->direction);
               break;
             case 'D':
               command = CMD_DEL_RULE;       //delete
-          td->direction = get_direction(optarg);
-          printf("direction in_out = %d\n", td->direction);
+              fr->direction = get_direction(optarg);
+              if (fr->direction == DIR_NONE)
+                 command = CMD_PRINT_HELP;
+              printf("direction in_out = %d\n", fr->direction);
               break;
             case 's':
               //mf_rule.src_ip = optarg;  //src ip
@@ -118,7 +125,7 @@ parse_cmd_args(int argc, char *argv[],filter_rule_t* td)
                switch(s) {
                case 1:
               printf("converted value = %x \n", ipvalue.s_addr);
-              td->base_rule.s_addr.addr = ipvalue.s_addr;
+              fr->base_rule.s_addr.addr = ipvalue.s_addr;
               break;
                case 0:
               printf("invalid input: %s\n", optarg);
@@ -133,7 +140,7 @@ parse_cmd_args(int argc, char *argv[],filter_rule_t* td)
               //mf_rule.src_netmask = optarg; //srcnetmask:
               break;
             case 'p':
-              td->base_rule.src_port = atoi(optarg);    //srcport:
+              fr->base_rule.src_port = atoi(optarg);    //srcport:
               break;
             case 't':
           {
@@ -142,7 +149,7 @@ parse_cmd_args(int argc, char *argv[],filter_rule_t* td)
                switch(s) {
                case 1:
               printf("converted value = %x \n", ipvalue.s_addr);
-              td->base_rule.d_addr.addr = ipvalue.s_addr;
+              fr->base_rule.d_addr.addr = ipvalue.s_addr;
               break;
                case 0:
               printf("invalid input: %s\n", optarg);
@@ -157,15 +164,15 @@ parse_cmd_args(int argc, char *argv[],filter_rule_t* td)
               //mf_rule.dest_netmask = optarg;    //destnetmask
               break;
             case 'd':
-              td->base_rule.dst_port = atoi(optarg);    //destport
+              fr->base_rule.dst_port = atoi(optarg);    //destport
               break;
             case 'c':
-              td->base_rule.proto = get_proto(optarg); //proto
-              if (td->base_rule.proto==-1)
-        command = CMD_PRINT_HELP;
+              fr->base_rule.proto = get_proto(optarg); //proto
+              if (fr->base_rule.proto==IPPROTO_NOTEXIST)
+                command = CMD_PRINT_HELP;
               break;
             case 'P':
-               td->policy = get_policy(optarg);
+               fr->policy = get_policy(optarg);
               break;
             case '?':
               /* getopt_long printed an error message. */
@@ -174,17 +181,6 @@ parse_cmd_args(int argc, char *argv[],filter_rule_t* td)
               abort();
         }
     }
-
-/*    if (optind < argc)
-    {
-        //printf("non-option ARGV-elements: ");
-        while (optind < argc)
-        //printf("%s ", argv[optind++]);
-        putchar('\n');
-    }
-*/
-
-
 
    return command;
 }

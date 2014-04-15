@@ -27,11 +27,11 @@ int
 get_policy(char* policy);
 
 int
-parse_cmd_args(int argc, char *argv[],filter_rule_t* td);
+parse_cmd_args(int argc, char *argv[], filter_rule_t* fr);
 
 }
 
 enum { CMD_NEW_RULE=1,CMD_PRINT_RULES,CMD_DEL_RULE,CMD_PRINT_HELP};
-enum { DIR_ALL,DIR_INPUT,DIR_OUTPUT};
+enum { DIR_NONE,DIR_ALL,DIR_INPUT,DIR_OUTPUT};
 
 #endif // UTILS_H
