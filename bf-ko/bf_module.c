@@ -25,6 +25,8 @@ struct nf_hook_ops nfho_out;  //net filter hook option struct
 
 DEFINE_SPINLOCK(list_mutex);	
 
+
+#define ACK_EVERY_N_MSG  50
 #define skb_filter_name "bf_filter"
 
 int nl_send_msg(struct sock * nl_sk,int destpid, int type,int flags,char* msg,int msg_size);
@@ -198,7 +200,7 @@ void list_rules(struct sock * nl_sk,int destpid)
     int flags = 0;
     list_for_each_entry(a_rule, &lst_fr.full_list, full_list) {
 
-        if(++i%220==0) { flags = NLM_F_ACK; };
+        if(++i%ACK_EVERY_N_MSG==0) { flags = NLM_F_ACK; };
 	
 	printk(KERN_INFO "#%d Src_addr: %X; dst_addr: %X; proto: %d; src_port: %d dst_port: %d\n", i,
 			a_rule->fr.base_rule.s_addr.addr, a_rule->fr.base_rule.d_addr.addr, 
@@ -406,7 +408,7 @@ int init_module()
 #if (LINUX_VERSION_CODE >= 0x020500)     nfho_out.owner = THIS_MODULE;
 #endif
 
-    // nf_register_hook(&nfho_out);
+    nf_register_hook(&nfho_out);
  
     nfho_in.hook = hook_func;
     nfho_in.hooknum = NF_INET_PRE_ROUTING;
@@ -430,7 +432,7 @@ error:
 void cleanup_module()
 {
     nf_unregister_hook(&nfho_in);
-    //nf_unregister_hook(&nfho_out);
+    nf_unregister_hook(&nfho_out);
 
     if ( skb_filter )
         remove_proc_entry(skb_filter_name, NULL);

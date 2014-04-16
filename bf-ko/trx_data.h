@@ -46,13 +46,14 @@ inline QDataStream &operator <<(QDataStream &stream,const filter_rule_t &fr) // 
     return stream;
 }
 
-//inline QDataStream &operator >>(QDataStream &stream, filter_rule_t &fr) // десериализуем;
-//{
-//    stream >> static_cast<short>(fr.base_rule.src_port);
-//    stream >> (short)fr.base_rule.dst_port;
-//    stream >> (short)fr.base_rule.proto;
-//    return stream;
-//}
+inline QDataStream &operator >>(QDataStream &stream, filter_rule_t &fr) // десериализуем;
+{
+    quint16 sp;
+    stream >> sp;fr.base_rule.src_port=sp;
+    stream >> static_cast<quint16>(fr.base_rule.dst_port);
+    stream >> static_cast<quint16>(fr.base_rule.proto);
+    return stream;
+}
 #endif
 
 
