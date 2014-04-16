@@ -30,4 +30,5 @@ INCLUDEPATH += ../bf-ko ../bf-link
 
 DESTDIR = ../../bin
 LIBS += -L../../lib -lbf-link -lnl
-
+OBJECTS_DIR = ./tmp
+MOC_DIR = ./moc

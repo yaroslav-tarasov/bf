@@ -12,7 +12,6 @@
 #include <netinet/ip.h>
 #include <linux/netlink.h>
 
-
 #include "bfcontrol.h"
 #include "trx_data.h"
 #include "utils.h"
@@ -33,6 +32,7 @@ int main(int argc, char *argv[])
 
     if (action == CMD_NEW_RULE) {
         qDebug() << "CMD_NEW_RULE\n";
+        bfc->addRule(fr);
         printf("Add new rule src_addr: %X; dst_addr: %X; proto: %d; src_port: %d dst_port: %d\n", fr.base_rule.s_addr.addr, fr.base_rule.d_addr.addr, fr.base_rule.proto, fr.base_rule.src_port, fr.base_rule.dst_port);
 
     } else if (action == CMD_PRINT_RULES) {
@@ -59,8 +59,9 @@ int main(int argc, char *argv[])
         bfc->deleteRule(fr);
 
     } else if (action == CMD_PRINT_HELP) {
-        qDebug() << "CMD_DEL_RULE\n";
+        qDebug() << "CMD_PRINT_HELP";
         // exit_printhelp();
+         qDebug() << "Something wrong in command string";
     }
 
     }

@@ -6,6 +6,7 @@
 #include <linux/if_ether.h>
 #include <linux/netlink.h>
 #include <string.h>
+#include <iostream>
 
 #include "trx_data.h"
 #include "utils.h"
@@ -68,6 +69,8 @@ parse_cmd_args(int argc, char *argv[],filter_rule_t* fr)
 
     memset(fr,0,sizeof(filter_rule_t));
 
+    bool proto_mandatory = false;
+
     while (1)
     {
         static const struct option long_options[] =
@@ -90,7 +93,7 @@ parse_cmd_args(int argc, char *argv[],filter_rule_t* fr)
         /*Detect the end of the options. */
         if (c == -1)
             break;
-        //command = CMD_PRINT_HELP;
+
         switch (c)
         {
             case 0:
@@ -168,8 +171,11 @@ parse_cmd_args(int argc, char *argv[],filter_rule_t* fr)
               break;
             case 'c':
               fr->base_rule.proto = get_proto(optarg); //proto
-              if (fr->base_rule.proto==IPPROTO_NOTEXIST)
+              if (fr->base_rule.proto==IPPROTO_NOTEXIST){
                 command = CMD_PRINT_HELP;
+              }
+
+              proto_mandatory = true;
               break;
             case 'P':
                fr->policy = get_policy(optarg);
@@ -180,8 +186,23 @@ parse_cmd_args(int argc, char *argv[],filter_rule_t* fr)
             default:
               abort();
         }
+
+//        if (optind < argc) {
+//            printf ("элементы ARGV, не параметры: ");
+//            while (optind < argc)
+//                printf ("%s ", argv[optind++]);
+//            printf ("\n");
+//        }
+
+
     }
 
+    // proto обязательный параметр при добавлении удалении правил
+   if(!proto_mandatory && (command == CMD_NEW_RULE || command == CMD_DEL_RULE ))
+   {
+       command = CMD_PRINT_HELP;
+       std::cout << "- пропущен обязательный параметр --proto " << std::endl ;
+   }
    return command;
 }
 

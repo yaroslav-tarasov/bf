@@ -27,3 +27,6 @@ HEADERS += bflink.h\
 INCLUDEPATH += ../bf-ko
 
 DESTDIR = ../../lib
+OBJECTS_DIR = ./tmp
+MOC_DIR = ./moc
+

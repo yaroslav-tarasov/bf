@@ -27,8 +27,9 @@ public:
     int getRulesSync(filter_rule_t& pattern, QList<filter_rule_ptr >& ruleslst,int timeout_ms=3000);
     int getRulesAsync(filter_rule_t& pattern);
     int deleteRule(filter_rule_t &pattern);
+    int addRule(filter_rule_t &pattern);
 
-    signals:
+signals:
     void data(QByteArray ba);
     void data(QList <filter_rule_ptr > );
     void done();

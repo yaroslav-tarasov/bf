@@ -139,3 +139,11 @@ int BFControl::deleteRule(filter_rule_t &pattern)
     return this->sendMsg(MSG_DELETE_RULE, &pattern, sizeof(filter_rule_t));
 }
 
+///////////////////////////////////////
+//  Добавлениение правила
+//
+
+int BFControl::addRule(filter_rule_t &pattern)
+{
+    return this->sendMsg(MSG_ADD_RULE, &pattern, sizeof(filter_rule_t));
+}
