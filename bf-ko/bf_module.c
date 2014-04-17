@@ -27,7 +27,7 @@ DEFINE_SPINLOCK(list_mutex);
 
 
 #define ACK_EVERY_N_MSG  50
-#define skb_filter_name "bf_filter"
+#define bf_filter_name "bf_filter"
 
 int nl_send_msg(struct sock * nl_sk,int destpid, int type,int flags,char* msg,int msg_size);
 void wfc(void);
@@ -36,14 +36,14 @@ typedef struct filter_rule_list {
     
     filter_rule_t fr;
     struct list_head full_list; /* kernel's list structure */
-    struct list_head protocol_list; /* kernel's list structure */
+    struct list_head direction_list; /* kernel's list structure */
     struct hash_entry entry;
 } filter_rule_list_t;
 
  
 static struct filter_rule_list lst_fr;
-static struct filter_rule_list lst_fr_udp;
-static struct filter_rule_list lst_fr_tcp;
+static struct filter_rule_list lst_fr_in;
+static struct filter_rule_list lst_fr_out;
 struct hash_table map_fr;
 
 static  void init_rules(void)
@@ -83,7 +83,7 @@ static  void init_rules(void)
 	a_new_fr = kmalloc(sizeof(*a_new_fr), GFP_KERNEL);
         a_new_fr->fr.base_rule.d_addr.addr = 0;
         a_new_fr->fr.base_rule.s_addr.addr = 0;
-        a_new_fr->fr.base_rule.proto = IPPROTO_UDP;
+        a_new_fr->fr.base_rule.proto = IPPROTO_NOT_EXIST;
         a_new_fr->fr.base_rule.src_port = 0;
 	a_new_fr->fr.base_rule.dst_port = 0;
 	a_new_fr->fr.policy = POLICY_ACCEPT;
@@ -93,20 +93,20 @@ static  void init_rules(void)
         list_add(&(a_new_fr->full_list), &(lst_fr.full_list));//list_add_tail(&(a_new_fr->list), &(lst_fr.list));
 	hash_table_insert(&map_fr, &a_new_fr->entry, (const char*)&a_new_fr->fr.base_rule, sizeof(struct filter_rule_base));
 	
-	if(a_new_fr->fr.base_rule.proto == IPPROTO_UDP)
-		list_add(&(a_new_fr->protocol_list), &(lst_fr_udp.protocol_list));
+	if(a_new_fr->fr.dir == INPUT)
+		list_add(&(a_new_fr->protocol_list), &(lst_fr_in.protocol_list));
 	
 	a_new_fr = kmalloc(sizeof(*a_new_fr), GFP_KERNEL);
         a_new_fr->fr.base_rule.d_addr.addr = 0;
         a_new_fr->fr.base_rule.s_addr.addr = 0;
-        a_new_fr->fr.base_rule.proto = IPPROTO_TCP;
+        a_new_fr->fr.base_rule.proto = IPPROTO_NOT_EXIST;
         a_new_fr->fr.base_rule.src_port = 0;
 	a_new_fr->fr.base_rule.dst_port = 0;
 	a_new_fr->fr.off = 0;	
 	a_new_fr->fr.policy = POLICY_ACCEPT;
 	
-	if (a_new_fr->fr.base_rule.proto == IPPROTO_TCP)
-		list_add(&(a_new_fr->protocol_list), &(lst_fr_tcp.protocol_list));	
+	if (a_new_fr->fr.dir == OUTPUT)
+		list_add(&(a_new_fr->protocol_list), &(lst_fr_out.protocol_list));	
 #endif
      
     i =0;
@@ -147,10 +147,10 @@ void add_rule(struct filter_rule* fr)
 spin_lock(&list_mutex);
         list_add(&(a_new_fr->full_list), &(lst_fr.full_list));//list_add_tail(&(a_new_fr->list), &(lst_fr.list));
 	hash_table_insert(&map_fr, &a_new_fr->entry, (const char*)&a_new_fr->fr.base_rule, sizeof(struct filter_rule_base));
-	if(a_new_fr->fr.base_rule.proto == IPPROTO_UDP)
-		list_add(&(a_new_fr->protocol_list), &(lst_fr_udp.protocol_list));
-	else if (a_new_fr->fr.base_rule.proto == IPPROTO_TCP)
-		list_add(&(a_new_fr->protocol_list), &(lst_fr_tcp.protocol_list));
+	if(a_new_fr->fr.dir == INPUT)
+		list_add(&(a_new_fr->protocol_list), &(lst_fr_in.protocol_list));
+	else if (a_new_fr->fr.dir == OUTPUT)
+		list_add(&(a_new_fr->protocol_list), &(lst_fr_out.protocol_list));
 spin_unlock(&list_mutex);	
 	
 }
@@ -165,7 +165,7 @@ void delete_rule(struct filter_rule* fr)
 	struct filter_rule_list *a_rule, *tmp;
 
 //spin_lock(&list_mutex);
-	list_for_each_entry_safe(a_rule, tmp, &lst_fr_udp.protocol_list, protocol_list){
+	list_for_each_entry_safe(a_rule, tmp, &lst_fr_in.protocol_list, protocol_list){
 		if(cmp_rule(&a_rule->fr,fr)==0)
 		{		
 			list_del(&a_rule->protocol_list);
@@ -173,7 +173,7 @@ void delete_rule(struct filter_rule* fr)
 		}
 	}
 
-	list_for_each_entry_safe(a_rule, tmp, &lst_fr_tcp.protocol_list, protocol_list){
+	list_for_each_entry_safe(a_rule, tmp, &lst_fr_out.protocol_list, protocol_list){
 		if(cmp_rule(&a_rule->fr,fr)==0)
 		{		
 			list_del(&a_rule->protocol_list);
@@ -261,24 +261,27 @@ unsigned int hook_func(unsigned int hooknum,
     if(!sock_buff || !ip_header || !ethheader || filter_value==0)
         return NF_ACCEPT;
 
-
-
+    struct list_head* direction_list = in==0?lst_fr_in.direction_list:lst_fr_out.direction_list;
+    
+    list_for_each_entry(a_rule, direction_list /*&lst_fr_in.direction_list\*/, protocol_list) {
     if(ip_header->protocol == IPPROTO_UDP){
         udp_header = (struct udphdr *)(skb_transport_header(sock_buff) + ip_hdrlen(sock_buff));
         if(udp_header){
 	    struct filter_rule_list  *a_rule;
 //spin_lock(&list_mutex);   
-#if 1
-	   list_for_each_entry(a_rule, &lst_fr_udp.protocol_list, protocol_list) {
-		if((ntohs(udp_header->source) == a_rule->fr.base_rule.src_port || ntohs(udp_header->dest) == a_rule->fr.base_rule.dst_port) &&
-		!a_rule->fr.off){
+		if( (a_rule->fr.base_rule.src_port>0?((ntohs(udp_header->source) == a_rule->fr.base_rule.src_port):1) &&
+		    (a_rule->fr.base_rule.dst_port>0?(ntohs(udp_header->dest) == a_rule->fr.base_rule.dst_port):1) &&
+		    (a_rule->fr.base_rule.s_addr.addr>0?(ntohs(ip_header->saddr) == a_rule->fr.base_rule.s_addr.addr):1) &&
+		    (a_rule->fr.base_rule.d_addr.addr>0?(ntohs(ip_header->saddr) == a_rule->fr.base_rule.d_addr.addr):1) &&
+		    
+			!a_rule->fr.off){
 			printk(KERN_INFO "TID %d SRC: (%u.%u.%u.%u):%d --> DST: (%u.%u.%u.%u):%d proto: %d; \n", 
 				(int)current->pid, NIPQUAD(ip_header->saddr),ntohs(udp_header->source),
 				NIPQUAD(ip_header->daddr),ntohs(udp_header->dest), a_rule->fr.base_rule.proto);
 			return NF_DROP;
 		}
-	    }
-#endif
+
+
 //spin_unlock(&list_mutex);
 
         }else
@@ -289,17 +292,19 @@ unsigned int hook_func(unsigned int hooknum,
         if(tcp_header){	
 	    struct filter_rule_list  *a_rule;
 //spin_lock(&list_mutex);   
-#if 1
-	   list_for_each_entry(a_rule, &lst_fr_tcp.protocol_list, protocol_list) {
-		if((ntohs(tcp_header->source) == a_rule->fr.base_rule.src_port || ntohs(tcp_header->dest) == a_rule->fr.base_rule.dst_port) &&
-		!a_rule->fr.off){
+
+	   //list_for_each_entry(a_rule, &lst_fr_tcp.protocol_list, protocol_list) {
+		if( (a_rule->fr.base_rule.src_port>0?((ntohs(tcp_header->source) == a_rule->fr.base_rule.src_port):1) &&
+		    (a_rule->fr.base_rule.dst_port>0?(ntohs(tcp_header->dest) == a_rule->fr.base_rule.dst_port):1) &&
+		    (a_rule->fr.base_rule.s_addr.addr>0?(ntohs(ip_header->saddr) == a_rule->fr.base_rule.s_addr.addr):1) &&
+		    (a_rule->fr.base_rule.d_addr.addr>0?(ntohs(ip_header->saddr) == a_rule->fr.base_rule.d_addr.addr):1) &&		!a_rule->fr.off){
 			printk(KERN_INFO "TID %d SRC: (%u.%u.%u.%u):%d --> DST: (%u.%u.%u.%u):%d proto: %d; \n", 
 				(int)current->pid, NIPQUAD(ip_header->saddr),ntohs(tcp_header->source),
 				NIPQUAD(ip_header->daddr),ntohs(tcp_header->dest), a_rule->fr.base_rule.proto);
 			return NF_DROP;
 		}
-	    }
-#endif
+	   // }
+
 //spin_unlock(&list_mutex);
 	
             //printk(KERN_INFO "SRC: (%u.%u.%u.%u) --> DST: (%u.%u.%u.%u)\n",NIPQUAD(ip_header->saddr),NIPQUAD(ip_header->daddr));
@@ -319,7 +324,10 @@ unsigned int hook_func(unsigned int hooknum,
         }else
             return NF_DROP;	
     }
- 
+    
+    
+    }
+    
     return filter_value != 0 ? NF_ACCEPT : NF_DROP;
 }
  
@@ -373,14 +381,14 @@ int init_module()
     int ret = 0;
     // LIST_HEAD(lst_fr);  // This macro leads to kernel panic on  list_add
     INIT_LIST_HEAD(&lst_fr.full_list);	
-    INIT_LIST_HEAD(&lst_fr_udp.protocol_list);	
-    INIT_LIST_HEAD(&lst_fr_tcp.protocol_list);
+    INIT_LIST_HEAD(&lst_fr_in.protocol_list);	
+    INIT_LIST_HEAD(&lst_fr_out.protocol_list);
 
     // mutex_init(&list_mutex);
 
     init_rules();
 	
-    skb_filter = create_proc_entry( skb_filter_name, 0644, NULL);
+    skb_filter = create_proc_entry( bf_filter_name, 0644, NULL);
  
     // If we cannot create the proc entry
     if(skb_filter == NULL){
@@ -405,7 +413,8 @@ int init_module()
     nfho_out.pf = PF_INET;
     nfho_out.priority = NF_IP_PRI_LAST;
     //nfho_out.priority = NF_IP_PRI_FIRST;
-#if (LINUX_VERSION_CODE >= 0x020500)     nfho_out.owner = THIS_MODULE;
+#if (LINUX_VERSION_CODE >= 0x020500) 
+    nfho_out.owner = THIS_MODULE;
 #endif
 
     nf_register_hook(&nfho_out);
@@ -417,7 +426,8 @@ int init_module()
     nfho_in.pf = PF_INET;
     //nfho.priority = NF_IP_PRI_LAST;
     nfho_in.priority = NF_IP_PRI_FIRST;
-#if (LINUX_VERSION_CODE >= 0x020500)     nfho_in.owner = THIS_MODULE;
+#if (LINUX_VERSION_CODE >= 0x020500) 
+    nfho_in.owner = THIS_MODULE;
 #endif
     nf_register_hook(&nfho_in);
 
@@ -435,7 +445,7 @@ void cleanup_module()
     nf_unregister_hook(&nfho_out);
 
     if ( skb_filter )
-        remove_proc_entry(skb_filter_name, NULL);
+        remove_proc_entry(bf_filter_name, NULL);
     
     nl_exit();
     
