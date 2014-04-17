@@ -13,7 +13,7 @@ class BFLINKSHARED_EXPORT NetlinkSocket : public QObject
 public:
     explicit NetlinkSocket(QObject *parent = 0);
     virtual ~NetlinkSocket();
-    int create(int proto, int buffsize);
+    int create(int proto);
     int sendMsg(int type,void* msg,size_t size);
     void close();
 protected:
@@ -29,7 +29,6 @@ protected:
    std::shared_ptr<NetlinkSocketPrivate> d;
    // std::shared_ptr<unsigned char> mBuff;
    int mProto;
-   int mBuffSize;
    bool mRunning;
 };
 

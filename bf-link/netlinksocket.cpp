@@ -85,12 +85,9 @@ NetlinkSocket::~NetlinkSocket()
     // d->t->join();
 };
 
-int NetlinkSocket::create(int proto,int buffsize)
+int NetlinkSocket::create(int proto)
 {
     mProto = proto;
-    mBuffSize = buffsize;
-    //mBuff.reset(new unsigned char[mBuffSize]);
-    //memset(mBuff.get(),0,mBuffSize);
     int ret=0;
     if((ret = d->create())==0)
     {

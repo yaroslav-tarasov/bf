@@ -83,7 +83,7 @@ static  void init_rules(void)
 	a_new_fr = kmalloc(sizeof(*a_new_fr), GFP_KERNEL);
         a_new_fr->fr.base_rule.d_addr.addr = 0;
         a_new_fr->fr.base_rule.s_addr.addr = 0;
-        a_new_fr->fr.base_rule.proto = IPPROTO_NOT_EXIST;
+        a_new_fr->fr.base_rule.proto = IPPROTO_NOTEXIST;
         a_new_fr->fr.base_rule.src_port = 0;
 	a_new_fr->fr.base_rule.dst_port = 0;
 	a_new_fr->fr.policy = POLICY_ACCEPT;
@@ -92,21 +92,21 @@ static  void init_rules(void)
         // add the new node to mylist 
         list_add(&(a_new_fr->full_list), &(lst_fr.full_list));//list_add_tail(&(a_new_fr->list), &(lst_fr.list));
 	hash_table_insert(&map_fr, &a_new_fr->entry, (const char*)&a_new_fr->fr.base_rule, sizeof(struct filter_rule_base));
-	
-	if(a_new_fr->fr.dir == INPUT)
-		list_add(&(a_new_fr->protocol_list), &(lst_fr_in.protocol_list));
+
+	//if(a_new_fr->fr.dir == DIR_INPUT)
+		list_add(&(a_new_fr->direction_list), &(lst_fr_in.direction_list));
 	
 	a_new_fr = kmalloc(sizeof(*a_new_fr), GFP_KERNEL);
         a_new_fr->fr.base_rule.d_addr.addr = 0;
         a_new_fr->fr.base_rule.s_addr.addr = 0;
-        a_new_fr->fr.base_rule.proto = IPPROTO_NOT_EXIST;
+        a_new_fr->fr.base_rule.proto = IPPROTO_NOTEXIST;
         a_new_fr->fr.base_rule.src_port = 0;
 	a_new_fr->fr.base_rule.dst_port = 0;
 	a_new_fr->fr.off = 0;	
 	a_new_fr->fr.policy = POLICY_ACCEPT;
 	
-	if (a_new_fr->fr.dir == OUTPUT)
-		list_add(&(a_new_fr->protocol_list), &(lst_fr_out.protocol_list));	
+	//if (a_new_fr->fr.dir == DIR_OUTPUT)
+		list_add(&(a_new_fr->direction_list), &(lst_fr_out.direction_list));	
 #endif
      
     i =0;
@@ -121,12 +121,12 @@ static void del_rules(void)
 { 
     struct filter_rule_list *a_rule, *tmp;
         
-    list_for_each_entry_safe(a_rule, tmp, &lst_fr_udp.protocol_list, protocol_list){
-         list_del(&a_rule->protocol_list);
+    list_for_each_entry_safe(a_rule, tmp, &lst_fr_in.direction_list, direction_list){
+         list_del(&a_rule->direction_list);
     }
 
-    list_for_each_entry_safe(a_rule, tmp, &lst_fr_tcp.protocol_list, protocol_list){
-         list_del(&a_rule->protocol_list);
+    list_for_each_entry_safe(a_rule, tmp, &lst_fr_out.direction_list, direction_list){
+         list_del(&a_rule->direction_list);
     }
 
     hash_table_finit(&map_fr);
@@ -147,10 +147,10 @@ void add_rule(struct filter_rule* fr)
 spin_lock(&list_mutex);
         list_add(&(a_new_fr->full_list), &(lst_fr.full_list));//list_add_tail(&(a_new_fr->list), &(lst_fr.list));
 	hash_table_insert(&map_fr, &a_new_fr->entry, (const char*)&a_new_fr->fr.base_rule, sizeof(struct filter_rule_base));
-	if(a_new_fr->fr.dir == INPUT)
-		list_add(&(a_new_fr->protocol_list), &(lst_fr_in.protocol_list));
-	else if (a_new_fr->fr.dir == OUTPUT)
-		list_add(&(a_new_fr->protocol_list), &(lst_fr_out.protocol_list));
+	if(a_new_fr->fr.direction == DIR_INPUT)
+		list_add(&(a_new_fr->direction_list), &(lst_fr_in.direction_list));
+	else if (a_new_fr->fr.direction == DIR_OUTPUT)
+		list_add(&(a_new_fr->direction_list), &(lst_fr_out.direction_list));
 spin_unlock(&list_mutex);	
 	
 }
@@ -165,18 +165,18 @@ void delete_rule(struct filter_rule* fr)
 	struct filter_rule_list *a_rule, *tmp;
 
 //spin_lock(&list_mutex);
-	list_for_each_entry_safe(a_rule, tmp, &lst_fr_in.protocol_list, protocol_list){
+	list_for_each_entry_safe(a_rule, tmp, &lst_fr_in.direction_list, direction_list){
 		if(cmp_rule(&a_rule->fr,fr)==0)
 		{		
-			list_del(&a_rule->protocol_list);
+			list_del(&a_rule->direction_list);
 			break;
 		}
 	}
 
-	list_for_each_entry_safe(a_rule, tmp, &lst_fr_out.protocol_list, protocol_list){
+	list_for_each_entry_safe(a_rule, tmp, &lst_fr_out.direction_list, direction_list){
 		if(cmp_rule(&a_rule->fr,fr)==0)
 		{		
-			list_del(&a_rule->protocol_list);
+			list_del(&a_rule->direction_list);
 			break;
 		}
 	}
@@ -252,6 +252,8 @@ unsigned int hook_func(unsigned int hooknum,
     struct icmphdr *icmp_header;	// ICMP Header
     struct tcphdr *tcp_header;	// TCP Header
     struct ethhdr  *ethheader;      // Ethernet Header
+    struct list_head* direction_list;
+    struct filter_rule_list  *a_rule;
 
     sock_buff = skb;	
  
@@ -261,16 +263,16 @@ unsigned int hook_func(unsigned int hooknum,
     if(!sock_buff || !ip_header || !ethheader || filter_value==0)
         return NF_ACCEPT;
 
-    struct list_head* direction_list = in==0?lst_fr_in.direction_list:lst_fr_out.direction_list;
+    direction_list = in==0?&lst_fr_in.direction_list:&lst_fr_out.direction_list;
     
-    list_for_each_entry(a_rule, direction_list /*&lst_fr_in.direction_list\*/, protocol_list) {
+    list_for_each_entry(a_rule, direction_list /*&lst_fr_in.direction_list\*/, direction_list) {
     if(ip_header->protocol == IPPROTO_UDP){
         udp_header = (struct udphdr *)(skb_transport_header(sock_buff) + ip_hdrlen(sock_buff));
         if(udp_header){
-	    struct filter_rule_list  *a_rule;
+	    
 //spin_lock(&list_mutex);   
-		if( (a_rule->fr.base_rule.src_port>0?((ntohs(udp_header->source) == a_rule->fr.base_rule.src_port):1) &&
-		    (a_rule->fr.base_rule.dst_port>0?(ntohs(udp_header->dest) == a_rule->fr.base_rule.dst_port):1) &&
+		if( ( (a_rule->fr.base_rule.src_port>0)?(ntohs(udp_header->source) == a_rule->fr.base_rule.src_port):1) &&
+		    ((a_rule->fr.base_rule.dst_port>0)?(ntohs(udp_header->dest) == a_rule->fr.base_rule.dst_port):1) &&
 		    (a_rule->fr.base_rule.s_addr.addr>0?(ntohs(ip_header->saddr) == a_rule->fr.base_rule.s_addr.addr):1) &&
 		    (a_rule->fr.base_rule.d_addr.addr>0?(ntohs(ip_header->saddr) == a_rule->fr.base_rule.d_addr.addr):1) &&
 		    
@@ -290,11 +292,10 @@ unsigned int hook_func(unsigned int hooknum,
         //printk(KERN_INFO "---------- TCP -------------\n");
         tcp_header = (struct tcphdr *)(skb_transport_header(sock_buff) + ip_hdrlen(sock_buff));
         if(tcp_header){	
-	    struct filter_rule_list  *a_rule;
 //spin_lock(&list_mutex);   
 
 	   //list_for_each_entry(a_rule, &lst_fr_tcp.protocol_list, protocol_list) {
-		if( (a_rule->fr.base_rule.src_port>0?((ntohs(tcp_header->source) == a_rule->fr.base_rule.src_port):1) &&
+		if( (a_rule->fr.base_rule.src_port>0?(ntohs(tcp_header->source) == a_rule->fr.base_rule.src_port):1) &&
 		    (a_rule->fr.base_rule.dst_port>0?(ntohs(tcp_header->dest) == a_rule->fr.base_rule.dst_port):1) &&
 		    (a_rule->fr.base_rule.s_addr.addr>0?(ntohs(ip_header->saddr) == a_rule->fr.base_rule.s_addr.addr):1) &&
 		    (a_rule->fr.base_rule.d_addr.addr>0?(ntohs(ip_header->saddr) == a_rule->fr.base_rule.d_addr.addr):1) &&		!a_rule->fr.off){
@@ -381,8 +382,8 @@ int init_module()
     int ret = 0;
     // LIST_HEAD(lst_fr);  // This macro leads to kernel panic on  list_add
     INIT_LIST_HEAD(&lst_fr.full_list);	
-    INIT_LIST_HEAD(&lst_fr_in.protocol_list);	
-    INIT_LIST_HEAD(&lst_fr_out.protocol_list);
+    INIT_LIST_HEAD(&lst_fr_in.direction_list);	
+    INIT_LIST_HEAD(&lst_fr_out.direction_list);
 
     // mutex_init(&list_mutex);
 
@@ -394,7 +395,7 @@ int init_module()
     if(skb_filter == NULL){
         ret = -ENOMEM;
         if( skb_filter )
-            remove_proc_entry( skb_filter_name, &proc_root);
+            remove_proc_entry( bf_filter_name, &proc_root);
  
         printk(KERN_INFO "Barrier Mini-Firewall: Could not allocate memory.\n");
         goto error;

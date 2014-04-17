@@ -29,7 +29,6 @@ signals:
 protected:
    std::shared_ptr<NetlinkSocketPrivate> d;
    int mProto;
-   int mBuffSize;
 };
 
 }

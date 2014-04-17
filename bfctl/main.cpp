@@ -2,6 +2,7 @@
 #include <QDebug>
 #include <QTimer>
 #include <QStringList>
+#include <QFile>
 
 #include <iostream>
 #include <linux/if_ether.h>
@@ -28,7 +29,8 @@ int main(int argc, char *argv[])
     {
 
     filter_rule_t fr;
-    int action = cmd_utils::parse_cmd_args(argc, argv,&fr);
+    std::string thename;
+    int action = cmd_utils::parse_cmd_args(argc, argv,&fr,thename);
 
     if (action == CMD_NEW_RULE) {
         qDebug() << "CMD_NEW_RULE\n";
@@ -47,7 +49,7 @@ int main(int argc, char *argv[])
         int i=0;
 
         foreach (BFControl::filter_rule_ptr rule,ruleslst){
-            qDebug() << "rule #" << i++ << "  " << rule->base_rule.src_port << "  " << rule->base_rule.dst_port << "  " << rule->base_rule.proto;
+            qDebug() << "rule #" << i++ << "  " << rule->base_rule.src_port << "  " << rule->base_rule.dst_port << "  " << cmd_utils::get_proto_name(rule->base_rule.proto);
             filter_rule_t fr = *static_cast<filter_rule_t*>(rule.data());
             //qDebug() << fr;
         }
@@ -57,6 +59,23 @@ int main(int argc, char *argv[])
     } else if (action == CMD_DEL_RULE) {
         qDebug() << "CMD_DEL_RULE\n";
         bfc->deleteRule(fr);
+
+    } else if (action == CMD_GET_FROM_FILE) {
+        QList<BFControl::filter_rule_ptr > ruleslst;
+        qDebug() << "CMD_GET_FROM_FILE\n";
+        QFile  file(QString::fromStdString(thename)) ;
+        if (!file.open(QIODevice::ReadOnly))  return -1;
+        QDataStream in(&file);
+
+        while(!in.atEnd()){
+            filter_rule_t fr;
+            in >>  fr;
+            ruleslst.append(BFControl::filter_rule_ptr(new filter_rule_t(fr)));;
+        }
+        file.close();
+
+        if(ruleslst.size()>0)
+            bfc->sendRulesSync(ruleslst);
 
     } else if (action == CMD_PRINT_HELP) {
         qDebug() << "CMD_PRINT_HELP";

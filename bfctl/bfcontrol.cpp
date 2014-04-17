@@ -61,13 +61,20 @@ void BFControl::process(QByteArray ba)
        d->ruleslst->append(filter_rule_ptr(new filter_rule_t(*reinterpret_cast<filter_rule_t*>(msg))));
     }
 
+    if (hdr->nlmsg_type==NLMSG_ERROR)
+    {
+        struct nlmsgerr *nlerr = (struct nlmsgerr*)NLMSG_DATA(hdr);
+        if(nlerr->error)
+            printf("Error message with code: %d \n",nlerr->error);
+    }
+
     qDebug() << "process" << hdr->nlmsg_type;
 }
 
 
 int BFControl::create()
 {
-    return d->mNS->create(NETLINK_USERSOCK,sizeof(filter_rule_t));
+    return d->mNS->create(NETLINK_USERSOCK);
 }
 
 int  BFControl::sendMsg(int type,void* msg,size_t size)
@@ -146,4 +153,28 @@ int BFControl::deleteRule(filter_rule_t &pattern)
 int BFControl::addRule(filter_rule_t &pattern)
 {
     return this->sendMsg(MSG_ADD_RULE, &pattern, sizeof(filter_rule_t));
+}
+
+
+///////////////////////////////////////
+//
+//
+int BFControl::sendRulesSync(QList<filter_rule_ptr >& ruleslst)
+{
+    int i=0;
+    foreach (BFControl::filter_rule_ptr rule,ruleslst){
+        qDebug() << "sendRulesSync  " << "rule #" << i++ << "  " << rule->base_rule.src_port << "  " << rule->base_rule.dst_port << "  " << rule->base_rule.proto;
+        filter_rule_t fr = *static_cast<filter_rule_t*>(rule.data());
+        int ret = addRule(fr);
+
+        if (ret < 0) {
+            d->ruleslst = NULL;
+            return ret;
+        }
+    }
+
+//     d->ruleslst = new QList<filter_rule_ptr >;
+
+    return 0;
+
 }

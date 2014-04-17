@@ -62,7 +62,7 @@ get_policy(char* policy) {
 }
 
 int
-parse_cmd_args(int argc, char *argv[],filter_rule_t* fr)
+parse_cmd_args(int argc, char *argv[],filter_rule_t* fr,std::string& file_name)
 {
     int c; int command = CMD_PRINT_HELP;
     struct in_addr ipvalue;
@@ -85,6 +85,7 @@ parse_cmd_args(int argc, char *argv[],filter_rule_t* fr)
             {"destnetmask", required_argument, NULL, 'n'},
             {"destport", required_argument, NULL, 'd'},
             {"proto", required_argument, NULL, 'c'},
+            {"file", required_argument, NULL, 'f'},
             {"action", required_argument, NULL, 'P'},
             {0, 0, 0, 0}
         };
@@ -106,6 +107,14 @@ parse_cmd_args(int argc, char *argv[],filter_rule_t* fr)
                    command = CMD_PRINT_HELP;
                 printf("direction in_out = %d\n", fr->direction);
               break;
+            case 'f':
+                command = CMD_GET_FROM_FILE;
+                if(optarg)
+                    file_name = optarg;
+                else
+                    command = CMD_PRINT_HELP;
+
+                break;
             case 'N':
                 command = CMD_NEW_RULE;
                 fr->direction = get_direction(optarg);

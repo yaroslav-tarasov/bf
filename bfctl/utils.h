@@ -1,6 +1,8 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#include <string>
+
 namespace cmd_utils {
 int
 get_proto(char* proto);
@@ -27,11 +29,11 @@ int
 get_policy(char* policy);
 
 int
-parse_cmd_args(int argc, char *argv[], filter_rule_t* fr);
+parse_cmd_args(int argc, char *argv[], filter_rule_t* fr, std::string &file_name);
 
 }
 
-enum { CMD_NEW_RULE=1,CMD_PRINT_RULES,CMD_DEL_RULE,CMD_PRINT_HELP};
-enum { DIR_NONE,DIR_ALL,DIR_INPUT,DIR_OUTPUT};
+enum { CMD_NEW_RULE=1,CMD_PRINT_RULES,CMD_DEL_RULE,CMD_PRINT_HELP,CMD_GET_FROM_FILE};
+
 
 #endif // UTILS_H

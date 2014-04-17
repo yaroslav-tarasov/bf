@@ -10,7 +10,6 @@
 #include "trx_data.h"
 
 enum { CMD_NEW_RULE=1,CMD_PRINT_RULES,CMD_DEL_RULE,CMD_PRINT_HELP};
-enum { DIR_ALL,DIR_INPUT,DIR_OUTPUT};
 
 int 
 get_proto(char* proto) {
