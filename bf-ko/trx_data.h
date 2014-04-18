@@ -9,7 +9,16 @@
 enum { DIR_NONE,DIR_ALL,DIR_INPUT,DIR_OUTPUT};
 enum {POLICY_NONE,POLICY_DROP,POLICY_ACCEPT};
 enum {IPPROTO_NOTEXIST=65000,IPPROTO_ALL};
-enum bf_messages {MSG_ADD_RULE=NLMSG_MIN_TYPE + 2,MSG_DATA,MSG_DONE,MSG_RULE_ERR,MSG_DELETE_RULE ,MSG_DELETE_ALL_RULES,MSG_UPDATE_RULE,MSG_GET_RULES,MSG_OK};
+enum bf_messages {MSG_ADD_RULE=NLMSG_MIN_TYPE + 2, // Добавление правила
+                  MSG_DATA,                     // При пересылке данных из модуля ядра в  userspace
+                  MSG_DONE,                     // По окончании пересылки данных из ядра
+                  MSG_RULE_ERR,
+                  MSG_DELETE_RULE ,             // Удаление конкретного правила
+                  MSG_DELETE_ALL_RULES,         // Удаление всех правил (не реализовано)
+                  MSG_UPDATE_RULE,              //
+                  MSG_GET_RULES,                // Получение правил из модуля ядра
+                  MSG_OK,                       // Подтверждние
+                  MSG_LOG};                     // Лог из модуля ядра
 
 #pragma pack (1)
 typedef struct _ip_addr
@@ -44,7 +53,7 @@ typedef struct filter_rule{
    __u32 id;
 #ifdef __cplusplus
    explicit  filter_rule(__u16 proto=0, __u16 src_port=0, __u16 dst_port=0,__u8  direction=DIR_INPUT,__u8  policy=POLICY_ACCEPT)
-       :base_rule(proto,src_port,dst_port),direction(direction),policy(policy){off=0;}
+       :base_rule(proto,src_port,dst_port),direction(direction),policy(policy),off(0){}
 #endif
 } filter_rule_t;
 

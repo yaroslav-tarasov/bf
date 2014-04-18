@@ -147,7 +147,7 @@ int BFControl::deleteRule(filter_rule_t &pattern)
 }
 
 ///////////////////////////////////////
-//  Добавлениение правила
+//  Добавление правила
 //
 
 int BFControl::addRule(filter_rule_t &pattern)
@@ -157,7 +157,7 @@ int BFControl::addRule(filter_rule_t &pattern)
 
 
 ///////////////////////////////////////
-//
+//    Добавление правил
 //
 int BFControl::sendRulesSync(QList<filter_rule_ptr >& ruleslst)
 {
@@ -172,8 +172,6 @@ int BFControl::sendRulesSync(QList<filter_rule_ptr >& ruleslst)
             return ret;
         }
     }
-
-//     d->ruleslst = new QList<filter_rule_ptr >;
 
     return 0;
 

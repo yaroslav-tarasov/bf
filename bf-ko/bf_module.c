@@ -24,7 +24,8 @@ struct nf_hook_ops nfho_in;   //net filter hook option struct
 struct nf_hook_ops nfho_out;  //net filter hook option struct
 
 DEFINE_SPINLOCK(list_mutex);	
-
+static DECLARE_RWSEM( hook_sem_in );
+static DECLARE_RWSEM( hook_sem_out );
 
 #define ACK_EVERY_N_MSG  50
 #define bf_filter_name "bf_filter"
@@ -61,16 +62,16 @@ static  void init_rules(void)
     for(i=0; i<20000; ++i){
 	
 	get_random_bytes ( &rb, sizeof (uint8_t) );
-        a_new_fr = kmalloc(sizeof(*a_new_fr), GFP_KERNEL);
-        a_new_fr->fr.base_rule.d_addr.addr = 0;
-        a_new_fr->fr.base_rule.s_addr.addr = 0;
-        a_new_fr->fr.base_rule.proto = IPPROTO_UDP;// rb<128?IPPROTO_UDP:IPPROTO_TCP;
-        a_new_fr->fr.base_rule.src_port = 53 + i;
+    a_new_fr = kmalloc(sizeof(*a_new_fr), GFP_KERNEL);
+    a_new_fr->fr.base_rule.d_addr.addr = 0;
+    a_new_fr->fr.base_rule.s_addr.addr = 0;
+    a_new_fr->fr.base_rule.proto = IPPROTO_UDP;// rb<128?IPPROTO_UDP:IPPROTO_TCP;
+    a_new_fr->fr.base_rule.src_port = 53 + i;
 	a_new_fr->fr.base_rule.dst_port = 53 + i;
 	a_new_fr->fr.off = 0;
-        //INIT_LIST_HEAD(&a_new_fr->full_list);
-        // add the new node to mylist 
-        list_add(&(a_new_fr->full_list), &(lst_fr.full_list));//list_add_tail(&(a_new_fr->list), &(lst_fr.list));
+    //INIT_LIST_HEAD(&a_new_fr->full_list);
+    // add the new node to mylist
+    list_add(&(a_new_fr->full_list), &(lst_fr.full_list));//list_add_tail(&(a_new_fr->list), &(lst_fr.list));
 	hash_table_insert(&map_fr, &a_new_fr->entry, (const char*)&a_new_fr->fr.base_rule, sizeof(struct filter_rule_base));
 	
 	if(a_new_fr->fr.base_rule.proto == IPPROTO_UDP)
@@ -81,26 +82,26 @@ static  void init_rules(void)
     }
 #else
 	a_new_fr = kmalloc(sizeof(*a_new_fr), GFP_KERNEL);
-        a_new_fr->fr.base_rule.d_addr.addr = 0;
-        a_new_fr->fr.base_rule.s_addr.addr = 0;
-        a_new_fr->fr.base_rule.proto = IPPROTO_NOTEXIST;
-        a_new_fr->fr.base_rule.src_port = 0;
+	a_new_fr->fr.base_rule.d_addr.addr = 0;
+	a_new_fr->fr.base_rule.s_addr.addr = 0;
+	a_new_fr->fr.base_rule.proto = IPPROTO_NOTEXIST;
+	a_new_fr->fr.base_rule.src_port = 0;
 	a_new_fr->fr.base_rule.dst_port = 0;
 	a_new_fr->fr.policy = POLICY_ACCEPT;
 	a_new_fr->fr.off = 0;
-        //INIT_LIST_HEAD(&a_new_fr->full_list);
-        // add the new node to mylist 
-        list_add(&(a_new_fr->full_list), &(lst_fr.full_list));//list_add_tail(&(a_new_fr->list), &(lst_fr.list));
+    //INIT_LIST_HEAD(&a_new_fr->full_list);
+    // add the new node to mylist
+    list_add(&(a_new_fr->full_list), &(lst_fr.full_list));//list_add_tail(&(a_new_fr->list), &(lst_fr.list));
 	hash_table_insert(&map_fr, &a_new_fr->entry, (const char*)&a_new_fr->fr.base_rule, sizeof(struct filter_rule_base));
 
 	//if(a_new_fr->fr.dir == DIR_INPUT)
 		list_add(&(a_new_fr->direction_list), &(lst_fr_in.direction_list));
 	
 	a_new_fr = kmalloc(sizeof(*a_new_fr), GFP_KERNEL);
-        a_new_fr->fr.base_rule.d_addr.addr = 0;
-        a_new_fr->fr.base_rule.s_addr.addr = 0;
-        a_new_fr->fr.base_rule.proto = IPPROTO_NOTEXIST;
-        a_new_fr->fr.base_rule.src_port = 0;
+	a_new_fr->fr.base_rule.d_addr.addr = 0;
+	a_new_fr->fr.base_rule.s_addr.addr = 0;
+	a_new_fr->fr.base_rule.proto = IPPROTO_NOTEXIST;
+	a_new_fr->fr.base_rule.src_port = 0;
 	a_new_fr->fr.base_rule.dst_port = 0;
 	a_new_fr->fr.off = 0;	
 	a_new_fr->fr.policy = POLICY_ACCEPT;
@@ -239,7 +240,18 @@ int find_rule(unsigned char* data)
 static struct proc_dir_entry *skb_filter;
  
 static int filter_value = 1;
- 
+
+//#define goto_drop  {              \
+//    if(in!=0)                     \
+//        up_write(&hook_sem_in);    \
+//    else                          \
+//        up_write(&hook_sem_out);   \
+//\
+//    return NF_DROP;               \
+//}
+
+#define goto_drop return NF_DROP;
+
 unsigned int hook_func(unsigned int hooknum, 
             struct sk_buff *skb, 
             const struct net_device *in, 
@@ -263,10 +275,28 @@ unsigned int hook_func(unsigned int hooknum,
     if(!sock_buff || !ip_header || !ethheader || filter_value==0)
         return NF_ACCEPT;
 
-    direction_list = in==0?&lst_fr_in.direction_list:&lst_fr_out.direction_list;
-    
+    direction_list = in!=0?&lst_fr_in.direction_list:&lst_fr_out.direction_list;
+
+
+    if(in!=0)
+       	printk(" struct net_device in!=0 ");
+    else
+       	printk(" struct net_device in=0 ");
+
+    if(out!=0)
+       	printk(" struct net_device out!=0\n");
+    else
+       	printk(" struct net_device out=0\n");
+
+    //  Низззззззя блокировать ядро
+    //if(in!=0)
+    //    down_write(&hook_sem_in);
+    //else
+    //    down_write(&hook_sem_out);
+
+
     list_for_each_entry(a_rule, direction_list /*&lst_fr_in.direction_list\*/, direction_list) {
-    if(ip_header->protocol == IPPROTO_UDP){
+    if(ip_header->protocol == IPPROTO_UDP && a_rule->fr.base_rule.proto == IPPROTO_UDP){
         udp_header = (struct udphdr *)(skb_transport_header(sock_buff) + ip_hdrlen(sock_buff));
         if(udp_header){
 	    
@@ -280,15 +310,15 @@ unsigned int hook_func(unsigned int hooknum,
 			printk(KERN_INFO "TID %d SRC: (%u.%u.%u.%u):%d --> DST: (%u.%u.%u.%u):%d proto: %d; \n", 
 				(int)current->pid, NIPQUAD(ip_header->saddr),ntohs(udp_header->source),
 				NIPQUAD(ip_header->daddr),ntohs(udp_header->dest), a_rule->fr.base_rule.proto);
-			return NF_DROP;
+            goto_drop;//return NF_DROP;
 		}
 
 
 //spin_unlock(&list_mutex);
 
         }else
-            return NF_DROP;
-    } else  if(ip_header->protocol == IPPROTO_TCP){
+            goto_drop;//return NF_DROP;
+    } else  if(ip_header->protocol == IPPROTO_TCP && a_rule->fr.base_rule.proto == IPPROTO_TCP){
         //printk(KERN_INFO "---------- TCP -------------\n");
         tcp_header = (struct tcphdr *)(skb_transport_header(sock_buff) + ip_hdrlen(sock_buff));
         if(tcp_header){	
@@ -302,16 +332,16 @@ unsigned int hook_func(unsigned int hooknum,
 			printk(KERN_INFO "TID %d SRC: (%u.%u.%u.%u):%d --> DST: (%u.%u.%u.%u):%d proto: %d; \n", 
 				(int)current->pid, NIPQUAD(ip_header->saddr),ntohs(tcp_header->source),
 				NIPQUAD(ip_header->daddr),ntohs(tcp_header->dest), a_rule->fr.base_rule.proto);
-			return NF_DROP;
+            goto_drop; //return NF_DROP;
 		}
 	   // }
 
-//spin_unlock(&list_mutex);
+//spin_unlock(&list_mutex);	
 	
             //printk(KERN_INFO "SRC: (%u.%u.%u.%u) --> DST: (%u.%u.%u.%u)\n",NIPQUAD(ip_header->saddr),NIPQUAD(ip_header->daddr));
             //printk(KERN_INFO "ICMP type: %d - ICMP code: %d\n",icmp_header->type, icmp_header->code);
         }else
-            return NF_DROP;	
+            goto_drop; //return NF_DROP;
     } else  if(ip_header->protocol == IPPROTO_ICMP){
         //printk(KERN_INFO "---------- ICMP -------------\n");
         icmp_header = (struct icmphdr *)(skb_transport_header(sock_buff) + ip_hdrlen(sock_buff));
@@ -323,11 +353,16 @@ unsigned int hook_func(unsigned int hooknum,
             //printk(KERN_INFO "SRC: (%u.%u.%u.%u) --> DST: (%u.%u.%u.%u)\n",NIPQUAD(ip_header->saddr),NIPQUAD(ip_header->daddr));
             //printk(KERN_INFO "ICMP type: %d - ICMP code: %d  in %s  out %s \n",icmp_header->type, icmp_header->code,in!=NULL?"true":"false",out!=NULL?"true":"false");
         }else
-            return NF_DROP;	
+            goto_drop;//return NF_DROP;
     }
     
     
-    }
+    } // end of list_for_each_entry
+
+    //if(in!=0)
+    //    up_write(&hook_sem_in);
+    //else
+    //    up_write(&hook_sem_out);
     
     return filter_value != 0 ? NF_ACCEPT : NF_DROP;
 }
