@@ -46,6 +46,23 @@ void BFControl::process(QByteArray ba)
         emit done();
         d->ruleslst = NULL;
     }
+    else  if(hdr->nlmsg_type==MSG_LOG)
+    {
+        filter_rule_t msg;
+        memset(&msg,0,sizeof(filter_rule_t));
+        qDebug() << "Got log message" ;
+    }
+    else   if (hdr->nlmsg_type==MSG_DATA && d->ruleslst)
+    {
+       unsigned char *msg = static_cast<unsigned char *>(NLMSG_DATA((struct nlmsghdr *)ba.data()));
+       d->ruleslst->append(filter_rule_ptr(new filter_rule_t(*reinterpret_cast<filter_rule_t*>(msg))));
+    }
+    else  if (hdr->nlmsg_type==NLMSG_ERROR)
+    {
+        struct nlmsgerr *nlerr = (struct nlmsgerr*)NLMSG_DATA(hdr);
+        if(nlerr->error)
+            printf("Error message with code: %d \n",nlerr->error);
+    }
 
     if(hdr->nlmsg_flags&NLM_F_ACK)
     {
@@ -55,18 +72,7 @@ void BFControl::process(QByteArray ba)
         qDebug() << "process   Send ACK" ;
     }
 
-    if (hdr->nlmsg_type==MSG_DATA && d->ruleslst)
-    {
-       unsigned char *msg = static_cast<unsigned char *>(NLMSG_DATA((struct nlmsghdr *)ba.data()));
-       d->ruleslst->append(filter_rule_ptr(new filter_rule_t(*reinterpret_cast<filter_rule_t*>(msg))));
-    }
 
-    if (hdr->nlmsg_type==NLMSG_ERROR)
-    {
-        struct nlmsgerr *nlerr = (struct nlmsgerr*)NLMSG_DATA(hdr);
-        if(nlerr->error)
-            printf("Error message with code: %d \n",nlerr->error);
-    }
 
     qDebug() << "process" << hdr->nlmsg_type;
 }

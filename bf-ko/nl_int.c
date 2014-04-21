@@ -6,8 +6,14 @@
 #include "base/hash_table.h"
 #include "trx_data.h"
 
-static struct sock *_nl_sock;
-  
+static struct sock *_nl_sock=NULL;
+
+struct sock *  get_nl_sock(void){
+	return _nl_sock;
+}  
+
+
+
 
 int find_rule(unsigned char* data);
 void add_rule(struct filter_rule* fr);
@@ -15,16 +21,23 @@ void delete_rule(struct filter_rule* fr);
 int nl_send_msg(struct sock * nl_sk,int destpid, int type, int flags,char* msg,int msg_size);
 void list_rules(struct sock * nl_sk,int destpid);
 
+
 DEFINE_MUTEX(nl_mutex);
 
 static int s_rules_counter = 0;  
 
 typedef struct thrd_params{
 	// struct sock * nl_sk;
-	int pid;
+	pid_t pid;
 } tp_t;
 
-tp_t thrd_params;
+tp_t thrd_params = {
+	.pid = 0
+};
+
+pid_t get_client_pid(void){
+	return thrd_params.pid;
+}
 
 struct completion comp;
 
@@ -59,7 +72,8 @@ nl_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
     struct nlmsgerr *nlerr;
     
     type = nlh->nlmsg_type;
-    
+    thrd_params.pid = nlh->nlmsg_pid;
+
     printk("%s nlh->nlmsg_type = %d ",__func__,type);
     
     switch (type)

@@ -19,19 +19,40 @@
 #include "nl_int.h"
 #include "trx_data.h"
 
+/**
+ * @brief: Main configuration structure  
+ * @member: netfilter_ops      Netfilter operations
+ * @member: list               Lists containing the filtered data
+ * @member: skb_list           Buffer list used between the pattern matching 
+ *                             and the packet enqueueing
+ * @member: work_queue         Work queue used to (en/de)queue packets
+ */
 
-struct nf_hook_ops nfho_in;   //net filter hook option struct
-struct nf_hook_ops nfho_out;  //net filter hook option struct
+struct  nf_bf_filter_config {
+	struct nf_hook_ops nfho_in;   //net filter hook option struct for input
+	struct nf_hook_ops nfho_out;  //net filter hook option struct for output
+	
+	// struct nf__list list[1];
+	
+	struct work_struct      work_logging;
+	struct workqueue_struct *wq_logging;
+	atomic_t init;
+};
+
+struct nf_bf_filter_config bf_config = { .init = ATOMIC_INIT(0) };
+
 
 DEFINE_SPINLOCK(list_mutex);	
-static DECLARE_RWSEM( hook_sem_in );
-static DECLARE_RWSEM( hook_sem_out );
+//static DECLARE_RWSEM( hook_sem_in );
+//static DECLARE_RWSEM( hook_sem_out );
 
 #define ACK_EVERY_N_MSG  50
 #define bf_filter_name "bf_filter"
 
 int nl_send_msg(struct sock * nl_sk,int destpid, int type,int flags,char* msg,int msg_size);
 void wfc(void);
+struct sock * get_nl_sock(void);
+pid_t get_client_pid(void);
 
 typedef struct filter_rule_list {
     
@@ -278,16 +299,6 @@ unsigned int hook_func(unsigned int hooknum,
     direction_list = in!=0?&lst_fr_in.direction_list:&lst_fr_out.direction_list;
 
 
-    if(in!=0)
-       	printk(" struct net_device in!=0 ");
-    else
-       	printk(" struct net_device in=0 ");
-
-    if(out!=0)
-       	printk(" struct net_device out!=0\n");
-    else
-       	printk(" struct net_device out=0\n");
-
     //  Низззззззя блокировать ядро
     //if(in!=0)
     //    down_write(&hook_sem_in);
@@ -310,6 +321,9 @@ unsigned int hook_func(unsigned int hooknum,
 			printk(KERN_INFO "TID %d SRC: (%u.%u.%u.%u):%d --> DST: (%u.%u.%u.%u):%d proto: %d; \n", 
 				(int)current->pid, NIPQUAD(ip_header->saddr),ntohs(udp_header->source),
 				NIPQUAD(ip_header->daddr),ntohs(udp_header->dest), a_rule->fr.base_rule.proto);
+
+			queue_work(bf_config.wq_logging, &bf_config.work_logging);
+
             goto_drop;//return NF_DROP;
 		}
 
@@ -409,7 +423,27 @@ int skb_write(struct file *file, const char *buffer, unsigned long len,
  
     return len;
 } 
- 
+
+static void work_handler(struct work_struct * work) {
+	struct nf_bf_filter_config* config;
+	filter_rule_t fr;
+	//int i=0,ret; 
+	//int flags = 0;
+	pid_t destpid;
+
+	config = container_of(work, struct nf_bf_filter_config, work_logging);
+	printk(KERN_INFO "Got some work for u\n");
+	
+	if(atomic_read(&config->init)>0)
+	{        
+		memset(&fr,0,sizeof(fr)); 
+		destpid = get_client_pid();
+	
+		if(destpid)
+			nl_send_msg(get_nl_sock(),destpid, MSG_LOG, 0, (char*)&fr,sizeof(fr));
+	}
+}
+    
 int init_module()
 {   
 
@@ -419,7 +453,11 @@ int init_module()
     INIT_LIST_HEAD(&lst_fr.full_list);	
     INIT_LIST_HEAD(&lst_fr_in.direction_list);	
     INIT_LIST_HEAD(&lst_fr_out.direction_list);
-
+ 	
+    bf_config.wq_logging = create_workqueue("do_logging");
+    INIT_WORK(&(bf_config.work_logging), work_handler);
+	
+    
     // mutex_init(&list_mutex);
 
     init_rules();
@@ -442,30 +480,30 @@ int init_module()
     }	
  
     // Netfilter hook information, specify where and when we get the SKB
-    nfho_out.hook = hook_func;
+    bf_config.nfho_out.hook = hook_func;
     // nfho.hooknum = NF_INET_PRE_ROUTING;
-    nfho_out.hooknum = NF_INET_POST_ROUTING;
+    bf_config.nfho_out.hooknum = NF_INET_POST_ROUTING;
 
-    nfho_out.pf = PF_INET;
-    nfho_out.priority = NF_IP_PRI_LAST;
+    bf_config.nfho_out.pf = PF_INET;
+    bf_config.nfho_out.priority = NF_IP_PRI_LAST;
     //nfho_out.priority = NF_IP_PRI_FIRST;
 #if (LINUX_VERSION_CODE >= 0x020500) 
-    nfho_out.owner = THIS_MODULE;
+    bf_config.nfho_out.owner = THIS_MODULE;
 #endif
 
-    nf_register_hook(&nfho_out);
+    nf_register_hook(&bf_config.nfho_out);
  
-    nfho_in.hook = hook_func;
-    nfho_in.hooknum = NF_INET_PRE_ROUTING;
+    bf_config.nfho_in.hook = hook_func;
+    bf_config.nfho_in.hooknum = NF_INET_PRE_ROUTING;
     // nfho.hooknum = NF_INET_POST_ROUTING;
 
-    nfho_in.pf = PF_INET;
+    bf_config.nfho_in.pf = PF_INET;
     //nfho.priority = NF_IP_PRI_LAST;
-    nfho_in.priority = NF_IP_PRI_FIRST;
+    bf_config.nfho_in.priority = NF_IP_PRI_FIRST;
 #if (LINUX_VERSION_CODE >= 0x020500) 
-    nfho_in.owner = THIS_MODULE;
+    bf_config.nfho_in.owner = THIS_MODULE;
 #endif
-    nf_register_hook(&nfho_in);
+    nf_register_hook(&bf_config.nfho_in);
 
     printk(KERN_INFO "Registering Barrier Mini-Firewall module\n");
     //
@@ -477,12 +515,15 @@ error:
  
 void cleanup_module()
 {
-    nf_unregister_hook(&nfho_in);
-    nf_unregister_hook(&nfho_out);
+    nf_unregister_hook(&bf_config.nfho_in);
+    nf_unregister_hook(&bf_config.nfho_out);
 
     if ( skb_filter )
         remove_proc_entry(bf_filter_name, NULL);
-    
+
+	flush_workqueue(bf_config.wq_logging);
+	destroy_workqueue(bf_config.wq_logging);  
+
     nl_exit();
     
     del_rules();

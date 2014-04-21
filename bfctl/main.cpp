@@ -88,10 +88,10 @@ int main(int argc, char *argv[])
     {
         qCritical() << "Can't connect to bf module \n";
     }
- #ifdef TEST_ASYNC_GET_RULES
+ //#ifdef TEST_ASYNC_GET_RULES
     std::cout << "Press  any key" << std::endl;
     std::cin.get();
- #endif
+ //#endif
     bfc->close();
     QTimer::singleShot(10, &a, SLOT(quit()));
     return a.exec();
