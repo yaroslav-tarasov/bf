@@ -228,13 +228,14 @@ void delete_rules(void)
 
 
 
-    hash_table_for_each_safe(hentry, &map_fr, pos, hti){
-	hash_table_del_hash_entry_safe(&map_fr,hentry);
-    }
+    //hash_table_for_each_safe(hentry, &map_fr, pos, hti){
+    //	hash_table_del_hash_entry_safe(&map_fr,hentry);
+    //}
     
  
     list_for_each_entry_safe(a_rule, tmp, &lst_fr.full_list, full_list){
          // printk(KERN_INFO "freeing node %s\n", a_rule->name);
+	 hash_table_del_key_safe(&map_fr,(const char*)&a_rule->fr.base_rule, sizeof(struct filter_rule_base));
          list_del_rcu(&a_rule->full_list);
          // kfree(a_rule);
 	 call_rcu(&a_rule->rcu, free_rule);
@@ -565,13 +566,15 @@ void cleanup_module()
 	destroy_workqueue(bf_config.wq_logging);  
 
     nl_exit();
-    
+
+    printk(KERN_INFO "Enter delete_rules();\n");
     delete_rules();
 
-
+    printk(KERN_INFO "Enter rcu_barrier();;\n");
     rcu_barrier();
     //mutex_destroy(&list_mutex);
 
+    printk(KERN_INFO "Enter hash_table_finit(&map_fr);\n");
     hash_table_finit(&map_fr);   
 
     printk(KERN_INFO "Unregistered the Barrier Mini-Firewall module\n");
