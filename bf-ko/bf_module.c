@@ -213,7 +213,11 @@ void delete_rule(struct filter_rule* fr)
 void delete_rules(void)
 { 
     struct filter_rule_list *a_rule, *tmp;
-        
+    unsigned int hti = 0;
+
+    struct hash_entry *hentry;
+    struct list_head * pos; 
+      
     list_for_each_entry_safe(a_rule, tmp, &lst_fr_in.direction_list, direction_list){
          list_del_rcu(&a_rule->direction_list);
     }
@@ -222,8 +226,13 @@ void delete_rules(void)
          list_del_rcu(&a_rule->direction_list);
     }
 
-    hash_table_finit(&map_fr);
 
+
+    hash_table_for_each_safe(hentry, &map_fr, pos, hti){
+	hash_table_del_hash_entry_safe(&map_fr,hentry);
+    }
+    
+ 
     list_for_each_entry_safe(a_rule, tmp, &lst_fr.full_list, full_list){
          // printk(KERN_INFO "freeing node %s\n", a_rule->name);
          list_del_rcu(&a_rule->full_list);
@@ -558,10 +567,13 @@ void cleanup_module()
     nl_exit();
     
     delete_rules();
-    
+
+
     rcu_barrier();
     //mutex_destroy(&list_mutex);
-    
+
+    hash_table_finit(&map_fr);   
+
     printk(KERN_INFO "Unregistered the Barrier Mini-Firewall module\n");
 }
  
