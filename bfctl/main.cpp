@@ -60,6 +60,10 @@ int main(int argc, char *argv[])
         qDebug() << "CMD_DEL_RULE\n";
         bfc->deleteRule(fr);
 
+    } else if (action == CMD_DEL_ALL_RULES) {
+        qDebug() << "CMD_DEL_ALL_RULES\n";
+        bfc->deleteRules(fr);
+
     } else if (action == CMD_GET_FROM_FILE) {
         QList<BFControl::filter_rule_ptr > ruleslst;
         qDebug() << "CMD_GET_FROM_FILE\n";

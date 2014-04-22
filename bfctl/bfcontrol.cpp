@@ -142,7 +142,6 @@ int BFControl::getRulesAsync(filter_rule_t &pattern)
 
 }
 
-
 ///////////////////////////////////////
 //   Удаление правила
 //
@@ -150,6 +149,15 @@ int BFControl::getRulesAsync(filter_rule_t &pattern)
 int BFControl::deleteRule(filter_rule_t &pattern)
 {
     return this->sendMsg(MSG_DELETE_RULE, &pattern, sizeof(filter_rule_t));
+}
+
+///////////////////////////////////////
+//   Удаление правил
+//
+
+int BFControl::deleteRules(filter_rule_t &pattern)
+{
+    return this->sendMsg(MSG_DELETE_ALL_RULES, &pattern, sizeof(filter_rule_t));
 }
 
 ///////////////////////////////////////

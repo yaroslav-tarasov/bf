@@ -78,6 +78,7 @@ parse_cmd_args(int argc, char *argv[],filter_rule_t* fr,std::string& file_name)
             {"list", required_argument, NULL, 'L'},
             {"new", required_argument, NULL, 'N'},
             {"delete", required_argument, NULL, 'D'},
+            {"clear", required_argument, NULL, 'C'},
             {"srcip", required_argument, NULL, 's'},
             {"srcnetmask", required_argument, NULL, 'm'},
             {"srcport", required_argument, NULL, 'p'},
@@ -124,6 +125,13 @@ parse_cmd_args(int argc, char *argv[],filter_rule_t* fr,std::string& file_name)
               break;
             case 'D':
               command = CMD_DEL_RULE;       //delete
+              fr->direction = get_direction(optarg);
+              if (fr->direction == DIR_NONE)
+                 command = CMD_PRINT_HELP;
+              printf("direction in_out = %d\n", fr->direction);
+              break;
+            case 'C':
+              command = CMD_DEL_ALL_RULES;       //delete
               fr->direction = get_direction(optarg);
               if (fr->direction == DIR_NONE)
                  command = CMD_PRINT_HELP;

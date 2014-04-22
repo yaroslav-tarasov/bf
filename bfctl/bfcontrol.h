@@ -28,6 +28,7 @@ public:
     int getRulesAsync(filter_rule_t& pattern);
     int sendRulesSync(QList<filter_rule_ptr >& ruleslst );
     int deleteRule(filter_rule_t &pattern);
+    int deleteRules(filter_rule_t &pattern);
     int addRule(filter_rule_t &pattern);
 
 signals:

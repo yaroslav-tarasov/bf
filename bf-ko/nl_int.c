@@ -13,14 +13,12 @@ struct sock *  get_nl_sock(void){
 }  
 
 
-
-
 int find_rule(unsigned char* data);
 void add_rule(struct filter_rule* fr);
 void delete_rule(struct filter_rule* fr);
 int nl_send_msg(struct sock * nl_sk,int destpid, int type, int flags,char* msg,int msg_size);
 void list_rules(struct sock * nl_sk,int destpid);
-
+void delete_rules(void);
 
 DEFINE_MUTEX(nl_mutex);
 
@@ -108,6 +106,13 @@ nl_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
 		}
 
 		break;
+        case MSG_DELETE_ALL_RULES:
+		printk("%s  --------------MSG_DELETE_ALL_RULES\n",__func__);
+	        data = NLMSG_DATA(nlh);
+		delete_rules();
+
+		break;
+
         case MSG_GET_RULES: 
 		printk("%s  --------------MSG_GET_RULES\n",__func__);
 		data = NLMSG_DATA(nlh);

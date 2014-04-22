@@ -60,6 +60,7 @@ typedef struct filter_rule_list {
     struct list_head full_list; /* kernel's list structure */
     struct list_head direction_list; /* kernel's list structure */
     struct hash_entry entry;
+    struct rcu_head rcu;
 } filter_rule_list_t;
 
  
@@ -116,7 +117,7 @@ static  void init_rules(void)
 	hash_table_insert(&map_fr, &a_new_fr->entry, (const char*)&a_new_fr->fr.base_rule, sizeof(struct filter_rule_base));
 
 	//if(a_new_fr->fr.dir == DIR_INPUT)
-		list_add(&(a_new_fr->direction_list), &(lst_fr_in.direction_list));
+		list_add_rcu(&(a_new_fr->direction_list), &(lst_fr_in.direction_list));
 	
 	a_new_fr = kmalloc(sizeof(*a_new_fr), GFP_KERNEL);
 	a_new_fr->fr.base_rule.d_addr.addr = 0;
@@ -139,26 +140,7 @@ static  void init_rules(void)
 
 }
 
-static void del_rules(void)
-{ 
-    struct filter_rule_list *a_rule, *tmp;
-        
-    list_for_each_entry_safe(a_rule, tmp, &lst_fr_in.direction_list, direction_list){
-         list_del(&a_rule->direction_list);
-    }
 
-    list_for_each_entry_safe(a_rule, tmp, &lst_fr_out.direction_list, direction_list){
-         list_del(&a_rule->direction_list);
-    }
-
-    hash_table_finit(&map_fr);
-
-    list_for_each_entry_safe(a_rule, tmp, &lst_fr.full_list, full_list){
-         // printk(KERN_INFO "freeing node %s\n", a_rule->name);
-         list_del(&a_rule->full_list);
-         kfree(a_rule);
-    }
-}
 
 void add_rule(struct filter_rule* fr)
 {
@@ -167,52 +149,87 @@ void add_rule(struct filter_rule* fr)
 	memcpy(&a_new_fr->fr,fr,sizeof(filter_rule_t));
 
 spin_lock(&list_mutex);
-        list_add(&(a_new_fr->full_list), &(lst_fr.full_list));//list_add_tail(&(a_new_fr->list), &(lst_fr.list));
+        list_add_rcu(&(a_new_fr->full_list), &(lst_fr.full_list));//list_add_tail(&(a_new_fr->list), &(lst_fr.list));
 	hash_table_insert(&map_fr, &a_new_fr->entry, (const char*)&a_new_fr->fr.base_rule, sizeof(struct filter_rule_base));
 	if(a_new_fr->fr.direction == DIR_INPUT)
-		list_add(&(a_new_fr->direction_list), &(lst_fr_in.direction_list));
+		list_add_rcu(&(a_new_fr->direction_list), &(lst_fr_in.direction_list));
 	else if (a_new_fr->fr.direction == DIR_OUTPUT)
-		list_add(&(a_new_fr->direction_list), &(lst_fr_out.direction_list));
+		list_add_rcu(&(a_new_fr->direction_list), &(lst_fr_out.direction_list));
 spin_unlock(&list_mutex);	
 	
 }
 
-inline int cmp_rule(struct filter_rule* fr1,struct filter_rule* fr2)
+inline int cmp_rule(struct filter_rule_base* fr1,struct filter_rule_base* fr2)
 {
-	return memcmp(fr1,fr2,sizeof(struct filter_rule));
+	return memcmp(fr1,fr2,sizeof(struct filter_rule_base));
+}
+
+void free_rule(struct rcu_head *rh)
+{
+	struct filter_rule_list *a_rule;
+	a_rule = container_of(rh, struct filter_rule_list, rcu);
+	kfree(a_rule);
+        printk(KERN_INFO "delete_rule : call_rcu : free_rule\n"); 
 }
 
 void delete_rule(struct filter_rule* fr)
 {
-	struct filter_rule_list *a_rule, *tmp;
+	struct filter_rule_list *a_rule, *tmp;	
 
+	printk(KERN_INFO "Enter delete_rule  \n"); 
 //spin_lock(&list_mutex);
 	list_for_each_entry_safe(a_rule, tmp, &lst_fr_in.direction_list, direction_list){
-		if(cmp_rule(&a_rule->fr,fr)==0)
+		if(cmp_rule(&a_rule->fr.base_rule,&fr->base_rule)==0)
 		{		
-			list_del(&a_rule->direction_list);
+			list_del_rcu(&a_rule->direction_list);
 			break;
 		}
 	}
 
 	list_for_each_entry_safe(a_rule, tmp, &lst_fr_out.direction_list, direction_list){
-		if(cmp_rule(&a_rule->fr,fr)==0)
+		if(cmp_rule(&a_rule->fr.base_rule,&fr->base_rule)==0)
 		{		
-			list_del(&a_rule->direction_list);
+			list_del_rcu(&a_rule->direction_list);
 			break;
 		}
 	}
 
 	hash_table_del_key_safe(&map_fr,(const char*)&fr->base_rule, sizeof(struct filter_rule_base));
-	
+
 	list_for_each_entry_safe(a_rule, tmp, &lst_fr.full_list, full_list){
-		if(cmp_rule(&a_rule->fr,fr)==0){		
-			list_del(&a_rule->full_list);
-			kfree(a_rule);
+
+		if(cmp_rule(&a_rule->fr.base_rule,&fr->base_rule)==0){		
+			list_del_rcu(&a_rule->full_list);
+			// kfree(a_rule);
+                        printk(KERN_INFO "delete_rule : call_rcu\n"); 
+			call_rcu(&a_rule->rcu, free_rule);
 		}
 	}
+	printk(KERN_INFO "Leave delete_rule  \n"); 
 //spin_unlock(&list_mutex);	
 	
+}
+
+void delete_rules(void)
+{ 
+    struct filter_rule_list *a_rule, *tmp;
+        
+    list_for_each_entry_safe(a_rule, tmp, &lst_fr_in.direction_list, direction_list){
+         list_del_rcu(&a_rule->direction_list);
+    }
+
+    list_for_each_entry_safe(a_rule, tmp, &lst_fr_out.direction_list, direction_list){
+         list_del_rcu(&a_rule->direction_list);
+    }
+
+    hash_table_finit(&map_fr);
+
+    list_for_each_entry_safe(a_rule, tmp, &lst_fr.full_list, full_list){
+         // printk(KERN_INFO "freeing node %s\n", a_rule->name);
+         list_del_rcu(&a_rule->full_list);
+         // kfree(a_rule);
+	 call_rcu(&a_rule->rcu, free_rule);
+    }
 }
 
 void list_rules(struct sock * nl_sk,int destpid)
@@ -262,16 +279,10 @@ static struct proc_dir_entry *skb_filter;
  
 static int filter_value = 1;
 
-//#define goto_drop  {              \
-//    if(in!=0)                     \
-//        up_write(&hook_sem_in);    \
-//    else                          \
-//        up_write(&hook_sem_out);   \
-//\
-//    return NF_DROP;               \
-//}
 
-#define goto_drop return NF_DROP;
+#define goto_drop { rcu_read_unlock(); \
+		  return NF_DROP; }
+
 
 unsigned int hook_func(unsigned int hooknum, 
             struct sk_buff *skb, 
@@ -298,15 +309,11 @@ unsigned int hook_func(unsigned int hooknum,
 
     direction_list = in!=0?&lst_fr_in.direction_list:&lst_fr_out.direction_list;
 
-
-    //  Низззззззя блокировать ядро
-    //if(in!=0)
-    //    down_write(&hook_sem_in);
-    //else
-    //    down_write(&hook_sem_out);
-
-
-    list_for_each_entry(a_rule, direction_list /*&lst_fr_in.direction_list\*/, direction_list) {
+    if(ip_header->protocol == IPPROTO_UDP || ip_header->protocol == IPPROTO_TCP){
+    
+    rcu_read_lock();
+    
+    list_for_each_entry_rcu(a_rule, direction_list /*&lst_fr_in.direction_list\*/, direction_list) {
     if(ip_header->protocol == IPPROTO_UDP && a_rule->fr.base_rule.proto == IPPROTO_UDP){
         udp_header = (struct udphdr *)(skb_transport_header(sock_buff) + ip_hdrlen(sock_buff));
         if(udp_header){
@@ -373,11 +380,10 @@ unsigned int hook_func(unsigned int hooknum,
     
     } // end of list_for_each_entry
 
-    //if(in!=0)
-    //    up_write(&hook_sem_in);
-    //else
-    //    up_write(&hook_sem_out);
-    
+    rcu_read_unlock();
+    }
+
+
     return filter_value != 0 ? NF_ACCEPT : NF_DROP;
 }
  
@@ -453,7 +459,10 @@ int init_module()
     INIT_LIST_HEAD(&lst_fr.full_list);	
     INIT_LIST_HEAD(&lst_fr_in.direction_list);	
     INIT_LIST_HEAD(&lst_fr_out.direction_list);
- 	
+    INIT_RCU_HEAD(&lst_fr.rcu);
+    INIT_RCU_HEAD(&lst_fr_in.rcu);
+    INIT_RCU_HEAD(&lst_fr_out.rcu);
+    
     bf_config.wq_logging = create_workqueue("do_logging");
     INIT_WORK(&(bf_config.work_logging), work_handler);
 	
@@ -526,7 +535,7 @@ void cleanup_module()
 
     nl_exit();
     
-    del_rules();
+    delete_rules();
     
     //mutex_destroy(&list_mutex);
     
