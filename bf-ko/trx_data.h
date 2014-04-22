@@ -53,7 +53,7 @@ typedef struct filter_rule{
    __u32 id;
 #ifdef __cplusplus
    explicit  filter_rule(__u16 proto=0, __u16 src_port=0, __u16 dst_port=0,__u8  direction=DIR_INPUT,__u8  policy=POLICY_ACCEPT)
-       :base_rule(proto,src_port,dst_port),direction(direction),policy(policy),off(0){}
+       :base_rule(proto,src_port,dst_port),off(0),direction(direction),policy(policy){}
 #endif
 } filter_rule_t;
 

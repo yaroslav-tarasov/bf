@@ -17,4 +17,12 @@ MOC_DIR = ./moc
 # Input
 SOURCES += main.cpp
 
-include(../qtservice/qt-solutions/qtservice/src/qtservice.pri)
+include(../exts/qtservice/src/qtservice.pri)
+
+
+INCLUDEPATH += ../bf-ko ../bf-link
+
+DESTDIR = ../../bin
+LIBS += -L../../lib -lbf-link -lnl
+OBJECTS_DIR = ./tmp
+MOC_DIR = ./moc

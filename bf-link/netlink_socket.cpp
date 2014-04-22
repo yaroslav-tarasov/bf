@@ -41,7 +41,7 @@ NetlinkSocket::~NetlinkSocket()
 
 int NetlinkSocket::create(int proto)
 {
-  d->sock_fd = socket(PF_NETLINK, SOCK_RAW,NETLINK_USERSOCK);
+  d->sock_fd = socket(PF_NETLINK, SOCK_RAW,proto);
   memset(&d->src_addr, 0, sizeof(struct sockaddr_nl));
   d->src_addr.nl_family = AF_NETLINK;
   d->src_addr.nl_pid = getpid(); /* self pid */

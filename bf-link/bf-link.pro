@@ -16,10 +16,12 @@ QMAKE_CXXFLAGS += -std=c++0x
 DEFINES += BFLINK_LIBRARY
 
 SOURCES += bflink.cpp \
+           bfcontrol.cpp \
            netlink_socket.cpp \
            netlinksocket.cpp
 
 HEADERS += bflink.h\
+        bfcontrol.h \
         bf-link_global.h\
         netlink_socket.h \
         netlinksocket.h
