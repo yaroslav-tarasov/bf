@@ -213,10 +213,10 @@ void delete_rule(struct filter_rule* fr)
 void delete_rules(void)
 { 
     struct filter_rule_list *a_rule, *tmp;
-    unsigned int hti = 0;
+//    unsigned int hti = 0;
 
-    struct hash_entry *hentry;
-    struct list_head * pos; 
+//    struct hash_entry *hentry;
+//    struct list_head * pos;
       
     list_for_each_entry_safe(a_rule, tmp, &lst_fr_in.direction_list, direction_list){
          list_del_rcu(&a_rule->direction_list);

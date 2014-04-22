@@ -4,12 +4,14 @@
 #
 #-------------------------------------------------
 
-QT       += network xml thread
+QT       += network xml
 
 QT       -= gui
 
 TARGET = bf-link
 TEMPLATE = lib
+
+CONFIG   += thread
 
 QMAKE_CXXFLAGS += -std=c++0x
 

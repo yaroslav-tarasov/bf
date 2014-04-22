@@ -4,12 +4,12 @@
 #
 #-------------------------------------------------
 
-QT       += core thread
+QT       += core
 
 QT       -= gui
 
 TARGET = bfctl
-CONFIG   += console
+CONFIG   += console thread
 CONFIG   -= app_bundle
 
 TEMPLATE = app
