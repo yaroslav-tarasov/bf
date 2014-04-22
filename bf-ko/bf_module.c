@@ -232,6 +232,28 @@ void delete_rules(void)
     }
 }
 
+void cleanup_rules(void)
+{ 
+    struct filter_rule_list *a_rule, *tmp;
+        
+    list_for_each_entry_safe(a_rule, tmp, &lst_fr_in.direction_list, direction_list){
+         list_del(&a_rule->direction_list);
+    }
+
+    list_for_each_entry_safe(a_rule, tmp, &lst_fr_out.direction_list, direction_list){
+         list_del(&a_rule->direction_list);
+    }
+
+    hash_table_finit(&map_fr);
+
+    list_for_each_entry_safe(a_rule, tmp, &lst_fr.full_list, full_list){
+         // printk(KERN_INFO "freeing node %s\n", a_rule->name);
+         list_del(&a_rule->full_list);
+         kfree(a_rule);
+
+    }
+}
+
 void list_rules(struct sock * nl_sk,int destpid)
 {
     struct filter_rule_list *a_rule; 
@@ -537,6 +559,7 @@ void cleanup_module()
     
     delete_rules();
     
+    rcu_barrier();
     //mutex_destroy(&list_mutex);
     
     printk(KERN_INFO "Unregistered the Barrier Mini-Firewall module\n");
