@@ -18,8 +18,9 @@ enum bf_messages {MSG_ADD_RULE=NLMSG_MIN_TYPE + 2, // Добавление пр�
                   MSG_UPDATE_RULE,              //
                   MSG_GET_RULES,                // Получение правил из модуля ядра
                   MSG_OK,                       // Подтверждние
-                  MSG_LOG};                     // Лог из модуля ядра
-
+                  MSG_LOG,                      // Лог из модуля ядра
+                  MSG_LOG_SUBSCRIBE
+                 };
 #pragma pack (1)
 typedef struct _ip_addr
 {

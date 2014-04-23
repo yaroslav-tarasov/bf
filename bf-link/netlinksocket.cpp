@@ -1,6 +1,8 @@
 #include "netlinksocket.h"
 #include <netlink/netlink.h>
 #include <netlink/handlers.h>
+#include <netlink/msg.h>
+// #include <linux/netlink.h>
 #include <QDebug>
 #include <thread>
 #include <linux/if_ether.h>
@@ -125,12 +127,19 @@ void NetlinkSocket::runListener()
     {
         if( (ret = d->recv (NULL, &nl_msg, NULL)) > 0)
         {
+            int n = ret;
             struct nlmsghdr * hdr = (struct nlmsghdr *) nl_msg;
-            if(hdr->nlmsg_len > 0)
-            {
-                QByteArray ba(reinterpret_cast<const char*>(nl_msg),hdr->nlmsg_len);
-                qDebug() << "nlmsg_type: " <<  hdr->nlmsg_type << "nlmsg_len: " << hdr->nlmsg_len ;
-                emit  data(ba);
+            unsigned char *msg;
+
+            while (nlmsg_ok(hdr, n)) {
+                msg = static_cast<unsigned char *>(nlmsg_data(hdr));
+                if(hdr->nlmsg_len > 0)
+                {
+                    QByteArray ba(reinterpret_cast<const char*>(hdr),hdr->nlmsg_len);
+                    qDebug() << "nlmsg_type: " <<  hdr->nlmsg_type << "nlmsg_len: " << hdr->nlmsg_len ;
+                    emit  data(ba);
+                }
+                hdr = nlmsg_next(hdr, &n);
             }
         }
         else

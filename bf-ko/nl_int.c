@@ -5,6 +5,7 @@
 #include "nl_int.h"
 #include "base/hash_table.h"
 #include "trx_data.h"
+#include "bf_config.h"
 
 static struct sock *_nl_sock=NULL;
 
@@ -12,13 +13,8 @@ struct sock *  get_nl_sock(void){
 	return _nl_sock;
 }  
 
+extern struct nf_bf_filter_config bf_config;
 
-int find_rule(unsigned char* data);
-void add_rule(struct filter_rule* fr);
-void delete_rule(struct filter_rule* fr);
-int nl_send_msg(struct sock * nl_sk,int destpid, int type, int flags,char* msg,int msg_size);
-void list_rules(struct sock * nl_sk,int destpid);
-void delete_rules(void);
 
 DEFINE_MUTEX(nl_mutex);
 
@@ -112,7 +108,12 @@ nl_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
 		delete_rules();
 
 		break;
+        case MSG_LOG_SUBSCRIBE:
+        printk("%s  --------------MSG_LOG_SUBSCRIBE",__func__);
+            data = NLMSG_DATA(nlh);
+            bf_config.pid_log = nlh->nlmsg_pid;
 
+        break;
         case MSG_GET_RULES: 
 		printk("%s  --------------MSG_GET_RULES\n",__func__);
 		data = NLMSG_DATA(nlh);
@@ -208,15 +209,6 @@ nl_send_msg(struct sock * nl_sk,int destpid, int type, int flags,char* msg,int m
 
     return res;
 }
-
-typedef struct filter_rule_list {
-
-    filter_rule_t fr;
-    struct list_head full_list; /* kernel's list structure */
-    struct list_head direction_list; /* kernel's list structure */
-    struct hash_entry entry;
-    struct rcu_head rcu;
-} filter_rule_list_t;
 
 int
 nl_send_lst(struct sock * nl_sk,int destpid,  filter_rule_list_t* lst,int lst_size,int* end_list)

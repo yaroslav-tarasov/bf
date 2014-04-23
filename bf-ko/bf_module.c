@@ -19,53 +19,15 @@
 #include "base/hash_table.h"
 #include "nl_int.h"
 #include "trx_data.h"
+#include "bf_config.h"
 
-/**
- * @brief: Main configuration structure  
- * @member: netfilter_ops      Netfilter operations
- * @member: list               Lists containing the filtered data
- * @member: skb_list           Buffer list used between the pattern matching 
- *                             and the packet enqueueing
- * @member: work_queue         Work queue used to (en/de)queue packets
- */
-
-struct  nf_bf_filter_config {
-	struct nf_hook_ops nfho_in;   //net filter hook option struct for input
-	struct nf_hook_ops nfho_out;  //net filter hook option struct for output
-	
-	// struct nf__list list[1];
-	
-	struct work_struct      work_logging;
-	struct workqueue_struct *wq_logging;
-	atomic_t init;
-};
-
-struct nf_bf_filter_config bf_config = { .init = ATOMIC_INIT(0) };
+struct nf_bf_filter_config bf_config = { .init = ATOMIC_INIT(0), .pid_log=0 };
 
 
 DEFINE_SPINLOCK(list_mutex);	
-//static DECLARE_RWSEM( hook_sem_in );
-//static DECLARE_RWSEM( hook_sem_out );
 
 #define ACK_EVERY_N_MSG  50
 #define bf_filter_name "bf_filter"
-
-int nl_send_msg(struct sock * nl_sk,int destpid, int type,int flags,char* msg,int msg_size);
-
-void wfc(void);
-struct sock * get_nl_sock(void);
-pid_t get_client_pid(void);
-
-typedef struct filter_rule_list {
-    
-    filter_rule_t fr;
-    struct list_head full_list; /* kernel's list structure */
-    struct list_head direction_list; /* kernel's list structure */
-    struct hash_entry entry;
-    struct rcu_head rcu;
-} filter_rule_list_t;
-
-int nl_send_lst(struct sock * nl_sk,int destpid,  filter_rule_list_t* lst,int lst_size,int* end_list);
 
 
 static struct filter_rule_list lst_fr;
@@ -303,27 +265,6 @@ void list_rules(struct sock * nl_sk,int destpid)
 
     if(ret<0)
          return;
-
-//    int c=0;
-//    int end_list =0;
-//    //while(end_list==0){
-//    list_for_each_entry(a_rule, &lst_fr.full_list, full_list) {
-
-//         if(c==0 || ++c%10==0) {
-//            if(++i%2==0) { flags = NLM_F_ACK; };
-
-//    ret= nl_send_lst( nl_sk,destpid,  flags, a_rule,10,&end_list);
-
-//    if(ret<0)
-//         return;
-
-//            if(flags == NLM_F_ACK) {
-//                flags = 0; wfc();
-//            }
-//        }
-//     }
-
-//    //}
 
     nl_send_msg(nl_sk,destpid, MSG_DONE, 0, (char*)&fr,sizeof(fr));
 #endif
