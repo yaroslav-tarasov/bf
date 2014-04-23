@@ -225,7 +225,7 @@ nl_send_lst(struct sock * nl_sk,int destpid,  filter_rule_list_t* lst,int lst_si
     struct filter_rule_list *a_rule=NULL;
     int pid;
     struct sk_buff *skb_out = NULL;
-    int res=0,flags=0,i=0,msg_size=sizeof(filter_rule_t),msg_cnt=0;
+    int res=0,flags=0,i=0,msg_size=sizeof(filter_rule_t),msg_cnt=1;
 
     if(!lst_size)
         lst_size = NLMSG_DEFAULT_SIZE / (msg_size + NLMSG_HDRLEN);
@@ -241,7 +241,7 @@ nl_send_lst(struct sock * nl_sk,int destpid,  filter_rule_list_t* lst,int lst_si
         if (i==0 || i == lst_size || !nlh || !skb_out)
             skb_out = nlmsg_new(NLMSG_DEFAULT_SIZE,0);
 
-        if(++msg_cnt%2==0) { flags = NLM_F_ACK; };
+        if(msg_cnt%2==0 && i == lst_size-1) { flags = NLM_F_ACK; };
 
         if(!skb_out)
         {
@@ -263,7 +263,7 @@ nl_send_lst(struct sock * nl_sk,int destpid,  filter_rule_list_t* lst,int lst_si
             flags = 0;
         }
 
-        if(++i == lst_size && !skb_out){
+        if(++i == lst_size && skb_out){
             res=nlmsg_unicast(nl_sk,skb_out,pid);
             printk(KERN_INFO " %s:  nlmsg_unicast\n", __FUNCTION__);
             skb_out = NULL;
@@ -275,7 +275,7 @@ nl_send_lst(struct sock * nl_sk,int destpid,  filter_rule_list_t* lst,int lst_si
             // nlmsg_free(skb_out);
             }
 
-            if(msg_cnt%2==0) {
+            if(msg_cnt++%2==0) {
                 wfc();
             }
         }
