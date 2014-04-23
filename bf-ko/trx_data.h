@@ -36,15 +36,15 @@ typedef struct {
 					      This is applied to both source and destination. */
   u_int16_t vlan_id;                   /* Use '0' for any vlan */
   u_int8_t  proto;                     /* Use 0 for 'any' protocol */
-  ip_addr   shost, dhost;              /* User '0' for any host. This is applied to both source and destination. */
-  ip_addr   shost_mask, dhost_mask;    /* IPv4/6 network mask */
+  ip_addr_t   shost, dhost;              /* User '0' for any host. This is applied to both source and destination. */
+  ip_addr_t   shost_mask, dhost_mask;    /* IPv4/6 network mask */
   u_int16_t sport_low, sport_high;     /* All ports between port_low...port_high means 'any' port */
   u_int16_t dport_low, dport_high;     /* All ports between port_low...port_high means 'any' port */
 } filtering_rule_core_fields;
 
 typedef struct filter_rule_base {
 
-
+	
     __u16 proto;
     __u16 src_port;
     __u16 dst_port;

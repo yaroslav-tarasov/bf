@@ -175,17 +175,12 @@ nl_send_msg(struct sock * nl_sk,int destpid, int type, int flags,char* msg,int m
     struct nlmsghdr *nlh;
     int pid;
     struct sk_buff *skb_out;
-    // int msg_size;
-    // char *msg="Hello from kernel";
     int res;
 
     printk(KERN_INFO "Entering: %s\n", __FUNCTION__);
     
-    // msg_size=strlen(msg);
-    
-    //nlh=(struct nlmsghdr*)skb->data;
-    //printk(KERN_INFO "Netlink received msg payload: %s\n",(char*)nlmsg_data(nlh));
-    pid = destpid; // nlh->nlmsg_pid; /*pid of sending process */
+
+    pid = destpid;
 
     skb_out = nlmsg_new(msg_size,0);
 
@@ -196,9 +191,11 @@ nl_send_msg(struct sock * nl_sk,int destpid, int type, int flags,char* msg,int m
     } 
     nlh=nlmsg_put(skb_out,0,0,/*NLMSG_DONE*/type,msg_size,flags);
 
-    NETLINK_CB(skb_out).dst_group = 0; /* not in mcast group */
-    memcpy(nlmsg_data(nlh),msg,msg_size);
-    
+    if(nlh){
+        NETLINK_CB(skb_out).dst_group = 0; /* not in mcast group */
+        memcpy(nlmsg_data(nlh),msg,msg_size);
+    }
+
     res=nlmsg_unicast(nl_sk,skb_out,pid);
     
     if(res<0)
@@ -208,8 +205,89 @@ nl_send_msg(struct sock * nl_sk,int destpid, int type, int flags,char* msg,int m
  	// nlmsg_free(skb_out);
     }
 
-   // nla_put_u8(skb_out, 8, 9);
-     // nlmsg_data(nlh);
+
+    return res;
+}
+
+typedef struct filter_rule_list {
+
+    filter_rule_t fr;
+    struct list_head full_list; /* kernel's list structure */
+    struct list_head direction_list; /* kernel's list structure */
+    struct hash_entry entry;
+    struct rcu_head rcu;
+} filter_rule_list_t;
+
+int
+nl_send_lst(struct sock * nl_sk,int destpid,  filter_rule_list_t* lst,int lst_size,int* end_list)
+{
+    struct nlmsghdr *nlh=NULL;
+    struct filter_rule_list *a_rule=NULL;
+    int pid;
+    struct sk_buff *skb_out = NULL;
+    int res,flags=0,i=0,msg_size=sizeof(filter_rule_t),msg_cnt=0;
+
+    if(!lst_size)
+        lst_size = NLMSG_DEFAULT_SIZE / (msg_size + NLMSG_HDRLEN);
+
+    printk(KERN_INFO "Entering: %s\n", __FUNCTION__);
+
+    pid = destpid;
+
+    if (lst_size <= 0) return -1;
+
+    list_for_each_entry(a_rule, &lst->full_list, full_list) {
+
+        if (i==0 || i == lst_size || !nlh || !skb_out)
+            skb_out = nlmsg_new(NLMSG_DEFAULT_SIZE,0);
+
+        if(++msg_cnt%2==0) { flags = NLM_F_ACK; };
+
+        if(!skb_out)
+        {
+            printk(KERN_ERR "Failed to allocate new skb\n");
+            return -1;
+        }
+
+        nlh=nlmsg_put(skb_out,0,0,MSG_DATA,msg_size,flags);
+
+        if(nlh){
+            NETLINK_CB(skb_out).dst_group = 0; /* not in mcast group */
+            memcpy(nlmsg_data(nlh),&a_rule->fr,msg_size);
+        }
+
+        if(flags == NLM_F_ACK) {
+            flags = 0;
+        }
+
+        if(++i == lst_size && !skb_out){
+            res=nlmsg_unicast(nl_sk,skb_out,pid);
+            skb_out = NULL;
+            i = 0;
+            if(res<0)
+            {
+                printk(KERN_INFO "Error while sending message to user err=%d msg_size=%d pid=%d\n",res,msg_size,pid);
+            // kfree_skb(skb_out); Видимо только тогда когда не вызывается unicast вообще и наверное тогда
+            // nlmsg_free(skb_out);
+            }
+
+            if(msg_cnt%2==0) {
+                wfc();
+            }
+        }
+
+    }
+
+    res=nlmsg_unicast(nl_sk,skb_out,pid);
+
+    if(res<0)
+    {
+        printk(KERN_INFO "Error while sending message to user err=%d msg_size=%d pid=%d\n",res,msg_size,pid);
+    // kfree_skb(skb_out); Видимо только тогда когда не вызывается unicast вообще и наверное тогда
+    // nlmsg_free(skb_out);
+    }
+
+
     return res;
 }
 

@@ -11,6 +11,7 @@
 #include <linux/ip.h>
 #include <linux/icmp.h>
 #include <linux/tcp.h>
+#include <linux/if_vlan.h>
 #include <linux/proc_fs.h>  /* Necessary because we use the proc fs */
 #include <linux/list.h>
 #include <net/ip.h>
@@ -50,6 +51,7 @@ DEFINE_SPINLOCK(list_mutex);
 #define bf_filter_name "bf_filter"
 
 int nl_send_msg(struct sock * nl_sk,int destpid, int type,int flags,char* msg,int msg_size);
+
 void wfc(void);
 struct sock * get_nl_sock(void);
 pid_t get_client_pid(void);
@@ -63,7 +65,9 @@ typedef struct filter_rule_list {
     struct rcu_head rcu;
 } filter_rule_list_t;
 
- 
+int nl_send_lst(struct sock * nl_sk,int destpid,  filter_rule_list_t* lst,int lst_size,int* end_list);
+
+
 static struct filter_rule_list lst_fr;
 static struct filter_rule_list lst_fr_in;
 static struct filter_rule_list lst_fr_out;
@@ -117,8 +121,8 @@ static  void init_rules(void)
 	hash_table_insert(&map_fr, &a_new_fr->entry, (const char*)&a_new_fr->fr.base_rule, sizeof(struct filter_rule_base));
 
 	//if(a_new_fr->fr.dir == DIR_INPUT)
-		list_add_rcu(&(a_new_fr->direction_list), &(lst_fr_in.direction_list));
-	
+        list_add(&(a_new_fr->direction_list), &(lst_fr_in.direction_list));
+
 	a_new_fr = kmalloc(sizeof(*a_new_fr), GFP_KERNEL);
 	a_new_fr->fr.base_rule.d_addr.addr = 0;
 	a_new_fr->fr.base_rule.s_addr.addr = 0;
@@ -149,7 +153,7 @@ void add_rule(struct filter_rule* fr)
 	memcpy(&a_new_fr->fr,fr,sizeof(filter_rule_t));
 
 spin_lock(&list_mutex);
-        list_add_rcu(&(a_new_fr->full_list), &(lst_fr.full_list));//list_add_tail(&(a_new_fr->list), &(lst_fr.list));
+    list_add_rcu(&(a_new_fr->full_list), &(lst_fr.full_list));//list_add_tail(&(a_new_fr->list), &(lst_fr.list));
 	hash_table_insert(&map_fr, &a_new_fr->entry, (const char*)&a_new_fr->fr.base_rule, sizeof(struct filter_rule_base));
 	if(a_new_fr->fr.direction == DIR_INPUT)
 		list_add_rcu(&(a_new_fr->direction_list), &(lst_fr_in.direction_list));
@@ -169,7 +173,7 @@ void free_rule(struct rcu_head *rh)
 	struct filter_rule_list *a_rule;
 	a_rule = container_of(rh, struct filter_rule_list, rcu);
 	kfree(a_rule);
-        printk(KERN_INFO "delete_rule : call_rcu : free_rule\n"); 
+    printk(KERN_INFO "delete_rule : call_rcu : free_rule\n");
 }
 
 void delete_rule(struct filter_rule* fr)
@@ -201,7 +205,7 @@ void delete_rule(struct filter_rule* fr)
 		if(cmp_rule(&a_rule->fr.base_rule,&fr->base_rule)==0){		
 			list_del_rcu(&a_rule->full_list);
 			// kfree(a_rule);
-                        printk(KERN_INFO "delete_rule : call_rcu\n"); 
+            printk(KERN_INFO "delete_rule : call_rcu\n");
 			call_rcu(&a_rule->rcu, free_rule);
 		}
 	}
@@ -234,11 +238,11 @@ void delete_rules(void)
     
  
     list_for_each_entry_safe(a_rule, tmp, &lst_fr.full_list, full_list){
-         // printk(KERN_INFO "freeing node %s\n", a_rule->name);
-	 hash_table_del_key_safe(&map_fr,(const char*)&a_rule->fr.base_rule, sizeof(struct filter_rule_base));
-         list_del_rcu(&a_rule->full_list);
-         // kfree(a_rule);
-	 call_rcu(&a_rule->rcu, free_rule);
+        // printk(KERN_INFO "freeing node %s\n", a_rule->name);
+        hash_table_del_key_safe(&map_fr,(const char*)&a_rule->fr.base_rule, sizeof(struct filter_rule_base));
+        list_del_rcu(&a_rule->full_list);
+        // kfree(a_rule);
+        call_rcu(&a_rule->rcu, free_rule);
     }
 }
 
@@ -268,8 +272,11 @@ void cleanup_rules(void)
 void list_rules(struct sock * nl_sk,int destpid)
 {
     struct filter_rule_list *a_rule; 
-    int i=0,ret; 
-    int flags = 0;
+    int ret;
+
+
+#if 0
+    int i=0,flags = 0;
     list_for_each_entry(a_rule, &lst_fr.full_list, full_list) {
 
         if(++i%ACK_EVERY_N_MSG==0) { flags = NLM_F_ACK; };
@@ -283,10 +290,39 @@ void list_rules(struct sock * nl_sk,int destpid)
 	if(ret<0)
 		 return;
 	
-	if(flags == NLM_F_ACK) {
-	 	flags = 0; wfc();
-	}
+        if(flags == NLM_F_ACK) {
+            flags = 0; wfc();
+        }
     }
+#else
+    int end_list =0;
+    ret= nl_send_lst( nl_sk,destpid,  &lst_fr,20,&end_list);
+
+    if(ret<0)
+         return;
+
+//    int c=0;
+//    int end_list =0;
+//    //while(end_list==0){
+//    list_for_each_entry(a_rule, &lst_fr.full_list, full_list) {
+
+//         if(c==0 || ++c%10==0) {
+//            if(++i%2==0) { flags = NLM_F_ACK; };
+
+//    ret= nl_send_lst( nl_sk,destpid,  flags, a_rule,10,&end_list);
+
+//    if(ret<0)
+//         return;
+
+//            if(flags == NLM_F_ACK) {
+//                flags = 0; wfc();
+//            }
+//        }
+//     }
+
+//    //}
+
+#endif
     
     nl_send_msg(nl_sk,destpid, MSG_DONE, 0, (char*)&a_rule->fr,sizeof(a_rule->fr));
 }
@@ -306,7 +342,15 @@ int find_rule(unsigned char* data)
 	}
 }
 
-
+static inline __be16 vlan_proto(const struct sk_buff *skb)
+{
+         if (vlan_tx_tag_present(skb))
+                 return skb->protocol;
+         else if (skb->protocol == htons(ETH_P_8021Q))
+                 return vlan_eth_hdr(skb)->h_vlan_encapsulated_proto;
+         else
+                 return 0;
+}
 
 static struct proc_dir_entry *skb_filter;
  
@@ -324,12 +368,12 @@ unsigned int hook_func(unsigned int hooknum,
             int (*okfn)(struct sk_buff *))
 {	
     struct sk_buff *sock_buff;
-    struct udphdr *udp_header;      // UDP header struct
-    struct iphdr *ip_header;        // IP header struct
-    struct icmphdr *icmp_header;	// ICMP Header
-    struct tcphdr *tcp_header;	// TCP Header
-    struct ethhdr  *ethheader;      // Ethernet Header
-    struct vlan_ethhdr *vlan_header;
+    struct udphdr *udp_header=NULL;      // UDP header struct
+    struct iphdr *ip_header=NULL;        // IP header struct
+    struct icmphdr *icmp_header=NULL;	// ICMP Header
+    struct tcphdr *tcp_header=NULL;	// TCP Header
+    struct ethhdr  *ethheader=NULL;      // Ethernet Header
+    struct vlan_ethhdr *vlan_header=NULL;
     struct list_head* direction_list;
     struct filter_rule_list  *a_rule;
 
@@ -337,7 +381,8 @@ unsigned int hook_func(unsigned int hooknum,
  
     ethheader = (struct ethhdr*) skb_mac_header(sock_buff); 
     ip_header = (struct iphdr *) skb_network_header(sock_buff);
-    vlan_header  = (struct vlan_ethhdr *)vlan_eth_hdr(sock_buff);
+    if (vlan_proto(sock_buff))
+    	vlan_header  = (struct vlan_ethhdr *)vlan_eth_hdr(sock_buff);
  
     if(!sock_buff || !ip_header || !ethheader || filter_value==0)
         return NF_ACCEPT;

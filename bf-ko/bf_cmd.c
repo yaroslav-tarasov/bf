@@ -411,43 +411,38 @@ main(int argc, char *argv[])
  	unsigned char *nl_msg;
 	unsigned char *msg;
 	struct ucred *creds;
-// 	int ret = nl_recv(nls, &peer, &nl_msg,&creds);
 
 	int msgn,n;
-	//unsigned char *buf; 
 	struct nlmsghdr *hdr;
 	int nlerrr =0;
-
+    int c = 0;
         printf("List of rules:\n");
 	do{ 
 		//nl_recvmsgs_default(nls);
 		msgn = n = nl_recv(nls, NULL, &nl_msg,&creds);
 		hdr = (struct nlmsghdr *) nl_msg;
-		msg = NLMSG_DATA((struct nlmsghdr *)nl_msg);
-		//printf(" %s nl_recv return %d %d\n", __func__,msgn,n);
 
 		if(n<0) printf("nl_recv err= %d\n", n);
 
 	while (nlmsg_ok(hdr, n)) {
-	         msg = NLMSG_DATA((struct nlmsghdr *)nl_msg);
+         msg = NLMSG_DATA((struct nlmsghdr *)hdr);
 		 //printf("hdr->nlmsg_type: %d hdr->nlmsg_flags: %d \n",hdr->nlmsg_type,hdr->nlmsg_flags);
 		
-		if(hdr->nlmsg_type==NLMSG_ERROR)
-		{	
+        if(hdr->nlmsg_type==NLMSG_ERROR){
 			struct nlmsgerr *nlerr;
 			nlerr = (struct nlmsgerr*)NLMSG_DATA((struct nlmsghdr *)nl_msg);
 			if(nlerrr!=0) printf("Got some error: %d \n",nlerr->error);
 			nlerrr = nlerr->error;
 		}
 
-		 if(hdr->nlmsg_type==NLMSG_ERROR || hdr->nlmsg_type==MSG_DONE) break;
+        if(hdr->nlmsg_type==NLMSG_ERROR || hdr->nlmsg_type==MSG_DONE) break;
 		
 		 // 
 		// printf("hdr->nlmsg_type: %d nlmsg_len: %d nlmsg_flags : %d nlmsg_seq : %d nlmsg_pid : %d \n",hdr->nlmsg_type,hdr->nlmsg_len,hdr->nlmsg_flags,hdr->nlmsg_seq,hdr->nlmsg_pid);
 		
 		if(hdr->nlmsg_type==MSG_DATA)
 	        printf("# %d src port: %d  dst port: %d d_addr: %d s_addr: %d proto: %s (%d)\n",
-			((filter_rule_t*)msg)->id,((filter_rule_t*)msg)->base_rule.src_port,
+            /*((filter_rule_t*)msg)->id*/++c,((filter_rule_t*)msg)->base_rule.src_port,
 			((filter_rule_t*)msg)->base_rule.dst_port,((filter_rule_t*)msg)->base_rule.d_addr.addr,
 			((filter_rule_t*)msg)->base_rule.s_addr.addr,get_proto_name(((filter_rule_t*)msg)->base_rule.proto)==NULL?"":get_proto_name(((filter_rule_t*)msg)->base_rule.proto),
 			((filter_rule_t*)msg)->base_rule.proto);
@@ -470,9 +465,9 @@ main(int argc, char *argv[])
 			printf("Cant sent MSG_OK err: %d \n",ret);
 		       	return EXIT_FAILURE;
 		    }
-		}
+        }
 
-	        hdr = nlmsg_next(hdr, &n);
+        hdr = nlmsg_next(hdr, &n);
 	}
 
 	}while(/*hdr->nlmsg_type!=NLMSG_ERROR*/ nlerrr==0 && hdr->nlmsg_type!=MSG_DONE && msgn>0);
