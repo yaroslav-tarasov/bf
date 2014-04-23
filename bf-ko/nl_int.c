@@ -225,7 +225,7 @@ nl_send_lst(struct sock * nl_sk,int destpid,  filter_rule_list_t* lst,int lst_si
     struct filter_rule_list *a_rule=NULL;
     int pid;
     struct sk_buff *skb_out = NULL;
-    int res,flags=0,i=0,msg_size=sizeof(filter_rule_t),msg_cnt=0;
+    int res=0,flags=0,i=0,msg_size=sizeof(filter_rule_t),msg_cnt=0;
 
     if(!lst_size)
         lst_size = NLMSG_DEFAULT_SIZE / (msg_size + NLMSG_HDRLEN);
@@ -254,6 +254,9 @@ nl_send_lst(struct sock * nl_sk,int destpid,  filter_rule_list_t* lst,int lst_si
         if(nlh){
             NETLINK_CB(skb_out).dst_group = 0; /* not in mcast group */
             memcpy(nlmsg_data(nlh),&a_rule->fr,msg_size);
+            printk(KERN_INFO "%s #%d Src_addr: %X; dst_addr: %X; proto: %d; src_port: %d dst_port: %d\n", __FUNCTION__, i,
+                    a_rule->fr.base_rule.s_addr.addr, a_rule->fr.base_rule.d_addr.addr,
+                    a_rule->fr.base_rule.proto, a_rule->fr.base_rule.src_port, a_rule->fr.base_rule.dst_port);
         }
 
         if(flags == NLM_F_ACK) {
@@ -262,6 +265,7 @@ nl_send_lst(struct sock * nl_sk,int destpid,  filter_rule_list_t* lst,int lst_si
 
         if(++i == lst_size && !skb_out){
             res=nlmsg_unicast(nl_sk,skb_out,pid);
+            printk(KERN_INFO " %s:  nlmsg_unicast\n", __FUNCTION__);
             skb_out = NULL;
             i = 0;
             if(res<0)
@@ -278,7 +282,8 @@ nl_send_lst(struct sock * nl_sk,int destpid,  filter_rule_list_t* lst,int lst_si
 
     }
 
-    res=nlmsg_unicast(nl_sk,skb_out,pid);
+    if (skb_out)
+        res=nlmsg_unicast(nl_sk,skb_out,pid);
 
     if(res<0)
     {
