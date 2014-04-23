@@ -271,11 +271,12 @@ void cleanup_rules(void)
 
 void list_rules(struct sock * nl_sk,int destpid)
 {
-    struct filter_rule_list *a_rule; 
+
     int ret;
 
 
 #if 0
+    struct filter_rule_list *a_rule;
     int i=0,flags = 0;
     list_for_each_entry(a_rule, &lst_fr.full_list, full_list) {
 
@@ -294,8 +295,10 @@ void list_rules(struct sock * nl_sk,int destpid)
             flags = 0; wfc();
         }
     }
+    nl_send_msg(nl_sk,destpid, MSG_DONE, 0, (char*)&a_rule->fr,sizeof(a_rule->fr));
 #else
     int end_list =0;
+    filter_rule_t fr;
     ret= nl_send_lst( nl_sk,destpid,  &lst_fr,20,&end_list);
 
     if(ret<0)
@@ -322,9 +325,10 @@ void list_rules(struct sock * nl_sk,int destpid)
 
 //    //}
 
+    nl_send_msg(nl_sk,destpid, MSG_DONE, 0, (char*)&fr,sizeof(fr));
 #endif
-    
-    nl_send_msg(nl_sk,destpid, MSG_DONE, 0, (char*)&a_rule->fr,sizeof(a_rule->fr));
+
+
 }
 
 int find_rule(unsigned char* data)
