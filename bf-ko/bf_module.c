@@ -329,6 +329,7 @@ unsigned int hook_func(unsigned int hooknum,
     struct icmphdr *icmp_header;	// ICMP Header
     struct tcphdr *tcp_header;	// TCP Header
     struct ethhdr  *ethheader;      // Ethernet Header
+    struct vlan_ethhdr *vlan_header;
     struct list_head* direction_list;
     struct filter_rule_list  *a_rule;
 
@@ -336,6 +337,7 @@ unsigned int hook_func(unsigned int hooknum,
  
     ethheader = (struct ethhdr*) skb_mac_header(sock_buff); 
     ip_header = (struct iphdr *) skb_network_header(sock_buff);
+    vlan_header  = (struct vlan_ethhdr *)vlan_eth_hdr(sock_buff);
  
     if(!sock_buff || !ip_header || !ethheader || filter_value==0)
         return NF_ACCEPT;
