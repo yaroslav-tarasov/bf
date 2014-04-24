@@ -17,7 +17,8 @@ MOC_DIR = ./moc
 # Input
 SOURCES += main.cpp \
     bfservice.cpp \
-    bfserviceprivate.cpp
+    bfserviceprivate.cpp \
+    qsyslog.cpp
 
 include(../exts/qtservice/src/qtservice.pri)
 
@@ -31,4 +32,5 @@ MOC_DIR = ./moc
 
 HEADERS += \
     bfservice.h \
-    bfserviceprivate.h
+    bfserviceprivate.h \
+    qsyslog.h

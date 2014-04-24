@@ -16,7 +16,10 @@ private:
 signals:
     
 public slots:
-    
+    void started();
+    void finished();
+private slots:
+    void gotLog(filter_rule_t);
 };
 
 #endif // BFSERVICEPRIVATE_H

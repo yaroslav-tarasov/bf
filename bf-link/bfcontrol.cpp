@@ -48,9 +48,10 @@ void BFControl::process(QByteArray ba)
     }
     else  if(hdr->nlmsg_type==MSG_LOG)
     {
-        filter_rule_t msg;
-        memset(&msg,0,sizeof(filter_rule_t));
-        qDebug() << "Got log message" ;
+        unsigned char *msg = static_cast<unsigned char *>(NLMSG_DATA((struct nlmsghdr *)ba.data()));
+        if (msg)
+        qDebug() << "Got log message:" << reinterpret_cast<filter_rule_t*>(msg)->base_rule.src_port;
+        emit log (*reinterpret_cast<filter_rule_t*>(msg));
     }
     else   if (hdr->nlmsg_type==MSG_DATA && d->ruleslst)
     {
@@ -168,6 +169,19 @@ int BFControl::addRule(filter_rule_t &pattern)
 {
     return this->sendMsg(MSG_ADD_RULE, &pattern, sizeof(filter_rule_t));
 }
+
+///////////////////////////////////////
+//  Подписка на получение лога о сбработавших правилах
+//  PID процесса получателя как аргумент
+//
+
+int BFControl::subscribeLog(pid_t pid)
+{
+    _log_subscribe_msg_t msg(pid);
+    return this->sendMsg(MSG_LOG_SUBSCRIBE, &msg, sizeof(_log_subscribe_msg_t));
+}
+
+
 
 
 ///////////////////////////////////////

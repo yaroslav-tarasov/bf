@@ -104,14 +104,15 @@ nl_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
 		break;
         case MSG_DELETE_ALL_RULES:
 		printk("%s  --------------MSG_DELETE_ALL_RULES\n",__func__);
-	        data = NLMSG_DATA(nlh);
+        // data = NLMSG_DATA(nlh);
 		delete_rules();
 
 		break;
         case MSG_LOG_SUBSCRIBE:
         printk("%s  --------------MSG_LOG_SUBSCRIBE",__func__);
-            data = NLMSG_DATA(nlh);
-            bf_config.pid_log = nlh->nlmsg_pid;
+        data = NLMSG_DATA(nlh);
+        bf_config.pid_log = ((_log_subscribe_msg_t*)data)->pid;//nlh->nlmsg_pid;
+        atomic_set(&bf_config.init, 1);
 
         break;
         case MSG_GET_RULES: 

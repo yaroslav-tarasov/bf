@@ -22,6 +22,15 @@ enum bf_messages {MSG_ADD_RULE=NLMSG_MIN_TYPE + 2, // Добавление пр�
                   MSG_LOG_SUBSCRIBE
                  };
 #pragma pack (1)
+typedef struct _log_subscribe_msg
+{
+   pid_t   pid;
+#ifdef __cplusplus
+   explicit _log_subscribe_msg(pid_t   pid=0):pid(pid){}
+#endif
+} _log_subscribe_msg_t;
+
+
 typedef struct _ip_addr
 {
    __u32   addr;  // WARNING ipv6 must be 128 bit

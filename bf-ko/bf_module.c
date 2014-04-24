@@ -30,6 +30,11 @@ DEFINE_SPINLOCK(list_mutex);
 #define bf_filter_name "bf_filter"
 
 
+typedef struct fr_log {
+    struct work_struct      work_logging;
+    filter_rule_t           fr;
+} fr_log_t;
+
 static struct filter_rule_list lst_fr;
 static struct filter_rule_list lst_fr_in;
 static struct filter_rule_list lst_fr_out;
@@ -458,17 +463,14 @@ int skb_write(struct file *file, const char *buffer, unsigned long len,
 static void work_handler(struct work_struct * work) {
 	struct nf_bf_filter_config* config;
 	filter_rule_t fr;
-	//int i=0,ret; 
-	//int flags = 0;
 	pid_t destpid;
 
 	config = container_of(work, struct nf_bf_filter_config, work_logging);
-	printk(KERN_INFO "Got some work for u\n");
 	
-	if(atomic_read(&config->init)>0)
+    if(atomic_read(&config->init)>0)
 	{        
 		memset(&fr,0,sizeof(fr)); 
-		destpid = get_client_pid();
+        destpid = bf_config.pid_log;//get_client_pid();
 	
 		if(destpid)
 			nl_send_msg(get_nl_sock(),destpid, MSG_LOG, 0, (char*)&fr,sizeof(fr));

@@ -1,12 +1,14 @@
 #include "bfservice.h"
 #include "bfserviceprivate.h"
+#include "qsyslog.h"
+#include <QDebug>
 
 BfService::BfService(int argc, char **argv,const QString &name):QtService<QCoreApplication>(argc, argv, name)
 {
     setObjectName("BfService");
 
     setServiceDescription(tr("Barrier mini-firewall service."));
-    setStartupType(QtServiceController::AutoStartup);
+    // setStartupType(QtServiceController::AutoStartup);
 
     d = new BfServicePrivate;
     privateThread = new QThread(this);
@@ -14,6 +16,9 @@ BfService::BfService(int argc, char **argv,const QString &name):QtService<QCoreA
 
     connect(privateThread, SIGNAL(started()), d, SLOT(started()));
     connect(privateThread, SIGNAL(finished()), d, SLOT(finished()));
+
+    QSyslog::instance().syslog(/*LOG_INFO*/6,QString("BfService::BfService()"));
+    qDebug() << "BfService::BfService()";
 }
 
 BfService::~BfService()
@@ -53,6 +58,8 @@ void BfService::createApplication(int &argc, char **argv)
 
 void BfService::start()
 {
+    QSyslog::instance().syslog(/*LOG_INFO*/6,QString("BfService::start()"));
+
 //    initLog4Qt();
 
 //    qLogInfo(objectName()) << tr("=========> Service started <=========");
@@ -119,6 +126,7 @@ void BfService::startThreads()
 
 void BfService::stop()
 {
+     QSyslog::instance().syslog(/*LOG_INFO*/6,QString("BfService::start()"));
 //    if (threadsStarted)
 //        stopThreads();
 
