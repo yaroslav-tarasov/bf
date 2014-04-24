@@ -18,7 +18,7 @@ BfService::BfService(int argc, char **argv,const QString &name):QtService<QCoreA
     connect(privateThread, SIGNAL(finished()), d, SLOT(finished()));
 
     QSyslog::instance().syslog(/*LOG_INFO*/6,QString("BfService::BfService()"));
-    qDebug() << "BfService::BfService()";
+
 }
 
 BfService::~BfService()
@@ -98,6 +98,7 @@ void BfService::start()
 //            onBecomeMaster();
 //    }
 
+     privateThread->start();
 }
 
 void BfService::startThreads()
@@ -126,7 +127,10 @@ void BfService::startThreads()
 
 void BfService::stop()
 {
-     QSyslog::instance().syslog(/*LOG_INFO*/6,QString("BfService::start()"));
+     QSyslog::instance().syslog(/*LOG_INFO*/6,QString("BfService::stop()"));
+
+     privateThread->quit();
+
 //    if (threadsStarted)
 //        stopThreads();
 

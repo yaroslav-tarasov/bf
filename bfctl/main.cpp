@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
 
     BFControl *bfc = new BFControl(&a);
 
-    if(bfc->create(/*NETLINK_USERSOCK,sizeof(filter_rule_t)*/)==0)
+    if(bfc->create()==0)
     {
 
     filter_rule_t fr;
