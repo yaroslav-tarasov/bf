@@ -30,6 +30,8 @@ protected:
    // std::shared_ptr<unsigned char> mBuff;
    int mProto;
    bool mRunning;
+private:
+   Q_DISABLE_COPY(NetlinkSocket)
 };
 
 #endif // NETLINKSOCKET_H
