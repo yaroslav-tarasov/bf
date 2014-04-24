@@ -15,7 +15,9 @@ OBJECTS_DIR = ./tmp
 MOC_DIR = ./moc
 
 # Input
-SOURCES += main.cpp
+SOURCES += main.cpp \
+    bfservice.cpp \
+    bfserviceprivate.cpp
 
 include(../exts/qtservice/src/qtservice.pri)
 
@@ -26,3 +28,7 @@ DESTDIR = ../../bin
 LIBS += -L../../lib -lbf-link -lnl
 OBJECTS_DIR = ./tmp
 MOC_DIR = ./moc
+
+HEADERS += \
+    bfservice.h \
+    bfserviceprivate.h
