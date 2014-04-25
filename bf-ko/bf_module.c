@@ -348,7 +348,6 @@ unsigned int hook_func(unsigned int hooknum,
         udp_header = (struct udphdr *)(skb_transport_header(sock_buff) + ip_hdrlen(sock_buff));
         if(udp_header){
 	    
-//spin_lock(&list_mutex);   
 		if( ( (a_rule->fr.base_rule.src_port>0)?(ntohs(udp_header->source) == a_rule->fr.base_rule.src_port):1) &&
 		    ((a_rule->fr.base_rule.dst_port>0)?(ntohs(udp_header->dest) == a_rule->fr.base_rule.dst_port):1) &&
 		    (a_rule->fr.base_rule.s_addr.addr>0?(ntohs(ip_header->saddr) == a_rule->fr.base_rule.s_addr.addr):1) &&
@@ -359,13 +358,11 @@ unsigned int hook_func(unsigned int hooknum,
 				(int)current->pid, NIPQUAD(ip_header->saddr),ntohs(udp_header->source),
 				NIPQUAD(ip_header->daddr),ntohs(udp_header->dest), a_rule->fr.base_rule.proto);
 
-			queue_work(bf_config.wq_logging, &bf_config.work_logging);
+            queue_work(bf_config.wq_logging, &bf_config.work_logging);
 
             goto_drop;//return NF_DROP;
 		}
 
-
-//spin_unlock(&list_mutex);
 
         }else
             goto_drop;//return NF_DROP;
@@ -373,7 +370,7 @@ unsigned int hook_func(unsigned int hooknum,
         //printk(KERN_INFO "---------- TCP -------------\n");
         tcp_header = (struct tcphdr *)(skb_transport_header(sock_buff) + ip_hdrlen(sock_buff));
         if(tcp_header){	
-//spin_lock(&list_mutex);   
+
 
 	   //list_for_each_entry(a_rule, &lst_fr_tcp.protocol_list, protocol_list) {
 		if( (a_rule->fr.base_rule.src_port>0?(ntohs(tcp_header->source) == a_rule->fr.base_rule.src_port):1) &&
@@ -387,7 +384,6 @@ unsigned int hook_func(unsigned int hooknum,
 		}
 	   // }
 
-//spin_unlock(&list_mutex);	
 	
             //printk(KERN_INFO "SRC: (%u.%u.%u.%u) --> DST: (%u.%u.%u.%u)\n",NIPQUAD(ip_header->saddr),NIPQUAD(ip_header->daddr));
             //printk(KERN_INFO "ICMP type: %d - ICMP code: %d\n",icmp_header->type, icmp_header->code);
@@ -462,19 +458,19 @@ int skb_write(struct file *file, const char *buffer, unsigned long len,
 
 static void work_handler(struct work_struct * work) {
 	struct nf_bf_filter_config* config;
-	filter_rule_t fr;
-	pid_t destpid;
+    filter_rule_t fr;
+    pid_t destpid;
 
 	config = container_of(work, struct nf_bf_filter_config, work_logging);
 	
     if(atomic_read(&config->init)>0)
-	{        
-		memset(&fr,0,sizeof(fr)); 
+    {
+        memset(&fr,0,sizeof(fr));
         destpid = bf_config.pid_log;//get_client_pid();
 	
-		if(destpid)
-			nl_send_msg(get_nl_sock(),destpid, MSG_LOG, 0, (char*)&fr,sizeof(fr));
-	}
+        if(destpid)
+            nl_send_msg(get_nl_sock(),destpid, MSG_LOG, 0, (char*)&fr,sizeof(fr));
+    }
 }
     
 int init_module()
@@ -551,22 +547,27 @@ error:
  
 void cleanup_module()
 {
+    printk(KERN_INFO " %s:  nf_unregister_hook\n", __FUNCTION__);
     nf_unregister_hook(&bf_config.nfho_in);
     nf_unregister_hook(&bf_config.nfho_out);
 
+    printk(KERN_INFO " %s:  remove_proc_entry\n", __FUNCTION__);
     if ( skb_filter )
         remove_proc_entry(bf_filter_name, NULL);
 
+    printk(KERN_INFO " %s:  flush_workqueue\n", __FUNCTION__);
 	flush_workqueue(bf_config.wq_logging);
 	destroy_workqueue(bf_config.wq_logging);  
 
+    printk(KERN_INFO " %s:  nl_exit\n", __FUNCTION__);
     nl_exit();
 
     // delete_rules();
-
+    printk(KERN_INFO " %s:  rcu_barrier\n", __FUNCTION__);
     rcu_barrier();
     //mutex_destroy(&list_mutex);
-    
+
+    printk(KERN_INFO " %s:  cleanup_rules\n", __FUNCTION__);
     cleanup_rules();
     
     hash_table_finit(&map_fr);   

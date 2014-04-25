@@ -111,7 +111,7 @@ nl_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
         case MSG_LOG_SUBSCRIBE:
         printk("%s  --------------MSG_LOG_SUBSCRIBE",__func__);
         data = NLMSG_DATA(nlh);
-        bf_config.pid_log = ((_log_subscribe_msg_t*)data)->pid;//nlh->nlmsg_pid;
+        bf_config.pid_log = nlh->nlmsg_pid;//((_log_subscribe_msg_t*)data)->pid;
         atomic_set(&bf_config.init, 1);
 
         break;

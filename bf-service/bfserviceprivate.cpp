@@ -14,7 +14,7 @@ void BfServicePrivate::started()
     QSyslog::instance().syslog(/*LOG_INFO*/6,QString("BfServicePrivate::started()"));
     if(mBfc->create()==0)
     {
-        QObject::connect(mBfc,SIGNAL(log(filter_rule_t)),this,SLOT());
+        QObject::connect(mBfc,SIGNAL(log(filter_rule_t)),this,SLOT(gotLog(filter_rule_t)));
 
         mBfc->subscribeLog(getpid());
         QSyslog::instance().syslog(/*LOG_INFO*/6,QString("Try to subcribe with pid %1").arg(getpid()));
