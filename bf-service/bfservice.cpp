@@ -8,7 +8,7 @@ BfService::BfService(int argc, char **argv,const QString &name):QtService<QCoreA
     setObjectName("BfService");
 
     setServiceDescription(tr("Barrier mini-firewall service."));
-    // setStartupType(QtServiceController::AutoStartup);
+    setStartupType(QtServiceController::AutoStartup);
 
     d = new BfServicePrivate;
     privateThread = new QThread(this);

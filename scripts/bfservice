@@ -1,0 +1,18 @@
+#/bin/bash 
+
+### BEGIN INIT INFO
+# Provides: barrier-firewall
+# Required-Start: $networking
+# Required-Stop: $networking
+# Default-Start: 2345
+# Default-Stop:  276
+# Short-Description: Starts/stop the barrier checksum daemon
+# Description: Runs barrier mini firewall daemon
+### END INIT INFO
+
+
+UVD_SECURITY=/sintez/sintez/security
+
+#su - sintez  -c "$UVD_SECURITY/bf-service.sh $1"
+$UVD_SECURITY/bf-service.sh $1
+exit 0
