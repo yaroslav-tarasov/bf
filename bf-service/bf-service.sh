@@ -1,6 +1,7 @@
 #/bin/bash
 
 SINTEZ_HOME=/sintez/sintez
+UVD_SECURITY=$SINTEZ_HOME/security
 
 bfkorunning() {
   lsmod | grep -q "bf_filter"
@@ -33,7 +34,7 @@ force_reload(){
 
 
 
-.  $SINTEZ_HOME/.uvd_security
+#.  $SINTEZ_HOME/.uvd_security
 export DISPLAY=:0
 
 case  $1 in
