@@ -2,29 +2,59 @@
 
 SINTEZ_HOME=/sintez/sintez
 
+bfkorunning() {
+  lsmod | grep -q "bf_filter"
+}
+
+start() {
+
+bfkorunning || {
+    echo "Bf-filter not loaded"
+    exit 1
+}
+$UVD_SECURITY/bin/bf-service -s  &  > /dev/null
+
+}
+
+stop() {
+
+ $UVD_SECURITY/bin/bf-service -t  & > /dev/null
+
+}
+
+restart() {
+      stop
+      start
+}
+
+force_reload(){
+      restart
+}
+
+
 
 .  $SINTEZ_HOME/.uvd_security
 export DISPLAY=:0
+
 case  $1 in
 
 start)
-
-
-$UVD_SECURITY/bin/bf-service -s  &
-
-
-;;
-
+  start
+  ;;
 stop)
-
-$UVD_SECURITY/bin/bf-service -t  &
-
-;;
+  stop
+  ;;
+restart)
+  restart
+  ;;
+setup)
+  ;;
+cleanup)
+  ;;
 
 *)
 
 echo  "Usage $0 <start|stop>"
-
 
 ;;
 
