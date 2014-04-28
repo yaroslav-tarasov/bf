@@ -6,8 +6,8 @@
 #endif
 
 // Направление для фильтра только DIR_INPUT,DIR_OUTPUT остальные значения не корректны для м.я.
-enum { DIR_NONE,DIR_ALL,DIR_INPUT,DIR_OUTPUT};
-enum {POLICY_NONE,POLICY_DROP,POLICY_ACCEPT};
+enum direction { DIR_NONE,DIR_ALL,DIR_INPUT,DIR_OUTPUT};
+enum policy {POLICY_NONE,POLICY_DROP,POLICY_ACCEPT};
 enum {IPPROTO_NOTEXIST=65000,IPPROTO_ALL};
 enum bf_messages {MSG_ADD_RULE=NLMSG_MIN_TYPE + 2, // Добавление правила
                   MSG_DATA,                     // При пересылке данных из модуля ядра в  userspace

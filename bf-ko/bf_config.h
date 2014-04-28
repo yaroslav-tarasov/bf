@@ -15,7 +15,7 @@ struct  nf_bf_filter_config {
     struct nf_hook_ops nfho_out;  //net filter hook option struct for output
 
     // struct nf__list list[1];
-
+    uint8_t    zero_rule[2]; // INPUT OUTPUT
     struct work_struct      work_logging;
     struct workqueue_struct *wq_logging;
     atomic_t init;

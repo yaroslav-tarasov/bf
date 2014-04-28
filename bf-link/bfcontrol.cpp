@@ -18,6 +18,8 @@ BFControl::BFControl(QObject *parent) :
     QObject(parent)
 {
     qRegisterMetaType<QList<filter_rule_ptr > >(" QList<filter_rule_ptr> ");
+    qRegisterMetaType<filter_rule_t >(" filter_rule_t ");
+
     d.reset(new BFControlPrivate(new NetlinkSocket(this)));
     QObject::connect( d->mNS,SIGNAL(data(QByteArray)),this,SLOT(process(QByteArray)));
     QObject::connect( d->mNS,SIGNAL(data(QByteArray)),this,SIGNAL(data(QByteArray)));

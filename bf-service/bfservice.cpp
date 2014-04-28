@@ -130,6 +130,10 @@ void BfService::stop()
      QSyslog::instance().syslog(/*LOG_INFO*/6,QString("BfService::stop()"));
 
      privateThread->quit();
+     if (!privateThread->wait(1000))
+     {
+         privateThread->terminate();
+     }
 
 //    if (threadsStarted)
 //        stopThreads();

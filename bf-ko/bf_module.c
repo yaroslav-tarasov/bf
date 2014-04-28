@@ -21,7 +21,9 @@
 #include "trx_data.h"
 #include "bf_config.h"
 
-struct nf_bf_filter_config bf_config = { .init = ATOMIC_INIT(0), .pid_log=0 };
+struct nf_bf_filter_config bf_config = { .init = ATOMIC_INIT(0),
+                                         .pid_log=0
+                                       };
 
 
 DEFINE_SPINLOCK(list_mutex);	
@@ -42,7 +44,7 @@ struct hash_table map_fr;
 
 static  void init_rules(void)
 {    
-    struct filter_rule_list *a_new_fr, *a_rule; 
+    struct filter_rule_list /* *a_new_fr,*/ *a_rule;
     int i;  
     
     
@@ -74,7 +76,8 @@ static  void init_rules(void)
 	
     }
 #else
-	a_new_fr = kmalloc(sizeof(*a_new_fr), GFP_KERNEL);
+#if 0
+    a_new_fr = kmalloc(sizeof(*a_new_fr), GFP_KERNEL);
 	a_new_fr->fr.base_rule.d_addr.addr = 0;
 	a_new_fr->fr.base_rule.s_addr.addr = 0;
 	a_new_fr->fr.base_rule.proto = IPPROTO_NOTEXIST;
@@ -100,7 +103,8 @@ static  void init_rules(void)
 	a_new_fr->fr.policy = POLICY_ACCEPT;
 	
 	//if (a_new_fr->fr.dir == DIR_OUTPUT)
-		list_add(&(a_new_fr->direction_list), &(lst_fr_out.direction_list));	
+        list_add(&(a_new_fr->direction_list), &(lst_fr_out.direction_list));
+#endif
 #endif
      
     i =0;
