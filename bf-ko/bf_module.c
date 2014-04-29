@@ -369,6 +369,7 @@ unsigned int hook_func(unsigned int hooknum,
 #ifdef  WQ_TEST
 	    fr_log_t *wl = kmalloc(sizeof(fr_log_t), GFP_KERNEL);
 	    INIT_WORK(&(wl->work_logging), work_handler);
+	    memcpy(&wl->fr,&a_rule->fr,sizeof(a_rule->fr));
             queue_work(bf_config.wq_logging, &wl->work_logging);
             
 #endif
@@ -480,11 +481,11 @@ static void work_handler(struct work_struct * work) {
 #endif 
     if(atomic_read(&bf_config.init)>0)
     {
-        memset(&fr,0,sizeof(fr));
+        // memset(&fr,0,sizeof(fr));
         destpid = bf_config.pid_log;//get_client_pid();
 	
         if(destpid)
-            nl_send_msg(get_nl_sock(),destpid, MSG_LOG, 0, (char*)&fr,sizeof(fr));
+            nl_send_msg(get_nl_sock(),destpid, MSG_LOG, 0, (char*)&wc->fr,sizeof(fr));
     }
 #ifdef  WQ_TEST
     kfree(wc);
