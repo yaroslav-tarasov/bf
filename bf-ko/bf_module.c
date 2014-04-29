@@ -21,12 +21,10 @@
 #include "trx_data.h"
 #include "bf_config.h"
 
-#define  WQ_TEST
 
 struct nf_bf_filter_config bf_config = { .init = ATOMIC_INIT(0),
                                          .pid_log=0
                                        };
-
 
 //DEFINE_SPINLOCK(list_mutex);	
 
@@ -34,10 +32,10 @@ struct nf_bf_filter_config bf_config = { .init = ATOMIC_INIT(0),
 #define bf_filter_name "bf_filter"
 
 
-typedef struct fr_log {
-    struct work_struct      work_logging;
-    filter_rule_t           fr;
-} fr_log_t;
+//typedef struct fr_log {
+//    struct work_struct      work_logging;
+//    filter_rule_t           fr;
+//} fr_log_t;
 
 static struct filter_rule_list lst_fr;
 static struct filter_rule_list lst_fr_in;
@@ -48,7 +46,12 @@ static  void init_rules(void)
 {    
     struct filter_rule_list /* *a_new_fr,*/ *a_rule;
     int i;  
-    
+
+//  Правило 0, последнее правило для входящих и исходящих (что происходит с оставшимися после фильтрации пакетами) 
+//  Или правило поведения фильтра, указанные в фильтре удаляем все остальные принимаем, либо наоборот
+//  для текущей конфигурации смысла в других трактовках нет 
+    bf_config.zero_rule[0] = NF_ACCEPT;
+    bf_config.zero_rule[1] = NF_ACCEPT;  
     
     hash_table_init(&map_fr, 10, NULL);
 
@@ -125,14 +128,14 @@ void add_rule(struct filter_rule* fr)
 	a_new_fr = kmalloc(sizeof(*a_new_fr), GFP_KERNEL);	
 	memcpy(&a_new_fr->fr,fr,sizeof(filter_rule_t));
 
-spin_lock(&list_mutex);
+//spin_lock(&list_mutex);
     list_add_rcu(&(a_new_fr->full_list), &(lst_fr.full_list));//list_add_tail(&(a_new_fr->list), &(lst_fr.list));
 	hash_table_insert(&map_fr, &a_new_fr->entry, (const char*)&a_new_fr->fr.base_rule, sizeof(struct filter_rule_base));
 	if(a_new_fr->fr.direction == DIR_INPUT)
 		list_add_rcu(&(a_new_fr->direction_list), &(lst_fr_in.direction_list));
 	else if (a_new_fr->fr.direction == DIR_OUTPUT)
 		list_add_rcu(&(a_new_fr->direction_list), &(lst_fr_out.direction_list));
-spin_unlock(&list_mutex);	
+//spin_unlock(&list_mutex);
 	
 }
 
@@ -308,6 +311,76 @@ static inline __be16 vlan_proto(const struct sk_buff *skb)
                  return 0;
 }
 
+static void dequeue_rule_packet(struct nf_bf_filter_config *nwf_list, struct sk_buff_head *sg_skb_list)
+{
+    struct  sk_buff *skb;
+
+    skb = __skb_dequeue(nwf_list->skb_list);
+    if (!skb)
+        return;
+
+    kfree_skb(skb);
+}
+
+static void add_to_skb_list(struct nf_bf_filter_config *nwf_list, struct sk_buff *skb)
+{
+    struct  sk_buff_head *skb_list;
+
+    skb_list = nwf_list->skb_list;
+
+    skb = skb_get(skb);
+    skb_orphan(skb);
+    skb_queue_tail(skb_list, skb);
+
+    queue_work(bf_config.wq_logging, &bf_config.work_logging);
+}
+
+static void work_handler(struct work_struct * work) {
+
+    struct nf_bf_filter_config* config;
+    struct iphdr       *ip_header=NULL;        // IP header struct
+    struct tcphdr      *tcp_header=NULL;	// TCP Header
+    struct udphdr      *udp_header=NULL;      // UDP header struct
+    struct  sk_buff *skb;
+
+    filter_rule_t fr;
+    pid_t destpid;
+
+    config = container_of(work, struct nf_bf_filter_config, work_logging);
+
+    //dequeue_rule_packet(struct nf_bf_filter_config *nwf_list, struct sk_buff_head *sg_skb_list)
+
+    skb = __skb_dequeue(config->skb_list);
+    if (!skb)
+        return;
+
+    if(atomic_read(&bf_config.init)>0)
+    {
+        destpid = bf_config.pid_log;//get_client_pid();
+	memset(&fr,0,sizeof(filter_rule_t));
+	
+        ip_header = (struct iphdr *) skb_network_header(skb);
+        udp_header = (struct udphdr *)(skb_transport_header(skb) + ip_hdrlen(skb));
+        tcp_header = (struct tcphdr *)(skb_transport_header(skb) + ip_hdrlen(skb));
+
+        fr.base_rule.proto = ip_header->protocol;
+        fr.base_rule.src_port =  ntohs(ip_header->protocol==IPPROTO_UDP? udp_header->source:tcp_header->source);
+        fr.base_rule.dst_port =  ntohs(ip_header->protocol==IPPROTO_UDP? udp_header->dest:tcp_header->dest);
+	fr.base_rule.s_addr.addr = ip_header->saddr;
+	fr.base_rule.d_addr.addr = ip_header->daddr;
+
+//        printk(KERN_INFO "%s: Src_addr: %X; dst_addr: %X; proto: %d; src_port: %d dst_port: %d\n", __FUNCTION__,fr.base_rule.s_addr.addr, fr.base_rule.d_addr.addr, fr.base_rule.proto, fr.base_rule.src_port, fr.base_rule.dst_port);
+
+//	printk(KERN_INFO "%s: SRC: (%u.%u.%u.%u):%d --> DST: (%u.%u.%u.%u):%d proto: %d; \n", __FUNCTION__,
+//				NIPQUAD(ip_header->saddr),ntohs(tcp_header->source),
+//				NIPQUAD(ip_header->daddr),ntohs(tcp_header->dest), fr.base_rule.proto);
+        if(destpid)
+            nl_send_msg(get_nl_sock(),destpid, MSG_LOG, 0, (char*)&fr,sizeof(fr));
+    }
+
+    kfree_skb(skb);
+}
+
 static struct proc_dir_entry *skb_filter;
  
 static int filter_value = 1;
@@ -323,14 +396,14 @@ unsigned int hook_func(unsigned int hooknum,
             const struct net_device *out, 
             int (*okfn)(struct sk_buff *))
 {	
-    struct sk_buff *sock_buff;
-    struct udphdr *udp_header=NULL;      // UDP header struct
-    struct iphdr *ip_header=NULL;        // IP header struct
-    struct icmphdr *icmp_header=NULL;	// ICMP Header
-    struct tcphdr *tcp_header=NULL;	// TCP Header
-    struct ethhdr  *ethheader=NULL;      // Ethernet Header
+    struct sk_buff     *sock_buff;
+    struct udphdr      *udp_header=NULL;      // UDP header struct
+    struct iphdr       *ip_header=NULL;        // IP header struct
+    struct icmphdr     *icmp_header=NULL;	// ICMP Header
+    struct tcphdr      *tcp_header=NULL;	// TCP Header
+    struct ethhdr      *ethheader=NULL;      // Ethernet Header
     struct vlan_ethhdr *vlan_header=NULL;
-    struct list_head* direction_list;
+    struct list_head   *direction_list;
     struct filter_rule_list  *a_rule;
 
     sock_buff = skb;	
@@ -363,16 +436,10 @@ unsigned int hook_func(unsigned int hooknum,
 			printk(KERN_INFO "TID %d SRC: (%u.%u.%u.%u):%d --> DST: (%u.%u.%u.%u):%d proto: %d; \n", 
 				(int)current->pid, NIPQUAD(ip_header->saddr),ntohs(udp_header->source),
 				NIPQUAD(ip_header->daddr),ntohs(udp_header->dest), a_rule->fr.base_rule.proto);
-#if 0 
-            queue_work(bf_config.wq_logging, &bf_config.work_logging);
-#endif
-#ifdef  WQ_TEST
-	    fr_log_t *wl = kmalloc(sizeof(fr_log_t), GFP_KERNEL);
-	    INIT_WORK(&(wl->work_logging), work_handler);
-	    memcpy(&wl->fr,&a_rule->fr,sizeof(a_rule->fr));
-            queue_work(bf_config.wq_logging, &wl->work_logging);
-            
-#endif
+
+          //queue_work(bf_config.wq_logging, &bf_config.work_logging);
+            add_to_skb_list( &bf_config, skb);
+
             goto_drop;//return NF_DROP;
 		}
 
@@ -423,7 +490,7 @@ unsigned int hook_func(unsigned int hooknum,
     }
 
 
-    return filter_value != 0 ? NF_ACCEPT : NF_DROP;
+    return in!=0 ? bf_config.zero_rule[0] : bf_config.zero_rule[1];
 }
  
 int skb_read(char *page, char **start, off_t off,
@@ -468,29 +535,6 @@ int skb_write(struct file *file, const char *buffer, unsigned long len,
  
     return len;
 } 
-
-static void work_handler(struct work_struct * work) {
-    struct nf_bf_filter_config* config;
-    filter_rule_t fr;
-    pid_t destpid;
-    fr_log_t*                   wc;
-#ifdef  WQ_TEST
-    wc = container_of(work, struct fr_log, work_logging);
-#else
-    config = container_of(work, struct nf_bf_filter_config, work_logging);
-#endif 
-    if(atomic_read(&bf_config.init)>0)
-    {
-        // memset(&fr,0,sizeof(fr));
-        destpid = bf_config.pid_log;//get_client_pid();
-	
-        if(destpid)
-            nl_send_msg(get_nl_sock(),destpid, MSG_LOG, 0, (char*)&wc->fr,sizeof(fr));
-    }
-#ifdef  WQ_TEST
-    kfree(wc);
-#endif    
-}
     
 int init_module()
 {   
@@ -507,7 +551,9 @@ int init_module()
     
     bf_config.wq_logging = create_workqueue("do_logging");
     INIT_WORK(&(bf_config.work_logging), work_handler);
-	
+
+    bf_config.skb_list 	= (struct sk_buff_head*)kmalloc(sizeof(struct sk_buff_head), GFP_KERNEL);
+    skb_queue_head_init(bf_config.skb_list);
     
     // mutex_init(&list_mutex);
 

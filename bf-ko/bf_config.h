@@ -18,6 +18,7 @@ struct  nf_bf_filter_config {
     uint8_t    zero_rule[2]; // INPUT OUTPUT
     struct work_struct      work_logging;
     struct workqueue_struct *wq_logging;
+    struct sk_buff_head *skb_list;
     atomic_t init;
     pid_t    pid_log;
 };
