@@ -21,12 +21,14 @@
 #include "trx_data.h"
 #include "bf_config.h"
 
+#define  WQ_TEST
+
 struct nf_bf_filter_config bf_config = { .init = ATOMIC_INIT(0),
                                          .pid_log=0
                                        };
 
 
-DEFINE_SPINLOCK(list_mutex);	
+//DEFINE_SPINLOCK(list_mutex);	
 
 #define ACK_EVERY_N_MSG  50
 #define bf_filter_name "bf_filter"
@@ -361,9 +363,15 @@ unsigned int hook_func(unsigned int hooknum,
 			printk(KERN_INFO "TID %d SRC: (%u.%u.%u.%u):%d --> DST: (%u.%u.%u.%u):%d proto: %d; \n", 
 				(int)current->pid, NIPQUAD(ip_header->saddr),ntohs(udp_header->source),
 				NIPQUAD(ip_header->daddr),ntohs(udp_header->dest), a_rule->fr.base_rule.proto);
-
+#if 0 
             queue_work(bf_config.wq_logging, &bf_config.work_logging);
-
+#endif
+#ifdef  WQ_TEST
+	    fr_log_t *wl = kmalloc(sizeof(fr_log_t), GFP_KERNEL);
+	    INIT_WORK(&(wl->work_logging), work_handler);
+            queue_work(bf_config.wq_logging, &wl->work_logging);
+            
+#endif
             goto_drop;//return NF_DROP;
 		}
 
@@ -461,13 +469,16 @@ int skb_write(struct file *file, const char *buffer, unsigned long len,
 } 
 
 static void work_handler(struct work_struct * work) {
-	struct nf_bf_filter_config* config;
+    struct nf_bf_filter_config* config;
     filter_rule_t fr;
     pid_t destpid;
-
-	config = container_of(work, struct nf_bf_filter_config, work_logging);
-	
-    if(atomic_read(&config->init)>0)
+    fr_log_t*                   wc;
+#ifdef  WQ_TEST
+    wc = container_of(work, struct fr_log, work_logging);
+#else
+    config = container_of(work, struct nf_bf_filter_config, work_logging);
+#endif 
+    if(atomic_read(&bf_config.init)>0)
     {
         memset(&fr,0,sizeof(fr));
         destpid = bf_config.pid_log;//get_client_pid();
@@ -475,6 +486,9 @@ static void work_handler(struct work_struct * work) {
         if(destpid)
             nl_send_msg(get_nl_sock(),destpid, MSG_LOG, 0, (char*)&fr,sizeof(fr));
     }
+#ifdef  WQ_TEST
+    kfree(wc);
+#endif    
 }
     
 int init_module()
