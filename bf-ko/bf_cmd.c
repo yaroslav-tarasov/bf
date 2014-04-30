@@ -310,6 +310,18 @@ nl_rcv_msg(struct nl_msg *msg, void *arg)
    printf("Goottooooooototototototo  callback \n");
 }
 
+__attribute__((constructor))
+static void module_ctor(void)
+{
+
+}
+
+__attribute__((destructor))
+static void module_dtor(void) {
+
+}
+
+
 int
 main(int argc, char *argv[])
 {

@@ -120,7 +120,40 @@ static  void init_rules(void)
 
 }
 
+inline int sorted(struct filter_rule* fr1,struct filter_rule* fr2)
+{
+	int w1=0,w2=0;	
+	
+	fr1->base_rule.src_port==0?w1++:0; 
+        fr2->base_rule.src_port==0?w2++:0;
 
+	fr1->base_rule.dst_port==0?w1++:0; 
+        fr2->base_rule.dst_port==0?w2++:0;
+
+	fr1->base_rule.s_addr.addr==0?w1++:0; 
+        fr2->base_rule.s_addr.addr==0?w2++:0;
+
+	fr1->base_rule.d_addr.addr==0?w1++:0; 
+        fr2->base_rule.d_addr.addr==0?w2++:0;	
+		
+
+	return w1 - w2;
+}
+
+void add_entry_sort(struct filter_rule_list *new,struct filter_rule_list *rule_list)
+{
+    struct list_head *ptr;
+    struct  filter_rule_list *entry;
+
+    list_for_each(ptr, &rule_list->direction_list) {
+        entry = list_entry(ptr, struct filter_rule_list, direction_list);
+        if (sorted(&entry->fr , &new->fr)<0) {
+            list_add_tail_rcu(&new->direction_list, ptr);
+            return;
+        }
+    }
+    list_add_tail_rcu(&new->direction_list, &rule_list->direction_list);
+}
 
 void add_rule(struct filter_rule* fr)
 {
@@ -129,12 +162,15 @@ void add_rule(struct filter_rule* fr)
 	memcpy(&a_new_fr->fr,fr,sizeof(filter_rule_t));
 
 //spin_lock(&list_mutex);
-    list_add_rcu(&(a_new_fr->full_list), &(lst_fr.full_list));//list_add_tail(&(a_new_fr->list), &(lst_fr.list));
+        list_add_rcu(&(a_new_fr->full_list), &(lst_fr.full_list));//list_add_tail(&(a_new_fr->list), &(lst_fr.list));
+
 	hash_table_insert(&map_fr, &a_new_fr->entry, (const char*)&a_new_fr->fr.base_rule, sizeof(struct filter_rule_base));
 	if(a_new_fr->fr.direction == DIR_INPUT)
-		list_add_rcu(&(a_new_fr->direction_list), &(lst_fr_in.direction_list));
+		//list_add_rcu(&(a_new_fr->direction_list), &(lst_fr_in.direction_list));
+		add_entry_sort(a_new_fr,&lst_fr_in);
 	else if (a_new_fr->fr.direction == DIR_OUTPUT)
-		list_add_rcu(&(a_new_fr->direction_list), &(lst_fr_out.direction_list));
+		//list_add_rcu(&(a_new_fr->direction_list), &(lst_fr_out.direction_list));
+		add_entry_sort(a_new_fr,&lst_fr_out);
 //spin_unlock(&list_mutex);
 	
 }
@@ -282,7 +318,14 @@ void list_rules(struct sock * nl_sk,int destpid)
 
     nl_send_msg(nl_sk,destpid, MSG_DONE, 0, (char*)&fr,sizeof(fr));
 #endif
-
+    {
+	    struct filter_rule_list  *a_rule;
+	    int i=0;  
+	    list_for_each_entry(a_rule, &lst_fr_in.direction_list, direction_list) {
+		printk(KERN_INFO "#%d Src_addr: %X; dst_addr: %X; proto: %d; src_port: %d dst_port: %d\n", i++,a_rule->fr.base_rule.s_addr.addr, a_rule->fr.base_rule.d_addr.addr, a_rule->fr.base_rule.proto, a_rule->fr.base_rule.src_port, a_rule->fr.base_rule.dst_port);
+	    
+	    }
+    }
 
 }
 
