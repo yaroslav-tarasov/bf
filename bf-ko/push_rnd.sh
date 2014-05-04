@@ -13,8 +13,8 @@ echo "Put some rules to bf"
 
 while [ "$n" -gt 0 ]
 do
-    ./bf_cmd --new INPUT --srcport $(( ( RANDOM % 1500  )  + 1 ))  --proto UDP
-    ./bf_cmd --new INPUT --srcport $(( ( RANDOM % 1500  )  + 1 ))  --proto TCP
+    ./bf_cmd --append INPUT --sport $(( ( RANDOM % 1500  )  + 1 ))  --proto UDP
+    ./bf_cmd --append INPUT --sport $(( ( RANDOM % 1500  )  + 1 ))  --proto TCP
     echo $n 
     n=$(( $n - 1 ))
 done

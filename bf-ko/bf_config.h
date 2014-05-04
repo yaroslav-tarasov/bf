@@ -27,7 +27,7 @@ typedef struct filter_rule_list {
 
     filter_rule_t fr;
     struct list_head full_list; /* kernel's list structure */
-    struct list_head direction_list; /* kernel's list structure */
+    struct list_head chain_list; /* kernel's list structure */
     struct hash_entry entry;
     struct rcu_head rcu;
 } filter_rule_list_t;

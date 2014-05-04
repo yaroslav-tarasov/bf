@@ -6,7 +6,7 @@
 #endif
 
 // Направление для фильтра только DIR_INPUT,DIR_OUTPUT остальные значения не корректны для м.я.
-enum direction { DIR_NONE,DIR_ALL,DIR_INPUT,DIR_OUTPUT};
+enum chain { CHAIN_NONE,CHAIN_ALL,CHAIN_INPUT,CHAIN_OUTPUT};
 enum policy {POLICY_NONE,POLICY_DROP,POLICY_ACCEPT};
 enum {IPPROTO_NOTEXIST=65000,IPPROTO_ALL};
 enum bf_messages {MSG_ADD_RULE=NLMSG_MIN_TYPE + 2, // Добавление правила
@@ -71,12 +71,12 @@ typedef struct filter_rule{
     unsigned char	h_source[ETH_ALEN];
    filter_rule_base_t base_rule;
    __u8  off;	    
-   __u8  direction;
+   __u8  chain;
    __u8  policy; 
    __u32 id;
 #ifdef __cplusplus
-   explicit  filter_rule(__u16 proto=0, __u16 src_port=0, __u16 dst_port=0,__u8  direction=DIR_INPUT,__u8  policy=POLICY_ACCEPT)
-       :base_rule(proto,src_port,dst_port),off(0),direction(direction),policy(policy){}
+   explicit  filter_rule(__u16 proto=0, __u16 src_port=0, __u16 dst_port=0,__u8  chain=CHAIN_INPUT,__u8  policy=POLICY_ACCEPT)
+       :base_rule(proto,src_port,dst_port),off(0),chain(chain),policy(policy){}
 #endif
 } filter_rule_t;
 
@@ -91,7 +91,7 @@ inline QDataStream &operator <<(QDataStream &stream,const filter_rule_t &fr)
     stream << fr.base_rule.s_addr.addr;
     stream << fr.base_rule.d_addr.addr;
     stream << fr.base_rule.proto;
-    stream << fr.direction;
+    stream << fr.chain;
     stream << fr.policy;
     stream << fr.off;
 
@@ -105,7 +105,7 @@ inline QDataStream &operator >>(QDataStream &stream, filter_rule_t &fr)
     stream >> fr.base_rule.s_addr.addr;
     stream >> fr.base_rule.d_addr.addr;
     stream >> fr.base_rule.proto;
-    stream >> fr.direction;
+    stream >> fr.chain;
     stream >> fr.policy;
     stream >> fr.off;
 

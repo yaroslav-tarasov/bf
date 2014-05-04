@@ -14,8 +14,8 @@ base_port=45000
 
 while [ "$n" -gt 0 ]
 do
-    ./bf_cmd --new INPUT --srcport $(( $base_port - $n ))  --proto UDP
-    ./bf_cmd --new INPUT --srcport $(( $base_port - $n  ))  --proto TCP
+    ./bf_cmd --append INPUT --sport $(( $base_port - $n ))  --proto UDP
+    ./bf_cmd --append INPUT --sport $(( $base_port - $n  ))  --proto TCP
     echo $n 
     n=$(( $n - 1 ))
 done

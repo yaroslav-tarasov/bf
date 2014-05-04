@@ -96,7 +96,7 @@ static  void init_rules(void)
 	hash_table_insert(&map_fr, &a_new_fr->entry, (const char*)&a_new_fr->fr.base_rule, sizeof(struct filter_rule_base));
 
 	//if(a_new_fr->fr.dir == DIR_INPUT)
-        list_add(&(a_new_fr->direction_list), &(lst_fr_in.direction_list));
+        list_add(&(a_new_fr->chain_list), &(lst_fr_in.chain_list));
 
 	a_new_fr = kmalloc(sizeof(*a_new_fr), GFP_KERNEL);
 	a_new_fr->fr.base_rule.d_addr.addr = 0;
@@ -108,7 +108,7 @@ static  void init_rules(void)
 	a_new_fr->fr.policy = POLICY_ACCEPT;
 	
 	//if (a_new_fr->fr.dir == DIR_OUTPUT)
-        list_add(&(a_new_fr->direction_list), &(lst_fr_out.direction_list));
+        list_add(&(a_new_fr->chain_list), &(lst_fr_out.chain_list));
 #endif
 #endif
      
@@ -145,14 +145,14 @@ void add_entry_sort(struct filter_rule_list *new,struct filter_rule_list *rule_l
     struct list_head *ptr;
     struct  filter_rule_list *entry;
 
-    list_for_each(ptr, &rule_list->direction_list) {
-        entry = list_entry(ptr, struct filter_rule_list, direction_list);
+    list_for_each(ptr, &rule_list->chain_list) {
+        entry = list_entry(ptr, struct filter_rule_list, chain_list);
         if (sorted(&entry->fr , &new->fr)<0) {
-            list_add_tail_rcu(&new->direction_list, ptr);
+            list_add_tail_rcu(&new->chain_list, ptr);
             return;
         }
     }
-    list_add_tail_rcu(&new->direction_list, &rule_list->direction_list);
+    list_add_tail_rcu(&new->chain_list, &rule_list->chain_list);
 }
 
 void add_rule(struct filter_rule* fr)
@@ -165,11 +165,11 @@ void add_rule(struct filter_rule* fr)
         list_add_rcu(&(a_new_fr->full_list), &(lst_fr.full_list));//list_add_tail(&(a_new_fr->list), &(lst_fr.list));
 
 	hash_table_insert(&map_fr, &a_new_fr->entry, (const char*)&a_new_fr->fr.base_rule, sizeof(struct filter_rule_base));
-	if(a_new_fr->fr.direction == DIR_INPUT)
-		//list_add_rcu(&(a_new_fr->direction_list), &(lst_fr_in.direction_list));
+    if(a_new_fr->fr.chain == CHAIN_INPUT)
+		//list_add_rcu(&(a_new_fr->chain_list), &(lst_fr_in.chain_list));
 		add_entry_sort(a_new_fr,&lst_fr_in);
-	else if (a_new_fr->fr.direction == DIR_OUTPUT)
-		//list_add_rcu(&(a_new_fr->direction_list), &(lst_fr_out.direction_list));
+    else if (a_new_fr->fr.chain == CHAIN_OUTPUT)
+		//list_add_rcu(&(a_new_fr->chain_list), &(lst_fr_out.chain_list));
 		add_entry_sort(a_new_fr,&lst_fr_out);
 //spin_unlock(&list_mutex);
 	
@@ -194,18 +194,18 @@ void delete_rule(struct filter_rule* fr)
 
 	printk(KERN_INFO "Enter delete_rule  \n"); 
 //spin_lock(&list_mutex);
-	list_for_each_entry_safe(a_rule, tmp, &lst_fr_in.direction_list, direction_list){
+	list_for_each_entry_safe(a_rule, tmp, &lst_fr_in.chain_list, chain_list){
 		if(cmp_rule(&a_rule->fr.base_rule,&fr->base_rule)==0)
 		{		
-			list_del_rcu(&a_rule->direction_list);
+			list_del_rcu(&a_rule->chain_list);
 			break;
 		}
 	}
 
-	list_for_each_entry_safe(a_rule, tmp, &lst_fr_out.direction_list, direction_list){
+	list_for_each_entry_safe(a_rule, tmp, &lst_fr_out.chain_list, chain_list){
 		if(cmp_rule(&a_rule->fr.base_rule,&fr->base_rule)==0)
 		{		
-			list_del_rcu(&a_rule->direction_list);
+			list_del_rcu(&a_rule->chain_list);
 			break;
 		}
 	}
@@ -234,12 +234,12 @@ void delete_rules(void)
 //    struct hash_entry *hentry;
 //    struct list_head * pos;
       
-    list_for_each_entry_safe(a_rule, tmp, &lst_fr_in.direction_list, direction_list){
-         list_del_rcu(&a_rule->direction_list);
+    list_for_each_entry_safe(a_rule, tmp, &lst_fr_in.chain_list, chain_list){
+         list_del_rcu(&a_rule->chain_list);
     }
 
-    list_for_each_entry_safe(a_rule, tmp, &lst_fr_out.direction_list, direction_list){
-         list_del_rcu(&a_rule->direction_list);
+    list_for_each_entry_safe(a_rule, tmp, &lst_fr_out.chain_list, chain_list){
+         list_del_rcu(&a_rule->chain_list);
     }
 
 
@@ -262,12 +262,12 @@ void cleanup_rules(void)
 { 
     struct filter_rule_list *a_rule, *tmp;
         
-    list_for_each_entry_safe(a_rule, tmp, &lst_fr_in.direction_list, direction_list){
-         list_del(&a_rule->direction_list);
+    list_for_each_entry_safe(a_rule, tmp, &lst_fr_in.chain_list, chain_list){
+         list_del(&a_rule->chain_list);
     }
 
-    list_for_each_entry_safe(a_rule, tmp, &lst_fr_out.direction_list, direction_list){
-         list_del(&a_rule->direction_list);
+    list_for_each_entry_safe(a_rule, tmp, &lst_fr_out.chain_list, chain_list){
+         list_del(&a_rule->chain_list);
     }
 
     // hash_table_finit(&map_fr);
@@ -321,7 +321,7 @@ void list_rules(struct sock * nl_sk,int destpid)
     {
 	    struct filter_rule_list  *a_rule;
 	    int i=0;  
-	    list_for_each_entry(a_rule, &lst_fr_in.direction_list, direction_list) {
+	    list_for_each_entry(a_rule, &lst_fr_in.chain_list, chain_list) {
 		printk(KERN_INFO "#%d Src_addr: %X; dst_addr: %X; proto: %d; src_port: %d dst_port: %d\n", i++,a_rule->fr.base_rule.s_addr.addr, a_rule->fr.base_rule.d_addr.addr, a_rule->fr.base_rule.proto, a_rule->fr.base_rule.src_port, a_rule->fr.base_rule.dst_port);
 	    
 	    }
@@ -446,7 +446,7 @@ unsigned int hook_func(unsigned int hooknum,
     struct tcphdr      *tcp_header=NULL;	// TCP Header
     struct ethhdr      *ethheader=NULL;      // Ethernet Header
     struct vlan_ethhdr *vlan_header=NULL;
-    struct list_head   *direction_list;
+    struct list_head   *chain_list;
     struct filter_rule_list  *a_rule;
 
     sock_buff = skb;	
@@ -459,13 +459,13 @@ unsigned int hook_func(unsigned int hooknum,
     if(!sock_buff || !ip_header || !ethheader || filter_value==0)
         return NF_ACCEPT;
 
-    direction_list = in!=0?&lst_fr_in.direction_list:&lst_fr_out.direction_list;
+    chain_list = in!=0?&lst_fr_in.chain_list:&lst_fr_out.chain_list;
 
     if(ip_header->protocol == IPPROTO_UDP || ip_header->protocol == IPPROTO_TCP){
     
     rcu_read_lock();
     
-    list_for_each_entry_rcu(a_rule, direction_list /*&lst_fr_in.direction_list\*/, direction_list) {
+    list_for_each_entry_rcu(a_rule, chain_list /*&lst_fr_in.chain_list\*/, chain_list) {
     if(ip_header->protocol == IPPROTO_UDP && a_rule->fr.base_rule.proto == IPPROTO_UDP){
         udp_header = (struct udphdr *)(skb_transport_header(sock_buff) + ip_hdrlen(sock_buff));
         if(udp_header){
@@ -586,8 +586,8 @@ int init_module()
     int ret = 0;
     // LIST_HEAD(lst_fr);  // This macro leads to kernel panic on  list_add
     INIT_LIST_HEAD(&lst_fr.full_list);	
-    INIT_LIST_HEAD(&lst_fr_in.direction_list);	
-    INIT_LIST_HEAD(&lst_fr_out.direction_list);
+    INIT_LIST_HEAD(&lst_fr_in.chain_list);	
+    INIT_LIST_HEAD(&lst_fr_out.chain_list);
     INIT_RCU_HEAD(&lst_fr.rcu);
     INIT_RCU_HEAD(&lst_fr_in.rcu);
     INIT_RCU_HEAD(&lst_fr_out.rcu);
