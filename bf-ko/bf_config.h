@@ -18,7 +18,7 @@ struct  nf_bf_filter_config {
     struct sk_buff_head     *skb_list;
     
     uint8_t  chain_rule[2]; // Конечное правило для цепочек INPUT OUTPUT, по умолчанию ACCEPT,
-                            // цепочек фиксированное колличество, 2 штуки на входе и на выходе      
+                            // цепочек фиксированное колличество, 2 штуки, одна на входе и одна на выходе      
     atomic_t init;
     pid_t    pid_log;
 };
