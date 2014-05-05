@@ -17,10 +17,10 @@ TEMPLATE = app
 QMAKE_CXXFLAGS += -std=c++0x
 
 SOURCES += main.cpp \
-    utils.cpp
+    ../../bfctl/utils.cpp
 
 HEADERS += \
-    utils.h \
+    ../../bfctl/utils.h \
     trx_data.h
 
 INCLUDEPATH += ../../bf-ko ../../bf-link

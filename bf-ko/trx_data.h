@@ -1,28 +1,58 @@
 #pragma once
 
-#ifdef __cplusplus
+#if defined(__cplusplus) && defined(QT_VERSION)
 #include <QtGlobal>
 #include <QDataStream>
+#include <QDebug>
+#include <QHostAddress>
 #endif
 
-// Направление для фильтра только DIR_INPUT,DIR_OUTPUT остальные значения не корректны для м.я.
-enum chain { CHAIN_NONE,CHAIN_ALL,CHAIN_INPUT,CHAIN_OUTPUT};
-enum policy {POLICY_NONE,POLICY_DROP,POLICY_ACCEPT};
-enum {IPPROTO_NOTEXIST=65000,IPPROTO_ALL};
-enum bf_messages {MSG_ADD_RULE=NLMSG_MIN_TYPE + 2, // Добавление правила
-                  MSG_DATA,                     // При пересылке данных из модуля ядра в  userspace
-                  MSG_DONE,                     // По окончании пересылки данных из ядра
+// Для фильтра только CHAIN_INPUT,CHAIN_OUTPUT остальные значения не корректны для м.я.
+enum chain { CHAIN_NONE,                        //!< Отсутствие наличия цепи
+             CHAIN_ALL,                         //!< все цепи сразу
+             CHAIN_INPUT,                       //!< цепь входящих
+             CHAIN_OUTPUT                       //!< цепь исходящих
+           };
+/**
+@brief
+    Политики фильтрации пакетов
+
+*/
+enum policy {
+             POLICY_NONE,                       //!< Отсутствие наличия политики
+             POLICY_DROP,                       //!< Отбрасываем пакет
+             POLICY_ACCEPT                      //!< Пропускаем пакет дальше
+            };
+
+enum {IPPROTO_NOTEXIST=65000,IPPROTO_ALL};      // Fake proto
+
+/**
+@brief
+    Сообщения для обмена с ko
+
+*/
+
+enum bf_messages {
+                  MSG_ADD_RULE=NLMSG_MIN_TYPE + 2, //!< Добавление правила
+                  MSG_DATA,                     //!< При пересылке данных из модуля ядра в  userspace
+                  MSG_DONE,                     //!< По окончании пересылки данных из ядра
                   MSG_RULE_ERR,
-                  MSG_DELETE_RULE ,             // Удаление конкретного правила
-                  MSG_DELETE_ALL_RULES,         // Удаление всех правил (не реализовано)
-                  MSG_UPDATE_RULE,
-                  MSG_CHAIN_RULE,               // Конечное правило для цепочки
-                  MSG_GET_RULES,                // Получение правил из модуля ядра
-                  MSG_OK,                       // Подтверждние
-                  MSG_LOG,                      // Лог из модуля ядра
-                  MSG_LOG_SUBSCRIBE
+                  MSG_DELETE_RULE ,             //!< Удаление конкретного правила
+                  MSG_DELETE_ALL_RULES,         //!< Удаление всех правил (не реализовано)
+                  MSG_UPDATE_RULE,              //!< (не реализовано)
+                  MSG_CHAIN_POLICY,             //!< Конечное правило для цепочки
+                  MSG_GET_RULES,                //!< Получение правил из модуля ядра
+                  MSG_OK,                       //!< Подтверждние
+                  MSG_LOG,                      //!< Лог из модуля ядра
+                  MSG_LOG_SUBSCRIBE             //!< Подписка на лог (реализован только один подписчик)
                  };
+
 #pragma pack (1)
+/**
+@brief
+    Подписка на лог из ko
+
+*/
 typedef struct _log_subscribe_msg
 {
    pid_t   pid;
@@ -112,6 +142,22 @@ inline QDataStream &operator >>(QDataStream &stream, filter_rule_t &fr)
 
     return stream;
 }
+
+inline QDebug operator<<(QDebug dbg, const filter_rule_t &fr)
+{
+    dbg.space() << "filter_rule_t"
+                  << "src_port:" << fr.base_rule.src_port
+                  << "dst_port:" << fr.base_rule.dst_port
+                  << "s_addr.addr:" << QHostAddress(static_cast<quint32>(fr.base_rule.s_addr.addr)).toString()
+                  << "d_addr.addr:" << QHostAddress(static_cast<quint32>(fr.base_rule.d_addr.addr)).toString()
+                  << "proto:" << fr.base_rule.proto
+                  << "chain:" << fr.chain
+                  << "policy:" << fr.policy
+                  << "off:" << fr.off
+                  << "end of filter_rule_t";
+    return dbg.space();
+}
+
 #endif
 
 

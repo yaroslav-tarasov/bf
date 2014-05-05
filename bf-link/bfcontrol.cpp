@@ -52,7 +52,7 @@ void BFControl::process(QByteArray ba)
     {
         unsigned char *msg = static_cast<unsigned char *>(NLMSG_DATA((struct nlmsghdr *)ba.data()));
         if (msg)
-        qDebug() << "Got log message:" << reinterpret_cast<filter_rule_t*>(msg)->base_rule.src_port;
+        // qDebug() << "Got log message:" << reinterpret_cast<filter_rule_t*>(msg)->base_rule.src_port;
         emit log (*reinterpret_cast<filter_rule_t*>(msg));
     }
     else   if (hdr->nlmsg_type==MSG_DATA && d->ruleslst)
@@ -72,12 +72,12 @@ void BFControl::process(QByteArray ba)
         filter_rule_t msg;
         memset(&msg,0,sizeof(filter_rule_t));
         d->mNS->sendMsg(MSG_OK,&msg,sizeof(filter_rule_t));
-        qDebug() << "process   Send ACK" ;
+        // qDebug() << "process   Send ACK" ;
     }
 
 
 
-    qDebug() << "process" << hdr->nlmsg_type;
+    // qDebug() << "process" << hdr->nlmsg_type;
 }
 
 
@@ -173,7 +173,20 @@ int BFControl::addRule(filter_rule_t &pattern)
 }
 
 ///////////////////////////////////////
-//  Подписка на получение лога о сбработавших правилах
+//  Установка цели для цепочки
+//
+
+int BFControl::setChainPolicy(filter_rule_t &pattern)
+{
+    filter_rule_t p;
+    memset(&p,0,sizeof(filter_rule_t));
+    p.policy = pattern.policy;
+    p.chain = pattern.chain;
+    return this->sendMsg(MSG_CHAIN_POLICY, &p, sizeof(filter_rule_t));
+}
+
+///////////////////////////////////////
+//  Подписка на получение лога о сработавших правилах
 //  PID процесса получателя как аргумент
 //
 

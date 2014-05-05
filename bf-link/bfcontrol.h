@@ -10,10 +10,11 @@
 #include <linux/if_ether.h>
 #include <linux/netlink.h>
 #include "trx_data.h"
+#include "bf-link_global.h"
 
 struct BFControlPrivate;
 
-class BFControl : public QObject
+class BFLINKSHARED_EXPORT BFControl : public QObject
 {
 
     Q_OBJECT
@@ -30,6 +31,7 @@ public:
     int deleteRule(filter_rule_t &pattern);
     int deleteRules(filter_rule_t &pattern);
     int addRule(filter_rule_t &pattern);
+    int setChainPolicy(filter_rule_t &pattern);
     int subscribeLog(pid_t pid);
 
 signals:

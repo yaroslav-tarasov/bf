@@ -40,13 +40,12 @@ thread( void * data ) {
 	int pid = ((tp_t*)data)->pid;
 
 	// struct task_struct *curr = current; /* current - указатель на дескриптор текущей задачи */
-        
-	daemonize("thread");
-        // allow_signal(SIGKILL);
+    // daemonize("thread");
+    // allow_signal(SIGKILL);
 	
 	list_rules(_nl_sock,pid);
 
-    	printk(KERN_INFO "%s skb->pid: %d\n",__func__,pid);
+    //printk(KERN_INFO "%s skb->pid: %d\n",__func__,pid);
     	
 	printk(KERN_INFO "Leave %s \n",__func__);
 	return 0;
@@ -55,7 +54,22 @@ thread( void * data ) {
 void 
 wfc(void){
 	wait_for_completion_timeout(&comp,1 * HZ);
-	// wait_for_completion(&comp);
+}
+
+static inline void
+set_chain_policy(filter_rule_t* fr )
+{
+    if(fr->chain == CHAIN_INPUT)
+        bf_config.chain_rule[0] = fr->policy;
+    else if(fr->chain == CHAIN_OUTPUT)
+        bf_config.chain_rule[1] = fr->policy;
+    else if(fr->chain == CHAIN_ALL)
+    {
+        bf_config.chain_rule[0] = fr->policy;
+        bf_config.chain_rule[1] = fr->policy;
+    }
+    else
+        printk(KERN_ERR "%s Have no such chain\n",__func__);
 }
 
 static int
@@ -102,46 +116,46 @@ nl_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
 		}
 
 		break;
-        case MSG_DELETE_ALL_RULES:
+    case MSG_DELETE_ALL_RULES:
 		printk("%s  --------------MSG_DELETE_ALL_RULES\n",__func__);
         // data = NLMSG_DATA(nlh);
 		delete_rules();
 
 		break;
-        case MSG_LOG_SUBSCRIBE:
+    case MSG_CHAIN_POLICY:
+        data = NLMSG_DATA(nlh);
+        if(data)
+            set_chain_policy(((filter_rule_t*)data));
+
+        break;
+    case MSG_LOG_SUBSCRIBE:
         printk("%s  --------------MSG_LOG_SUBSCRIBE",__func__);
         data = NLMSG_DATA(nlh);
         bf_config.pid_log = nlh->nlmsg_pid;//((_log_subscribe_msg_t*)data)->pid;
         atomic_set(&bf_config.init, 1);
 
         break;
-        case MSG_GET_RULES: 
+    case MSG_GET_RULES:
 		printk("%s  --------------MSG_GET_RULES\n",__func__);
 		data = NLMSG_DATA(nlh);
-		//((filter_rule_t*)data)->base_rule.src_port=1200;
-		// memset(data,1,sizeof(filter_rule_t));	
-		// nl_send_msg(_nl_sock,skb,data,sizeof(filter_rule_t));
-		//list_rules(_nl_sock,skb);
 		printk(KERN_INFO "%s skb->pid: %d\n",__func__,nlh->nlmsg_pid);
-                // thrd_params.nl_sk = _nl_sock;
+        // thrd_params.nl_sk = _nl_sock;
 		thrd_params.pid = nlh->nlmsg_pid;
 		 /*hello_thread_id =*/ kernel_thread(thread, &thrd_params, CLONE_FS | CLONE_FILES | CLONE_SIGHAND | SIGCHLD | CLONE_KERNEL);
-		// printk("%s: nl_send_msg %d\n", __func__, sizeof(filter_rule_t));
 		break;
         case MSG_DONE:
 		printk("%s  --------------MSG_DONE\n",__func__);
  		//s_rules_counter = 0;
 		break;
-        case MSG_OK:
+    case MSG_OK:
 		printk("%s  --------------MSG_OK\n",__func__);
- 		//s_rules_counter = 0;
 		printk(KERN_INFO "Got the flag NLM_F_ACK, nlh->nlmsg_flags =%d\n",nlh->nlmsg_flags);
 		//if(nlh->nlmsg_flags&NLM_F_ACK)
 		{
 			complete(&comp);	
 		}
 		break;
-        case NLMSG_ERROR:
+    case NLMSG_ERROR:
 		printk("%s  --------------NLMSG_ERROR\n",__func__);
 		nlerr = (struct nlmsgerr*)NLMSG_DATA(nlh);
 		//printf("Got some error: %d \n",nlerr->error);
@@ -152,13 +166,6 @@ nl_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
 	        return -EINVAL;
     }
 
-//    printk("%s: %02x %02x %02x %02x %02x %02x %02x %02x\n", __func__,
-//            data[0], data[1], data[2], data[3],
-//            data[4], data[5], data[6], data[7]);
-
-//    printk("%s: %02x %02x \n", __func__,
-//            *(unsigned int*)&data[0],
-//            *(unsigned int*)&data[4]);
     printk(KERN_INFO "Leave %s \n",__func__);
     return 0;
 }
@@ -264,8 +271,6 @@ nl_send_lst(struct sock * nl_sk,int destpid,  filter_rule_list_t* lst,int lst_si
             if(res<0)
             {
                 printk(KERN_INFO "Error while sending message to user err=%d msg_size=%d pid=%d\n",res,msg_size,pid);
-            // kfree_skb(skb_out); Видимо только тогда когда не вызывается unicast вообще и наверное тогда
-            // nlmsg_free(skb_out);
             }
 
             if(msg_cnt++%2==0) {
@@ -281,8 +286,6 @@ nl_send_lst(struct sock * nl_sk,int destpid,  filter_rule_list_t* lst,int lst_si
     if(res<0)
     {
         printk(KERN_INFO "Error while sending message to user err=%d msg_size=%d pid=%d\n",res,msg_size,pid);
-    // kfree_skb(skb_out); Видимо только тогда когда не вызывается unicast вообще и наверное тогда
-    // nlmsg_free(skb_out);
     }
 
 
@@ -318,5 +321,5 @@ void input (struct sock *sk, int len)
 	wake_up_interruptible(sk->sk_sleep);
 }
 
-EXPORT_SYMBOL( nl_init );
-EXPORT_SYMBOL( nl_exit );
+//EXPORT_SYMBOL( nl_init );
+//EXPORT_SYMBOL( nl_exit );

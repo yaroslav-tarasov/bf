@@ -10,7 +10,7 @@ fi
 
 echo "Put some rules to bf"
 
-base_port=45000
+base_port=25000
 
 while [ "$n" -gt 0 ]
 do

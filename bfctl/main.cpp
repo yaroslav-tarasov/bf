@@ -3,6 +3,7 @@
 #include <QTimer>
 #include <QStringList>
 #include <QFile>
+#include <QProcessEnvironment>
 
 #include <iostream>
 #include <linux/if_ether.h>
@@ -49,9 +50,9 @@ int main(int argc, char *argv[])
         int i=0;
 
         foreach (BFControl::filter_rule_ptr rule,ruleslst){
-            qDebug() << "rule #" << i++ << "  " << rule->base_rule.src_port << "  " << rule->base_rule.dst_port << "  " << cmd_utils::get_proto_name(rule->base_rule.proto);
+            // qDebug() << "rule #" << i++ << "  " << rule->base_rule.src_port << "  " << rule->base_rule.dst_port << "  " << cmd_utils::get_proto_name(rule->base_rule.proto);
             filter_rule_t fr = *static_cast<filter_rule_t*>(rule.data());
-            //qDebug() << fr;
+            qDebug() << "rule #" << i++ << "  " << fr;
         }
 #endif
 
@@ -63,7 +64,9 @@ int main(int argc, char *argv[])
     } else if (action == CMD_DEL_ALL_RULES) {
         qDebug() << "CMD_DEL_ALL_RULES\n";
         bfc->deleteRules(fr);
-
+    } else if (action == CMD_SET_POLICY) {
+        qDebug() << "CMD_SET_POLICY";
+        bfc->setChainPolicy(fr);
     } else if (action == CMD_GET_FROM_FILE) {
         QList<BFControl::filter_rule_ptr > ruleslst;
         qDebug() << "CMD_GET_FROM_FILE\n";

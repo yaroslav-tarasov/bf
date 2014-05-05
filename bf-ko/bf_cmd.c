@@ -494,23 +494,6 @@ main(int argc, char *argv[])
 
 	}while(/*hdr->nlmsg_type!=NLMSG_ERROR*/ nlerrr==0 && hdr->nlmsg_type!=MSG_DONE && msgn>0);
 
-	/*msgn = n = nl_recv(nls, NULL, &nl_msg,&creds);
-	hdr = (struct nlmsghdr *) nl_msg;
-	msg = NLMSG_DATA((struct nlmsghdr *)nl_msg);
-	printf("hdr->nlmsg_type: %d nlmsg_len: %d nlmsg_flags : %d nlmsg_seq : %d nlmsg_pid : %d \n",hdr->nlmsg_type,hdr->nlmsg_len,hdr->nlmsg_flags,hdr->nlmsg_seq,hdr->nlmsg_pid);
-        printf("# %d src port: %d  dst port: %d d_addr: %d s_addr: %d proto: %d\n",
-		((filter_rule_t*)msg)->id,((filter_rule_t*)msg)->base_rule.src_port,
-		((filter_rule_t*)msg)->base_rule.dst_port,((filter_rule_t*)msg)->base_rule.d_addr.addr,
-		((filter_rule_t*)msg)->base_rule.s_addr.addr,((filter_rule_t*)msg)->base_rule.proto);
-
-	if(hdr->nlmsg_type==NLMSG_ERROR)
-	{	
-		struct nlmsgerr *nlerr;
-		nlerr = (struct nlmsgerr*)NLMSG_DATA((struct nlmsghdr *)nl_msg);
-		printf("Got some error: %d \n",nlerr->error);
-	}*/
-
-	
 
 
     } else if (action == CMD_DEL_RULE) {

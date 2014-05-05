@@ -7,7 +7,7 @@ TARGET =
 DEPENDPATH += .
 INCLUDEPATH += .
 QT -=  gui
-QT += core
+QT += core network
 CONFIG += c++11
 unix: QMAKE_CXXFLAGS += -std=c++0x
 
@@ -18,7 +18,9 @@ MOC_DIR = ./moc
 SOURCES += main.cpp \
     bfservice.cpp \
     bfserviceprivate.cpp \
-    qsyslog.cpp
+    qsyslog.cpp \
+    bfrules.cpp \
+    bfconfig.cpp
 
 include(../exts/qtservice/src/qtservice.pri)
 
@@ -33,4 +35,6 @@ MOC_DIR = ./moc
 HEADERS += \
     bfservice.h \
     bfserviceprivate.h \
-    qsyslog.h
+    qsyslog.h \
+    bfrules.h \
+    bfconfig.h

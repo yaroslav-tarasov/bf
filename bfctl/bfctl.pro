@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core
+QT       += core network
 
 QT       -= gui
 
@@ -17,13 +17,12 @@ TEMPLATE = app
 QMAKE_CXXFLAGS += -std=c++0x
 
 SOURCES += main.cpp \
-    #netlinksocket.cpp \
     utils.cpp
 
 HEADERS += \
     utils.h \
     trx_data.h
-    #netlinksocket.h \
+
 
 INCLUDEPATH += ../bf-ko ../bf-link
 

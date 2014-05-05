@@ -136,7 +136,7 @@ void NetlinkSocket::runListener()
                 if(hdr->nlmsg_len > 0)
                 {
                     QByteArray ba(reinterpret_cast<const char*>(hdr),hdr->nlmsg_len);
-                    qDebug() << "nlmsg_type: " <<  hdr->nlmsg_type << "nlmsg_len: " << hdr->nlmsg_len ;
+                    // qDebug() << "nlmsg_type: " <<  hdr->nlmsg_type << "nlmsg_len: " << hdr->nlmsg_len ;
                     emit  data(ba);
                 }
                 hdr = nlmsg_next(hdr, &n);

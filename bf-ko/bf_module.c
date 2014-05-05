@@ -37,6 +37,15 @@ struct nf_bf_filter_config bf_config = { .init = ATOMIC_INIT(0),
 //    filter_rule_t           fr;
 //} fr_log_t;
 
+inline static void __printfr(const char* func ,filter_rule_t fr)
+{
+    printk(KERN_INFO "%s: SRC: (%u.%u.%u.%u):%d --> DST: (%u.%u.%u.%u):%d proto: %d; \n", func,
+                    NIPQUAD(fr.base_rule.s_addr.addr),fr.base_rule.src_port,
+                    NIPQUAD(fr.base_rule.d_addr.addr),fr.base_rule.dst_port, fr.base_rule.proto);
+}
+
+#define  PRINTFR(fr)  __printfr(__FUNCTION__ , fr);
+
 static struct filter_rule_list lst_fr;
 static struct filter_rule_list lst_fr_in;
 static struct filter_rule_list lst_fr_out;
@@ -77,13 +86,13 @@ static  void init_rules(void)
 		list_add(&(a_new_fr->protocol_list), &(lst_fr_tcp.protocol_list));		
 	
     }
-#endif
-     
+
     i =0;
     list_for_each_entry(a_rule, &lst_fr.full_list, full_list) {
         printk(KERN_INFO "#%d Src_addr: %X; dst_addr: %X; proto: %d; src_port: %d dst_port: %d\n", i++,a_rule->fr.base_rule.s_addr.addr, a_rule->fr.base_rule.d_addr.addr, a_rule->fr.base_rule.proto, a_rule->fr.base_rule.src_port, a_rule->fr.base_rule.dst_port);
     
      }
+#endif
 
 }
 
@@ -258,9 +267,7 @@ void list_rules(struct sock * nl_sk,int destpid)
 {
 
     int ret;
-
-
-#if 0
+#if 1
     struct filter_rule_list *a_rule;
     int i=0,flags = 0;
     list_for_each_entry(a_rule, &lst_fr.full_list, full_list) {
@@ -291,14 +298,14 @@ void list_rules(struct sock * nl_sk,int destpid)
 
     nl_send_msg(nl_sk,destpid, MSG_DONE, 0, (char*)&fr,sizeof(fr));
 #endif
-    {
-	    struct filter_rule_list  *a_rule;
-	    int i=0;  
-	    list_for_each_entry(a_rule, &lst_fr_in.chain_list, chain_list) {
-		printk(KERN_INFO "#%d Src_addr: %X; dst_addr: %X; proto: %d; src_port: %d dst_port: %d\n", i++,a_rule->fr.base_rule.s_addr.addr, a_rule->fr.base_rule.d_addr.addr, a_rule->fr.base_rule.proto, a_rule->fr.base_rule.src_port, a_rule->fr.base_rule.dst_port);
+//    {
+//	    struct filter_rule_list  *a_rule;
+//	    int i=0;
+//	    list_for_each_entry(a_rule, &lst_fr_in.chain_list, chain_list) {
+//		printk(KERN_INFO "#%d Src_addr: %X; dst_addr: %X; proto: %d; src_port: %d dst_port: %d\n", i++,a_rule->fr.base_rule.s_addr.addr, a_rule->fr.base_rule.d_addr.addr, a_rule->fr.base_rule.proto, a_rule->fr.base_rule.src_port, a_rule->fr.base_rule.dst_port);
 	    
-	    }
-    }
+//	    }
+//    }
 
 }
 
@@ -351,6 +358,8 @@ static void add_to_skb_list(struct nf_bf_filter_config *nwf_list, struct sk_buff
     queue_work(bf_config.wq_logging, &bf_config.work_logging);
 }
 
+
+
 static void work_handler(struct work_struct * work) {
 
     struct nf_bf_filter_config* config;
@@ -373,7 +382,7 @@ static void work_handler(struct work_struct * work) {
     if(atomic_read(&bf_config.init)>0)
     {
         destpid = bf_config.pid_log;//get_client_pid();
-	memset(&fr,0,sizeof(filter_rule_t));
+        memset(&fr,0,sizeof(filter_rule_t));
 	
         ip_header = (struct iphdr *) skb_network_header(skb);
         udp_header = (struct udphdr *)(skb_transport_header(skb) + ip_hdrlen(skb));
@@ -382,14 +391,11 @@ static void work_handler(struct work_struct * work) {
         fr.base_rule.proto = ip_header->protocol;
         fr.base_rule.src_port =  ntohs(ip_header->protocol==IPPROTO_UDP? udp_header->source:tcp_header->source);
         fr.base_rule.dst_port =  ntohs(ip_header->protocol==IPPROTO_UDP? udp_header->dest:tcp_header->dest);
-	fr.base_rule.s_addr.addr = ip_header->saddr;
-	fr.base_rule.d_addr.addr = ip_header->daddr;
+        fr.base_rule.s_addr.addr = ip_header->saddr;
+        fr.base_rule.d_addr.addr = ip_header->daddr;
 
-//        printk(KERN_INFO "%s: Src_addr: %X; dst_addr: %X; proto: %d; src_port: %d dst_port: %d\n", __FUNCTION__,fr.base_rule.s_addr.addr, fr.base_rule.d_addr.addr, fr.base_rule.proto, fr.base_rule.src_port, fr.base_rule.dst_port);
+//      PRINTFR(fr);
 
-//	printk(KERN_INFO "%s: SRC: (%u.%u.%u.%u):%d --> DST: (%u.%u.%u.%u):%d proto: %d; \n", __FUNCTION__,
-//				NIPQUAD(ip_header->saddr),ntohs(tcp_header->source),
-//				NIPQUAD(ip_header->daddr),ntohs(tcp_header->dest), fr.base_rule.proto);
         if(destpid)
             nl_send_msg(get_nl_sock(),destpid, MSG_LOG, 0, (char*)&fr,sizeof(fr));
     }
@@ -411,7 +417,7 @@ unsigned int hook_func(unsigned int hooknum,
             const struct net_device *in, 
             const struct net_device *out, 
             int (*okfn)(struct sk_buff *))
-{	
+{
     struct sk_buff     *sock_buff;
     struct udphdr      *udp_header=NULL;      // UDP header struct
     struct iphdr       *ip_header=NULL;        // IP header struct
