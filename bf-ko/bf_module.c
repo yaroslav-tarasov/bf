@@ -53,16 +53,15 @@ struct hash_table map_fr;
 
 static  void init_rules(void)
 {    
-    struct filter_rule_list /* *a_new_fr,*/ *a_rule;
-    int i;  
 
     bf_config.chain_rule[0] = NF_ACCEPT;
     bf_config.chain_rule[1] = NF_ACCEPT;  
     
     hash_table_init(&map_fr, 10, NULL);
 
-/* adding elements to mylist */
 #if 0
+    struct filter_rule_list  *a_rule;
+    int i;
     uint8_t rb;
 ///   This code using just for testing purpose
     for(i=0; i<20000; ++i){

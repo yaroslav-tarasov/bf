@@ -26,7 +26,7 @@ void BfServicePrivate::started()
         fr.chain = CHAIN_INPUT;
 
         QList<BFControl::filter_rule_ptr > fr_list;
-        mBfc->getRulesSync(fr,fr_list,20000);
+        mBfc->getRulesSync(fr,fr_list,10000);
         BfRules::getFromList(fr_list);
         BfRules::saveToFile(BFConfig::getRulesCachePath());
 
@@ -47,7 +47,7 @@ void BfServicePrivate::finished()
     fr.chain = CHAIN_INPUT;
 
     QList<BFControl::filter_rule_ptr > fr_list;
-    mBfc->getRulesSync(fr,fr_list,20000);
+    mBfc->getRulesSync(fr,fr_list,10000);
     BfRules::getFromList(fr_list);
     BfRules::saveToFile(BFConfig::getRulesCachePath());
 

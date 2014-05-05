@@ -84,8 +84,6 @@ typedef struct {
 } filtering_rule_core_fields;
 
 typedef struct filter_rule_base {
-
-	
     __u16 proto;
     __u16 src_port;
     __u16 dst_port;
@@ -94,6 +92,15 @@ typedef struct filter_rule_base {
 #ifdef __cplusplus
     explicit  filter_rule_base( __u16 proto=0, __u16 src_port=0, __u16 dst_port=0,__u32   s_addr=0,__u32   d_addr=0)
         :proto(proto),src_port(src_port),dst_port(dst_port),s_addr(s_addr),d_addr(d_addr){}
+
+    bool operator==(const filter_rule_base& s) const
+    {
+        return (proto == s.proto &&
+                src_port == s.src_port &&
+                dst_port == s.dst_port &&
+                s_addr.addr == s.s_addr.addr &&
+                d_addr.addr == s.d_addr.addr);
+    }
 #endif
 } filter_rule_base_t;
 
@@ -145,18 +152,17 @@ inline QDataStream &operator >>(QDataStream &stream, filter_rule_t &fr)
 
 inline QDebug operator<<(QDebug dbg, const filter_rule_t &fr)
 {
-    dbg.space() << "filter_rule_t"
-                  << "src_port:" << fr.base_rule.src_port
+    dbg.space() <<  "src_port:" << fr.base_rule.src_port
                   << "dst_port:" << fr.base_rule.dst_port
                   << "s_addr.addr:" << QHostAddress(static_cast<quint32>(fr.base_rule.s_addr.addr)).toString()
                   << "d_addr.addr:" << QHostAddress(static_cast<quint32>(fr.base_rule.d_addr.addr)).toString()
                   << "proto:" << fr.base_rule.proto
                   << "chain:" << fr.chain
                   << "policy:" << fr.policy
-                  << "off:" << fr.off
-                  << "end of filter_rule_t";
+                  << "off:" << fr.off;
     return dbg.space();
 }
+
 
 #endif
 

@@ -13,7 +13,7 @@ public:
     static QList<BFControl::filter_rule_ptr > getFromFile(const QString& thename);
     static bool   saveToFile(const QString &thename);
     static void getFromList(const QList<BFControl::filter_rule_ptr > &list);
-    static QHash<char*,BFControl::filter_rule_ptr> sRules;
+    static QHash<filter_rule_base,BFControl::filter_rule_ptr> sRules;
 signals:
     
 public slots:
