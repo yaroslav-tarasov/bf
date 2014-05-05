@@ -47,11 +47,8 @@ static  void init_rules(void)
     struct filter_rule_list /* *a_new_fr,*/ *a_rule;
     int i;  
 
-//  Правило 0, последнее правило для входящих и исходящих (что происходит с оставшимися после фильтрации пакетами) 
-//  Или правило поведения фильтра, указанные в фильтре удаляем все остальные принимаем, либо наоборот
-//  для текущей конфигурации смысла в других трактовках нет 
-    bf_config.zero_rule[0] = NF_ACCEPT;
-    bf_config.zero_rule[1] = NF_ACCEPT;  
+    bf_config.chain_rule[0] = NF_ACCEPT;
+    bf_config.chain_rule[1] = NF_ACCEPT;  
     
     hash_table_init(&map_fr, 10, NULL);
 
@@ -80,36 +77,6 @@ static  void init_rules(void)
 		list_add(&(a_new_fr->protocol_list), &(lst_fr_tcp.protocol_list));		
 	
     }
-#else
-#if 0
-    a_new_fr = kmalloc(sizeof(*a_new_fr), GFP_KERNEL);
-	a_new_fr->fr.base_rule.d_addr.addr = 0;
-	a_new_fr->fr.base_rule.s_addr.addr = 0;
-	a_new_fr->fr.base_rule.proto = IPPROTO_NOTEXIST;
-	a_new_fr->fr.base_rule.src_port = 0;
-	a_new_fr->fr.base_rule.dst_port = 0;
-	a_new_fr->fr.policy = POLICY_ACCEPT;
-	a_new_fr->fr.off = 0;
-    //INIT_LIST_HEAD(&a_new_fr->full_list);
-    // add the new node to mylist
-    list_add(&(a_new_fr->full_list), &(lst_fr.full_list));//list_add_tail(&(a_new_fr->list), &(lst_fr.list));
-	hash_table_insert(&map_fr, &a_new_fr->entry, (const char*)&a_new_fr->fr.base_rule, sizeof(struct filter_rule_base));
-
-	//if(a_new_fr->fr.dir == DIR_INPUT)
-        list_add(&(a_new_fr->chain_list), &(lst_fr_in.chain_list));
-
-	a_new_fr = kmalloc(sizeof(*a_new_fr), GFP_KERNEL);
-	a_new_fr->fr.base_rule.d_addr.addr = 0;
-	a_new_fr->fr.base_rule.s_addr.addr = 0;
-	a_new_fr->fr.base_rule.proto = IPPROTO_NOTEXIST;
-	a_new_fr->fr.base_rule.src_port = 0;
-	a_new_fr->fr.base_rule.dst_port = 0;
-	a_new_fr->fr.off = 0;	
-	a_new_fr->fr.policy = POLICY_ACCEPT;
-	
-	//if (a_new_fr->fr.dir == DIR_OUTPUT)
-        list_add(&(a_new_fr->chain_list), &(lst_fr_out.chain_list));
-#endif
 #endif
      
     i =0;
@@ -166,11 +133,17 @@ void add_rule(struct filter_rule* fr)
 
 	hash_table_insert(&map_fr, &a_new_fr->entry, (const char*)&a_new_fr->fr.base_rule, sizeof(struct filter_rule_base));
     if(a_new_fr->fr.chain == CHAIN_INPUT)
-		//list_add_rcu(&(a_new_fr->chain_list), &(lst_fr_in.chain_list));
+#ifndef TEST_SORT_ADD    
+		list_add_rcu(&(a_new_fr->chain_list), &(lst_fr_in.chain_list));
+#else		
 		add_entry_sort(a_new_fr,&lst_fr_in);
+#endif		
     else if (a_new_fr->fr.chain == CHAIN_OUTPUT)
-		//list_add_rcu(&(a_new_fr->chain_list), &(lst_fr_out.chain_list));
+#ifndef TEST_SORT_ADD     
+		list_add_rcu(&(a_new_fr->chain_list), &(lst_fr_out.chain_list));
+#else		
 		add_entry_sort(a_new_fr,&lst_fr_out);
+#endif
 //spin_unlock(&list_mutex);
 	
 }
@@ -533,7 +506,7 @@ unsigned int hook_func(unsigned int hooknum,
     }
 
 
-    return in!=0 ? bf_config.zero_rule[0] : bf_config.zero_rule[1];
+    return in!=0 ? bf_config.chain_rule[0] : bf_config.chain_rule[1];
 }
  
 int skb_read(char *page, char **start, off_t off,
