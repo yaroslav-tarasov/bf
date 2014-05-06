@@ -13,13 +13,13 @@ bfkorunning || {
     echo "Bf-filter not loaded"
     exit 1
 }
-$UVD_SECURITY/bin/bf-service -s  &  > /dev/null
+$UVD_SECURITY/bin/bf-service -s  1> /dev/null 2>/dev/null  &
 
 }
 
 stop() {
 
- $UVD_SECURITY/bin/bf-service -t  & > /dev/null
+ $UVD_SECURITY/bin/bf-service -t 1> /dev/null 2> /dev/null &
 
 }
 
