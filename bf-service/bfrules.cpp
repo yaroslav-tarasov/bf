@@ -2,22 +2,13 @@
 #include <QDataStream>
 #include <QFile>
 
-//QHash<char*,BFControl::filter_rule_ptr> BfRules::sRules;
+#include "hash_function.h"
+
 QHash<filter_rule_base,BFControl::filter_rule_ptr> BfRules::sRules;
 
 uint qHash(const filter_rule_base& s)
 {
-    uint result = s.proto & 0xFF;
-
-    result <<=(sizeof(quint8)*8);
-    result = result|s.src_port;
-
-    result <<=(sizeof(quint8)*8);
-    result = result|s.dst_port;
-
-    result <<=(sizeof(quint8)*8);
-    result = result|s.s_addr.addr;
-    return result;
+    return utils::__hash(reinterpret_cast<const char*>(&s),sizeof(filter_rule_base));
 }
 
 BfRules::BfRules(QObject *parent) :
@@ -25,8 +16,27 @@ BfRules::BfRules(QObject *parent) :
 {
 }
 
+QList<BFControl::filter_rule_ptr > BfRules::getByPattern(const filter_rule_t  &fr)
+{
+    QList<BFControl::filter_rule_ptr > ruleslst;
+    //qDebug()<< "Enter BfRules::getByPattern";
+    //qDebug() << fr;
+    foreach (BFControl::filter_rule_ptr p,sRules)
+    {
+        //qDebug() << "rule: "<< *p;
+        if(fr_pattern(&*p,&fr) )
+        {
+            ruleslst.append(p);
+            //qDebug() << "append "<< *p;
+        }
+    }
+    //qDebug()<< "Leave BfRules::getByPattern";
+    return ruleslst;
+}
+
 QList<BFControl::filter_rule_ptr > BfRules::getFromFile(const QString &thename)
 {
+    //qDebug()<< "Enter BfRules::getFromFile";
     QList<BFControl::filter_rule_ptr > ruleslst;
     QFile  file(thename) ;
     if (!file.open(QIODevice::ReadOnly))  return ruleslst;
@@ -38,10 +48,11 @@ QList<BFControl::filter_rule_ptr > BfRules::getFromFile(const QString &thename)
         in >>  fr;
         BFControl::filter_rule_ptr p = BFControl::filter_rule_ptr(new filter_rule_t(fr));
         ruleslst.append(p);
-        sRules[fr.base_rule]= p;//reinterpret_cast<char*>(&fr.base_rule)
-
+        sRules[fr.base]= p;
     }
     file.close();
+
+    //qDebug()<< "Leave BfRules::getFromFile";
     return ruleslst;
 }
 
@@ -54,12 +65,11 @@ bool BfRules::saveToFile(const QString &thename)
 
     QDataStream out(&file);
 
-//    out << sRules;
 
     foreach (BFControl::filter_rule_ptr p,sRules)
     {
         out << *(p.data());
-        qDebug() << *(p.data()) << "size" << sRules.size();
+        // qDebug() << *(p.data()) << "size" << sRules.size();
     }
 
 
@@ -71,8 +81,12 @@ bool BfRules::saveToFile(const QString &thename)
 
  void BfRules::getFromList(const QList<BFControl::filter_rule_ptr > &list)
  {
+     //qDebug()<< "Enter BfRules::getFromList";
+     sRules.clear();
      foreach(BFControl::filter_rule_ptr p,list)
      {
-         sRules[p->base_rule]= p;//reinterpret_cast<char*>(&p->base_rule)
+         sRules[p->base]= p;
+
      }
+     //qDebug()<< "Leave BfRules::getFromList";
  }

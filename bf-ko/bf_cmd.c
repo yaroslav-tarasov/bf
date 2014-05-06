@@ -9,7 +9,26 @@
 
 #include "trx_data.h"
 
-enum { CMD_NEW_RULE=1,CMD_PRINT_RULES,CMD_DEL_RULE,CMD_DEL_ALL_RULES,CMD_PRINT_HELP,CMD_GET_FROM_FILE,CMD_SET_POLICY};
+enum commands_t {
+       CMD_NONE,
+       CMD_INSERT,
+       CMD_DELETE = 0x0002U,
+       //CMD_DELETE_NUM = 0x0004U,
+       //CMD_REPLACE=		0x0008U,
+       CMD_APPEND=		0x0010U,
+       CMD_LIST=		0x0020U,
+       CMD_FLUSH=		0x0040U,
+       //CMD_ZERO=		0x0080U,
+       //CMD_NEW_CHAIN=		0x0100U,
+       //CMD_DELETE_CHAIN=	0x0200U,
+       CMD_SET_POLICY=		0x0400U,
+       //CMD_RENAME_CHAIN=	0x0800U,
+       //CMD_LIST_RULES=		0x1000U,
+       //CMD_ZERO_NUM=		0x2000U,
+       //CMD_CHECK=		0x4000U,
+       CMD_GET_FROM_FILE,
+       CMD_PRINT_HELP
+};
 
 int 
 get_proto(char* proto) {
@@ -108,11 +127,11 @@ parse_cmd_args(int argc, char *argv[],filter_rule_t* fr,const char* file_name)
               //printf("flag option: %s, mf_rule.in_out = %d\n", long_options[option_index].name, mf_rule.in_out);
               break;
             case 'L':
-                command = CMD_PRINT_RULES;
-                fr->chain = get_chain(optarg);
-                if (fr->chain == CHAIN_NONE)
+                command = CMD_LIST;
+                fr->base.chain = get_chain(optarg);
+                if (fr->base.chain == CHAIN_NONE)
                    command = CMD_PRINT_HELP;
-                printf("chain in_out = %d\n", fr->chain);
+                //printf("chain in_out = %d\n", fr->base.chain);
               break;
             case 'f':
                 command = CMD_GET_FROM_FILE;
@@ -123,33 +142,33 @@ parse_cmd_args(int argc, char *argv[],filter_rule_t* fr,const char* file_name)
 
                 break;
             case 'A':
-                command = CMD_NEW_RULE;
-                fr->chain = get_chain(optarg);
-                if (fr->chain == CHAIN_NONE)
+                command = CMD_APPEND;
+                fr->base.chain = get_chain(optarg);
+                if (fr->base.chain == CHAIN_NONE)
                    command = CMD_PRINT_HELP;
-                printf("chain in_out = %d\n", fr->chain);
+                //printf("chain in_out = %d\n", fr->base.chain);
               break;
             case 'D':
-              command = CMD_DEL_RULE;       //delete
-              fr->chain = get_chain(optarg);
-              if (fr->chain == CHAIN_NONE)
+              command = CMD_DELETE;       //delete
+              fr->base.chain = get_chain(optarg);
+              if (fr->base.chain == CHAIN_NONE)
                  command = CMD_PRINT_HELP;
-              printf("chain in_out = %d\n", fr->chain);
+              //printf("chain in_out = %d\n", fr->base.chain);
               break;
             case 'F':
-              command = CMD_DEL_ALL_RULES;       //delete
-              fr->chain = get_chain(optarg);
-              if (fr->chain ==CHAIN_NONE)
+              command = CMD_FLUSH;       //delete
+              fr->base.chain = get_chain(optarg);
+              if (fr->base.chain ==CHAIN_NONE)
                  command = CMD_PRINT_HELP;
-              printf("chain in_out = %d\n", fr->chain);
+              //printf("chain in_out = %d\n", fr->base.chain);
               break;
             case 's':
              {
               int s = inet_pton(AF_INET, optarg, &ipvalue);
                switch(s) {
                case 1:
-                 printf("converted value = %x \n", ipvalue.s_addr);
-                 fr->base_rule.s_addr.addr = ipvalue.s_addr;
+                 // printf("converted value = %x \n", ipvalue.s_addr);
+                 fr->base.s_addr.addr = ipvalue.s_addr;
                break;
                case 0:
                  printf("invalid input: %s\n", optarg);
@@ -164,16 +183,16 @@ parse_cmd_args(int argc, char *argv[],filter_rule_t* fr,const char* file_name)
               //mf_rule.src_netmask = optarg; //srcnetmask:
               break;
             case '1':
-              fr->base_rule.src_port = atoi(optarg);    //srcport:
+              fr->base.src_port = atoi(optarg);    //srcport:
               break;
             case 'd':
               {
-              printf("converted value  d_addr.addr\n");
+              //printf("converted value  d_addr.addr\n");
               int s = inet_pton(AF_INET, optarg, &ipvalue);
                    switch(s) {
                    case 1:
-                  printf("converted value = %x \n", ipvalue.s_addr);
-                  fr->base_rule.d_addr.addr = ipvalue.s_addr;
+                  //printf("converted value = %x \n", ipvalue.s_addr);
+                  fr->base.d_addr.addr = ipvalue.s_addr;
                   break;
                    case 0:
                   printf("invalid input: %s\n", optarg);
@@ -188,11 +207,11 @@ parse_cmd_args(int argc, char *argv[],filter_rule_t* fr,const char* file_name)
               //mf_rule.dest_netmask = optarg;    //destnetmask
               break;
             case '2':
-              fr->base_rule.dst_port = atoi(optarg);    //destport
+              fr->base.dst_port = atoi(optarg);    //destport
               break;
             case 'p':
-              fr->base_rule.proto = get_proto(optarg); //proto
-              if (fr->base_rule.proto==IPPROTO_NOTEXIST){
+              fr->base.proto = get_proto(optarg); //proto
+              if (fr->base.proto==IPPROTO_NOTEXIST){
                 command = CMD_PRINT_HELP;
               }
 
@@ -223,7 +242,7 @@ parse_cmd_args(int argc, char *argv[],filter_rule_t* fr,const char* file_name)
     }
 
     // proto обязательный параметр при добавлении удалении правил
-   if(!proto_mandatory && (command == CMD_NEW_RULE || command == CMD_DEL_RULE ))
+   if(!proto_mandatory && (command == CMD_APPEND || command == CMD_DELETE ))
    {
        command = CMD_PRINT_HELP;
        printf ("- пропущен обязательный параметр --proto \n");
@@ -378,9 +397,9 @@ main(int argc, char *argv[])
 #endif
         return EXIT_FAILURE;
     } 
-    if (action == CMD_NEW_RULE) {
-        printf("CMD_NEW_RULE\n");
-	printf("Src_addr: %X; dst_addr: %X; proto: %d; src_port: %d dst_port: %d\n", fr.base_rule.s_addr.addr, fr.base_rule.d_addr.addr, fr.base_rule.proto, fr.base_rule.src_port, fr.base_rule.dst_port);
+    if (action == CMD_APPEND) {
+        printf("CMD_APPEND");
+    printf("Src_addr: %X; dst_addr: %X; proto: %d; src_port: %d dst_port: %d\n", fr.base.s_addr.addr, fr.base.d_addr.addr, fr.base.proto, fr.base.src_port, fr.base.dst_port);
 
 
     	ret = nl_send_simple(nls, MSG_ADD_RULE, 0, &fr, sizeof(fr));
@@ -403,8 +422,8 @@ main(int argc, char *argv[])
     	}
 
 
-    } else if (action == CMD_PRINT_RULES) {
-        printf("CMD_PRINT_RULES\n");
+    } else if (action == CMD_LIST) {
+        printf("CMD_LIST\n");
 	// printf("pid %d:\n",getpid());
 
 
@@ -464,10 +483,10 @@ main(int argc, char *argv[])
 		
 		if(hdr->nlmsg_type==MSG_DATA)
 	        printf("# %d src port: %d  dst port: %d d_addr: %d s_addr: %d proto: %s (%d)\n",
-            /*((filter_rule_t*)msg)->id*/++c,((filter_rule_t*)msg)->base_rule.src_port,
-			((filter_rule_t*)msg)->base_rule.dst_port,((filter_rule_t*)msg)->base_rule.d_addr.addr,
-			((filter_rule_t*)msg)->base_rule.s_addr.addr,get_proto_name(((filter_rule_t*)msg)->base_rule.proto)==NULL?"":get_proto_name(((filter_rule_t*)msg)->base_rule.proto),
-			((filter_rule_t*)msg)->base_rule.proto);
+            /*((filter_rule_t*)msg)->id*/++c,((filter_rule_t*)msg)->base.src_port,
+            ((filter_rule_t*)msg)->base.dst_port,((filter_rule_t*)msg)->base.d_addr.addr,
+            ((filter_rule_t*)msg)->base.s_addr.addr,get_proto_name(((filter_rule_t*)msg)->base.proto)==NULL?"":get_proto_name(((filter_rule_t*)msg)->base.proto),
+            ((filter_rule_t*)msg)->base.proto);
 
 		if(hdr->nlmsg_flags&NLM_F_ACK){
 		    filter_rule_t msg;	
@@ -496,8 +515,8 @@ main(int argc, char *argv[])
 
 
 
-    } else if (action == CMD_DEL_RULE) {
-        printf("CMD_DEL_RULE\n");
+    } else if (action == CMD_DELETE) {
+        printf("CMD_DELETE\n");
 
     	ret = nl_send_simple(nls, MSG_DELETE_RULE, 0, &fr, sizeof(fr));
 
@@ -517,8 +536,8 @@ main(int argc, char *argv[])
 		//printf(".");		
 		//total_cb += ret;
     	}
-    } else if (action == CMD_DEL_ALL_RULES) {
-        printf("CMD_DEL_ALL_RULES\n");
+    } else if (action == CMD_FLUSH) {
+        printf("CMD_FLUSH\n");
 
     	ret = nl_send_simple(nls, MSG_DELETE_ALL_RULES, 0, &fr, sizeof(fr));
 

@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core
+QT       += core network
 
 QT       -= gui
 
@@ -23,7 +23,7 @@ HEADERS += \
     ../../bfctl/utils.h \
     trx_data.h
 
-INCLUDEPATH += ../../bf-ko ../../bf-link
+INCLUDEPATH += ../../bf-ko ../../bf-link ../../bfctl
 
 DESTDIR = ../../../bin
 LIBS += -L../../../lib -lbf-link -lnl

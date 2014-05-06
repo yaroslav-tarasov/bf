@@ -29,8 +29,10 @@ HEADERS += \ #bflink.h\
         bf-link_global.h\
         netlink_socket.h \
         netlinksocket.h \
-    bflocalcontrol.h \
-    bfremotecontrol.h
+        bflocalcontrol.h \
+        bfremotecontrol.h \
+        trx_data.h
+
 
 INCLUDEPATH += ../bf-ko
 

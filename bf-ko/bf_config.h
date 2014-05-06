@@ -46,5 +46,16 @@ int   nl_send_msg(struct sock * nl_sk,int destpid, int type, int flags,char* msg
 void  list_rules(struct sock * nl_sk,int destpid);
 void  delete_rules(void);
 
+extern int fdebug;
+
+inline static void __printfr(const char* func ,filter_rule_t fr)
+{
+    printk(KERN_INFO "%s: SRC: (%u.%u.%u.%u):%d --> DST: (%u.%u.%u.%u):%d proto: %d; \n", func,
+                    NIPQUAD(fr.base.s_addr.addr),fr.base.src_port,
+                    NIPQUAD(fr.base.d_addr.addr),fr.base.dst_port, fr.base.proto);
+}
+
+#define  PRINTFR(fr)  __printfr(__FUNCTION__ , fr);
+#define  PRINTK_DBG if(fdebug) printk
 
 #endif // BF_CONFIG_H

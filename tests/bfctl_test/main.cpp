@@ -3,6 +3,7 @@
 #include <QTimer>
 #include <QStringList>
 #include <QFile>
+#include <QProcessEnvironment>
 
 #include <iostream>
 #include <linux/if_ether.h>
@@ -32,13 +33,13 @@ int main(int argc, char *argv[])
     std::string thename;
     int action = cmd_utils::parse_cmd_args(argc, argv,&fr,thename);
 
-    if (action == CMD_NEW_RULE) {
-        qDebug() << "CMD_NEW_RULE\n";
+    if (action == CMD_APPEND) {
+        qDebug() << "CMD_APPEND";
         bfc->addRule(fr);
-        printf("Add new rule src_addr: %X; dst_addr: %X; proto: %d; src_port: %d dst_port: %d\n", fr.base_rule.s_addr.addr, fr.base_rule.d_addr.addr, fr.base_rule.proto, fr.base_rule.src_port, fr.base_rule.dst_port);
+        printf("Add new rule src_addr: %X; dst_addr: %X; proto: %d; src_port: %d dst_port: %d\n", fr.base.s_addr.addr, fr.base.d_addr.addr, fr.base.proto, fr.base.src_port, fr.base.dst_port);
 
-    } else if (action == CMD_PRINT_RULES) {
-        qDebug() <<"CMD_PRINT_RULES\n";
+    } else if (action == CMD_LIST) {
+        qDebug() <<"CMD_LIST\n";
 
 #ifdef TEST_ASYNC_GET_RULES
         bfc->getRulesAsync(fr);
@@ -49,19 +50,19 @@ int main(int argc, char *argv[])
         int i=0;
 
         foreach (BFControl::filter_rule_ptr rule,ruleslst){
-            qDebug() << "rule #" << i++ << "  " << rule->base_rule.src_port << "  " << rule->base_rule.dst_port << "  " << cmd_utils::get_proto_name(rule->base_rule.proto);
+            // qDebug() << "rule #" << i++ << "  " << rule->base_rule.src_port << "  " << rule->base_rule.dst_port << "  " << cmd_utils::get_proto_name(rule->base_rule.proto);
             filter_rule_t fr = *static_cast<filter_rule_t*>(rule.data());
-            //qDebug() << fr;
+            qDebug() << "rule #" << i++ << "  " << fr;
         }
 #endif
 
 
-    } else if (action == CMD_DEL_RULE) {
-        qDebug() << "CMD_DEL_RULE\n";
+    } else if (action == CMD_DELETE) {
+        qDebug() << "CMD_DELETE\n";
         bfc->deleteRule(fr);
 
-    } else if (action == CMD_DEL_ALL_RULES) {
-        qDebug() << "CMD_DEL_ALL_RULES\n";
+    } else if (action == CMD_FLUSH) {
+        qDebug() << "CMD_FLUSH\n";
         bfc->deleteRules(fr);
     } else if (action == CMD_SET_POLICY) {
         qDebug() << "CMD_SET_POLICY";
@@ -94,10 +95,10 @@ int main(int argc, char *argv[])
     {
         qCritical() << "Can't connect to bf module \n";
     }
- //#ifdef TEST_ASYNC_GET_RULES
+ #ifdef TEST_ASYNC_GET_RULES
     std::cout << "Press  any key" << std::endl;
     std::cin.get();
- //#endif
+ #endif
     bfc->close();
     QTimer::singleShot(10, &a, SLOT(quit()));
     return a.exec();

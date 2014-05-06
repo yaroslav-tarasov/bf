@@ -14,9 +14,10 @@ public:
 private:
     BFControl *mBfc;
 signals:
-    
+    void done();
 public slots:
     void started();
+    void stop();
     void finished();
 private slots:
     void gotLog(filter_rule_t);

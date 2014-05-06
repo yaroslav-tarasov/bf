@@ -24,19 +24,18 @@ get_proto(char* proto) {
     return IPPROTO_NOTEXIST;
 }
 
-//inline 	const char*
-//get_proto_name(int proto) {
-//    static const char* proto_names[]=
-//    {"ALL","TCP","UDP"};
-//    if (IPPROTO_NOTEXIST == proto) {
-//        return proto_names[0];
-//    } else if (IPPROTO_TCP == proto ) {
-//        return proto_names[1];
-//    } else if (IPPROTO_UDP == proto ) {
-//        return proto_names[2];
-//    }
-//    return NULL;
-//}
+const char* get_proto_name(int proto) {
+    static const char* proto_names[]=
+    {"ALL","TCP","UDP"};
+    if (IPPROTO_NOTEXIST == proto) {
+        return proto_names[0];
+    } else if (IPPROTO_TCP == proto ) {
+        return proto_names[1];
+    } else if (IPPROTO_UDP == proto ) {
+        return proto_names[2];
+    }
+    return NULL;
+}
 
 int
 get_chain(char* dir) {
@@ -110,11 +109,13 @@ parse_cmd_args(int argc, char *argv[],filter_rule_t* fr,std::string& file_name)
               //printf("flag option: %s, mf_rule.in_out = %d\n", long_options[option_index].name, mf_rule.in_out);
               break;
             case 'L':
-                command = CMD_PRINT_RULES;
-                fr->chain = get_chain(optarg);
-                if (fr->chain == CHAIN_NONE)
+                command = CMD_LIST;
+                fr->base.chain = get_chain(optarg);
+                if (fr->base.chain == CHAIN_NONE)
+                {
+                   std::cout << "Пропущен обязательный параметр название цепочки " << std::endl ;
                    command = CMD_PRINT_HELP;
-                printf("chain in_out = %d\n", fr->chain);
+                }
               break;
             case 'f':
                 command = CMD_GET_FROM_FILE;
@@ -125,33 +126,40 @@ parse_cmd_args(int argc, char *argv[],filter_rule_t* fr,std::string& file_name)
 
                 break;
             case 'A':
-                command = CMD_NEW_RULE;
-                fr->chain = get_chain(optarg);
-                if (fr->chain == CHAIN_NONE)
+                command = CMD_APPEND;
+                fr->base.chain = get_chain(optarg);
+                if (fr->base.chain == CHAIN_NONE)
+                {
+                   std::cout << "Пропущен обязательный параметр название цепочки " << std::endl ;
                    command = CMD_PRINT_HELP;
-                printf("chain in_out = %d\n", fr->chain);
+                }
+                //printf("chain in_out = %d\n", fr->base.chain);
               break;
             case 'D':
-              command = CMD_DEL_RULE;       //delete
-              fr->chain = get_chain(optarg);
-              if (fr->chain == CHAIN_NONE)
+              command = CMD_DELETE;       //delete
+              fr->base.chain = get_chain(optarg);
+              if (fr->base.chain == CHAIN_NONE)
+              {
+                 std::cout << "Пропущен обязательный параметр название цепочки " << std::endl ;
                  command = CMD_PRINT_HELP;
-              printf("chain in_out = %d\n", fr->chain);
+              }
               break;
             case 'F':
-              command = CMD_DEL_ALL_RULES;       //delete
-              fr->chain = get_chain(optarg);
-              if (fr->chain ==CHAIN_NONE)
+              command = CMD_FLUSH;       //delete
+              fr->base.chain = get_chain(optarg);
+              if (fr->base.chain == CHAIN_NONE)
+              {
+                 std::cout << "Пропущен обязательный параметр название цепочки " << std::endl ;
                  command = CMD_PRINT_HELP;
-              printf("chain in_out = %d\n", fr->chain);
+              }
               break;
             case 's':
              {
               int s = inet_pton(AF_INET, optarg, &ipvalue);
                switch(s) {
                case 1:
-                 printf("converted value = %x \n", ipvalue.s_addr);
-                 fr->base_rule.s_addr.addr = ipvalue.s_addr;
+                 //printf("converted value = %x \n", ipvalue.s_addr);
+                 fr->base.s_addr.addr = ipvalue.s_addr;
                break;
                case 0:
                  printf("invalid input: %s\n", optarg);
@@ -166,16 +174,16 @@ parse_cmd_args(int argc, char *argv[],filter_rule_t* fr,std::string& file_name)
               //mf_rule.src_netmask = optarg; //srcnetmask:
               break;
             case '1':
-              fr->base_rule.src_port = atoi(optarg);    //srcport:
+              fr->base.src_port = atoi(optarg);    //srcport:
               break;
             case 'd':
               {
-              printf("converted value  d_addr.addr\n");
+              //printf("converted value  d_addr.addr\n");
               int s = inet_pton(AF_INET, optarg, &ipvalue);
                    switch(s) {
                    case 1:
-                  printf("converted value = %x \n", ipvalue.s_addr);
-                  fr->base_rule.d_addr.addr = ipvalue.s_addr;
+                  //printf("converted value = %x \n", ipvalue.s_addr);
+                  fr->base.d_addr.addr = ipvalue.s_addr;
                   break;
                    case 0:
                   printf("invalid input: %s\n", optarg);
@@ -190,11 +198,12 @@ parse_cmd_args(int argc, char *argv[],filter_rule_t* fr,std::string& file_name)
               //mf_rule.dest_netmask = optarg;    //destnetmask
               break;
             case '2':
-              fr->base_rule.dst_port = atoi(optarg);    //destport
+              fr->base.dst_port = atoi(optarg);    //destport
               break;
             case 'p':
-              fr->base_rule.proto = get_proto(optarg); //proto
-              if (fr->base_rule.proto==IPPROTO_NOTEXIST){
+              fr->base.proto = get_proto(optarg); //proto
+              if (fr->base.proto==IPPROTO_NOTEXIST){
+                std::cout << "Ошибка в параметре --proto " << std::endl ;
                 command = CMD_PRINT_HELP;
               }
 
@@ -203,9 +212,17 @@ parse_cmd_args(int argc, char *argv[],filter_rule_t* fr,std::string& file_name)
             case 'P':
                fr->policy = get_policy(optarg);
                command = CMD_SET_POLICY;
+               if (fr->policy==POLICY_NONE){
+                 std::cout << "Ошибка в параметре --policy " << std::endl ;
+                 command = CMD_PRINT_HELP;
+               }
               break;
             case 'j':
                fr->policy = get_policy(optarg);
+               if (fr->policy==POLICY_NONE){
+                 std::cout << "Ошибка в параметре --jump " << std::endl ;
+                 command = CMD_PRINT_HELP;
+               }
               break;
             case '?':
               /* getopt_long printed an error message. */
@@ -225,7 +242,7 @@ parse_cmd_args(int argc, char *argv[],filter_rule_t* fr,std::string& file_name)
     }
 
     // proto обязательный параметр при добавлении удалении правил
-   if(!proto_mandatory && (command == CMD_NEW_RULE || command == CMD_DEL_RULE ))
+   if(!proto_mandatory && (command == CMD_APPEND || command == CMD_DELETE ))
    {
        command = CMD_PRINT_HELP;
        std::cout << "- пропущен обязательный параметр --proto " << std::endl ;

@@ -16,9 +16,9 @@ public:
     static void syslog(int level, QString message);
 private:
     QSyslog(QObject *parent = 0);
+    Q_DISABLE_COPY(QSyslog)
 
     static QString appName;
-    
 };
 
 #endif // QSYSLOG_H

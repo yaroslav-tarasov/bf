@@ -4,6 +4,7 @@
 #include "bfrules.h"
 #include "bfconfig.h"
 #include <QDebug>
+#include "qwaitfordone.h"
 
 BfService::BfService(int argc, char **argv,const QString &name):QtService<QCoreApplication>(argc, argv, name)
 {
@@ -30,11 +31,14 @@ BfService::~BfService()
 
 void BfService::createApplication(int &argc, char **argv)
 {
+    QSyslog::instance().syslog(/*LOG_INFO*/6,QString("Enter BfService::createApplication"));
     QtService<QCoreApplication>::createApplication(argc, argv);
 
     BFConfig bc(this);
 
     BfRules::getFromFile(BFConfig::getRulesCachePath());
+
+
 
 //    InitMain::setupSearchPath();
 
@@ -92,6 +96,11 @@ void BfService::startThreads()
 void BfService::stop()
 {
      QSyslog::instance().syslog(/*LOG_INFO*/6,QString("BfService::stop()"));
+     //QWaitForDone w(d);
+
+     d->stop();
+
+     // w.start(20000);
 
      privateThread->quit();
      if (!privateThread->wait(20000))

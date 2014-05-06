@@ -5,7 +5,9 @@
 #include <QDataStream>
 #include <QDebug>
 #include <QHostAddress>
+#include <arpa/inet.h>
 #endif
+
 
 // Для фильтра только CHAIN_INPUT,CHAIN_OUTPUT остальные значения не корректны для м.я.
 enum chain { CHAIN_NONE,                        //!< Отсутствие наличия цепи
@@ -84,14 +86,15 @@ typedef struct {
 } filtering_rule_core_fields;
 
 typedef struct filter_rule_base {
+    __u8  chain;
     __u16 proto;
     __u16 src_port;
     __u16 dst_port;
     ip_addr_t s_addr;
     ip_addr_t d_addr;
 #ifdef __cplusplus
-    explicit  filter_rule_base( __u16 proto=0, __u16 src_port=0, __u16 dst_port=0,__u32   s_addr=0,__u32   d_addr=0)
-        :proto(proto),src_port(src_port),dst_port(dst_port),s_addr(s_addr),d_addr(d_addr){}
+    explicit  filter_rule_base( __u16 proto=0, __u16 src_port=0, __u16 dst_port=0,__u32   s_addr=0,__u32   d_addr=0,__u8 chain=0)
+        :chain(chain),proto(proto),src_port(src_port),dst_port(dst_port),s_addr(s_addr),d_addr(d_addr){}
 
     bool operator==(const filter_rule_base& s) const
     {
@@ -107,29 +110,45 @@ typedef struct filter_rule_base {
 typedef struct filter_rule{
     unsigned char	h_dest[ETH_ALEN];
     unsigned char	h_source[ETH_ALEN];
-   filter_rule_base_t base_rule;
+   filter_rule_base_t base;
    __u8  off;	    
-   __u8  chain;
    __u8  policy; 
    __u32 id;
 #ifdef __cplusplus
-   explicit  filter_rule(__u16 proto=0, __u16 src_port=0, __u16 dst_port=0,__u8  chain=CHAIN_INPUT,__u8  policy=POLICY_ACCEPT)
-       :base_rule(proto,src_port,dst_port),off(0),chain(chain),policy(policy){}
+   explicit  filter_rule(__u16 proto=0, __u16 src_port=0, __u16 dst_port=0,__u8  chain=0,__u8  policy=0)
+       :base(proto,src_port,dst_port,0,0,chain),off(0),policy(policy){}
 #endif
 } filter_rule_t;
 
 #pragma pack ()
 
+#if !defined (__cplusplus) && !defined (__KERNEL__)
+   typedef int bool;
+   #define true   (1)
+   #define false  (0)
+#endif
+
+static inline bool fr_pattern(const filter_rule_t *fr1, const filter_rule_t *fr2)
+{
+    return  (fr2->base.chain==0?true:(fr1->base.chain==fr2->base.chain)) &&
+            (fr2->base.dst_port==0?true:(fr1->base.dst_port==fr2->base.dst_port)) &&
+            (fr2->base.d_addr.addr==0?true:(fr1->base.d_addr.addr==fr2->base.d_addr.addr)) &&
+            (fr2->base.proto==0?true:(fr1->base.proto==fr2->base.proto)) &&
+            (fr2->base.src_port==0?true:(fr1->base.src_port==fr2->base.src_port)) &&
+            (fr2->base.s_addr.addr==0?true:(fr1->base.s_addr.addr==fr2->base.s_addr.addr)) &&
+            (fr2->off==0?true:(fr1->off==fr2->off)) &&
+            (fr2->policy==0?true:(fr1->policy==fr2->policy));
+}
 
 #if defined (__cplusplus) && defined(QT_VERSION)
 inline QDataStream &operator <<(QDataStream &stream,const filter_rule_t &fr)
 {
-    stream << fr.base_rule.src_port;
-    stream << fr.base_rule.dst_port;
-    stream << fr.base_rule.s_addr.addr;
-    stream << fr.base_rule.d_addr.addr;
-    stream << fr.base_rule.proto;
-    stream << fr.chain;
+    stream << fr.base.src_port;
+    stream << fr.base.dst_port;
+    stream << fr.base.s_addr.addr;
+    stream << fr.base.d_addr.addr;
+    stream << fr.base.proto;
+    stream << fr.base.chain;
     stream << fr.policy;
     stream << fr.off;
 
@@ -138,12 +157,12 @@ inline QDataStream &operator <<(QDataStream &stream,const filter_rule_t &fr)
 
 inline QDataStream &operator >>(QDataStream &stream, filter_rule_t &fr)
 {
-    stream >> fr.base_rule.src_port;
-    stream >> fr.base_rule.dst_port;
-    stream >> fr.base_rule.s_addr.addr;
-    stream >> fr.base_rule.d_addr.addr;
-    stream >> fr.base_rule.proto;
-    stream >> fr.chain;
+    stream >> fr.base.src_port;
+    stream >> fr.base.dst_port;
+    stream >> fr.base.s_addr.addr;
+    stream >> fr.base.d_addr.addr;
+    stream >> fr.base.proto;
+    stream >> fr.base.chain;
     stream >> fr.policy;
     stream >> fr.off;
 
@@ -152,17 +171,16 @@ inline QDataStream &operator >>(QDataStream &stream, filter_rule_t &fr)
 
 inline QDebug operator<<(QDebug dbg, const filter_rule_t &fr)
 {
-    dbg.space() <<  "src_port:" << fr.base_rule.src_port
-                  << "dst_port:" << fr.base_rule.dst_port
-                  << "s_addr.addr:" << QHostAddress(static_cast<quint32>(fr.base_rule.s_addr.addr)).toString()
-                  << "d_addr.addr:" << QHostAddress(static_cast<quint32>(fr.base_rule.d_addr.addr)).toString()
-                  << "proto:" << fr.base_rule.proto
-                  << "chain:" << fr.chain
+    dbg.space() <<  "src_port:" << fr.base.src_port
+                  << "dst_port:" << fr.base.dst_port
+                  << "s_addr.addr:" << QHostAddress(static_cast<quint32>(htonl(fr.base.s_addr.addr))).toString()
+                  << "d_addr.addr:" << QHostAddress(static_cast<quint32>(htonl(fr.base.d_addr.addr))).toString()
+                  << "proto:" << fr.base.proto
+                  << "chain:" << fr.base.chain
                   << "policy:" << fr.policy
                   << "off:" << fr.off;
     return dbg.space();
 }
-
 
 #endif
 

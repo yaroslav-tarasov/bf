@@ -41,6 +41,7 @@ void BFControl::process(QList <filter_rule_ptr > ruleslst)
 
 void BFControl::process(QByteArray ba)
 {
+    //qDebug()<< "Enter BFControl::process";
     struct nlmsghdr * hdr = (struct nlmsghdr *) ba.data();
     if (hdr->nlmsg_type==MSG_DONE)
     {
@@ -59,6 +60,7 @@ void BFControl::process(QByteArray ba)
     {
        unsigned char *msg = static_cast<unsigned char *>(NLMSG_DATA((struct nlmsghdr *)ba.data()));
        d->ruleslst->append(filter_rule_ptr(new filter_rule_t(*reinterpret_cast<filter_rule_t*>(msg))));
+       ///qDebug() << "BFControl::process(QByteArray ba)" << *reinterpret_cast<filter_rule_t*>(msg);
     }
     else  if (hdr->nlmsg_type==NLMSG_ERROR)
     {
@@ -76,8 +78,8 @@ void BFControl::process(QByteArray ba)
     }
 
 
-
-    // qDebug() << "process" << hdr->nlmsg_type;
+    //qDebug()<< "Leave BFControl::process";
+    //qDebug() << "process" << hdr->nlmsg_type;
 }
 
 
@@ -181,7 +183,7 @@ int BFControl::setChainPolicy(filter_rule_t &pattern)
     filter_rule_t p;
     memset(&p,0,sizeof(filter_rule_t));
     p.policy = pattern.policy;
-    p.chain = pattern.chain;
+    p.base.chain = pattern.base.chain;
     return this->sendMsg(MSG_CHAIN_POLICY, &p, sizeof(filter_rule_t));
 }
 
@@ -206,7 +208,7 @@ int BFControl::sendRulesSync(QList<filter_rule_ptr >& ruleslst)
 {
     int i=0;
     foreach (BFControl::filter_rule_ptr rule,ruleslst){
-        qDebug() << "sendRulesSync  " << "rule #" << i++ << "  " << rule->base_rule.src_port << "  " << rule->base_rule.dst_port << "  " << rule->base_rule.proto;
+        //qDebug() << "sendRulesSync  " << "rule #" << i++ << "  " << rule->base.src_port << "  " << rule->base.dst_port << "  " << rule->base.proto;
         filter_rule_t fr = *static_cast<filter_rule_t*>(rule.data());
         int ret = addRule(fr);
 

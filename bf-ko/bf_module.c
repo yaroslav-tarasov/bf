@@ -32,19 +32,7 @@ struct nf_bf_filter_config bf_config = { .init = ATOMIC_INIT(0),
 #define bf_filter_name "bf_filter"
 
 
-//typedef struct fr_log {
-//    struct work_struct      work_logging;
-//    filter_rule_t           fr;
-//} fr_log_t;
-
-inline static void __printfr(const char* func ,filter_rule_t fr)
-{
-    printk(KERN_INFO "%s: SRC: (%u.%u.%u.%u):%d --> DST: (%u.%u.%u.%u):%d proto: %d; \n", func,
-                    NIPQUAD(fr.base_rule.s_addr.addr),fr.base_rule.src_port,
-                    NIPQUAD(fr.base_rule.d_addr.addr),fr.base_rule.dst_port, fr.base_rule.proto);
-}
-
-#define  PRINTFR(fr)  __printfr(__FUNCTION__ , fr);
+int fdebug=1;
 
 static struct filter_rule_list lst_fr;
 static struct filter_rule_list lst_fr_in;
@@ -99,17 +87,17 @@ inline int sorted(struct filter_rule* fr1,struct filter_rule* fr2)
 {
 	int w1=0,w2=0;	
 	
-	fr1->base_rule.src_port==0?w1++:0; 
-        fr2->base_rule.src_port==0?w2++:0;
+    fr1->base.src_port==0?w1++:0;
+        fr2->base.src_port==0?w2++:0;
 
-	fr1->base_rule.dst_port==0?w1++:0; 
-        fr2->base_rule.dst_port==0?w2++:0;
+    fr1->base.dst_port==0?w1++:0;
+        fr2->base.dst_port==0?w2++:0;
 
-	fr1->base_rule.s_addr.addr==0?w1++:0; 
-        fr2->base_rule.s_addr.addr==0?w2++:0;
+    fr1->base.s_addr.addr==0?w1++:0;
+        fr2->base.s_addr.addr==0?w2++:0;
 
-	fr1->base_rule.d_addr.addr==0?w1++:0; 
-        fr2->base_rule.d_addr.addr==0?w2++:0;	
+    fr1->base.d_addr.addr==0?w1++:0;
+        fr2->base.d_addr.addr==0?w2++:0;
 		
 
 	return w1 - w2;
@@ -137,18 +125,18 @@ void add_rule(struct filter_rule* fr)
 	memcpy(&a_new_fr->fr,fr,sizeof(filter_rule_t));
 
 //spin_lock(&list_mutex);
-        list_add_rcu(&(a_new_fr->full_list), &(lst_fr.full_list));//list_add_tail(&(a_new_fr->list), &(lst_fr.list));
+        list_add_tail_rcu(&(a_new_fr->full_list), &(lst_fr.full_list));//list_add_tail(&(a_new_fr->list), &(lst_fr.list));
 
-	hash_table_insert(&map_fr, &a_new_fr->entry, (const char*)&a_new_fr->fr.base_rule, sizeof(struct filter_rule_base));
-    if(a_new_fr->fr.chain == CHAIN_INPUT)
+    hash_table_insert(&map_fr, &a_new_fr->entry, (const char*)&a_new_fr->fr.base, sizeof(struct filter_rule_base));
+    if(a_new_fr->fr.base.chain == CHAIN_INPUT)
 #ifndef TEST_SORT_ADD    
-		list_add_rcu(&(a_new_fr->chain_list), &(lst_fr_in.chain_list));
+        list_add_tail_rcu(&(a_new_fr->chain_list), &(lst_fr_in.chain_list));
 #else		
 		add_entry_sort(a_new_fr,&lst_fr_in);
 #endif		
-    else if (a_new_fr->fr.chain == CHAIN_OUTPUT)
+    else if (a_new_fr->fr.base.chain == CHAIN_OUTPUT)
 #ifndef TEST_SORT_ADD     
-		list_add_rcu(&(a_new_fr->chain_list), &(lst_fr_out.chain_list));
+        list_add_tail_rcu(&(a_new_fr->chain_list), &(lst_fr_out.chain_list));
 #else		
 		add_entry_sort(a_new_fr,&lst_fr_out);
 #endif
@@ -166,17 +154,19 @@ void free_rule(struct rcu_head *rh)
 	struct filter_rule_list *a_rule;
 	a_rule = container_of(rh, struct filter_rule_list, rcu);
 	kfree(a_rule);
-    printk(KERN_INFO "delete_rule : call_rcu : free_rule\n");
+
+    PRINTK_DBG(KERN_INFO "delete_rule : call_rcu : free_rule\n");
 }
 
 void delete_rule(struct filter_rule* fr)
 {
 	struct filter_rule_list *a_rule, *tmp;	
 
-	printk(KERN_INFO "Enter delete_rule  \n"); 
+    PRINTK_DBG(KERN_INFO "Enter delete_rule  \n");
+
 //spin_lock(&list_mutex);
 	list_for_each_entry_safe(a_rule, tmp, &lst_fr_in.chain_list, chain_list){
-		if(cmp_rule(&a_rule->fr.base_rule,&fr->base_rule)==0)
+        if(cmp_rule(&a_rule->fr.base,&fr->base)==0)
 		{		
 			list_del_rcu(&a_rule->chain_list);
 			break;
@@ -184,25 +174,28 @@ void delete_rule(struct filter_rule* fr)
 	}
 
 	list_for_each_entry_safe(a_rule, tmp, &lst_fr_out.chain_list, chain_list){
-		if(cmp_rule(&a_rule->fr.base_rule,&fr->base_rule)==0)
+        if(cmp_rule(&a_rule->fr.base,&fr->base)==0)
 		{		
 			list_del_rcu(&a_rule->chain_list);
 			break;
 		}
 	}
 
-	hash_table_del_key_safe(&map_fr,(const char*)&fr->base_rule, sizeof(struct filter_rule_base));
+    hash_table_del_key_safe(&map_fr,(const char*)&fr->base, sizeof(struct filter_rule_base));
 
 	list_for_each_entry_safe(a_rule, tmp, &lst_fr.full_list, full_list){
 
-		if(cmp_rule(&a_rule->fr.base_rule,&fr->base_rule)==0){		
+        if(cmp_rule(&a_rule->fr.base,&fr->base)==0){
 			list_del_rcu(&a_rule->full_list);
 			// kfree(a_rule);
-            printk(KERN_INFO "delete_rule : call_rcu\n");
+
+            PRINTK_DBG(KERN_INFO "delete_rule : call_rcu\n");
+
 			call_rcu(&a_rule->rcu, free_rule);
 		}
 	}
-	printk(KERN_INFO "Leave delete_rule  \n"); 
+
+    PRINTK_DBG(KERN_INFO "Leave delete_rule  \n");
 //spin_unlock(&list_mutex);	
 	
 }
@@ -223,16 +216,13 @@ void delete_rules(void)
          list_del_rcu(&a_rule->chain_list);
     }
 
-
-
     //hash_table_for_each_safe(hentry, &map_fr, pos, hti){
     //	hash_table_del_hash_entry_safe(&map_fr,hentry);
     //}
-    
- 
+
     list_for_each_entry_safe(a_rule, tmp, &lst_fr.full_list, full_list){
         // printk(KERN_INFO "freeing node %s\n", a_rule->name);
-        hash_table_del_key_safe(&map_fr,(const char*)&a_rule->fr.base_rule, sizeof(struct filter_rule_base));
+        hash_table_del_key_safe(&map_fr,(const char*)&a_rule->fr.base, sizeof(struct filter_rule_base));
         list_del_rcu(&a_rule->full_list);
         // kfree(a_rule);
         call_rcu(&a_rule->rcu, free_rule);
@@ -255,7 +245,7 @@ void cleanup_rules(void)
 
     list_for_each_entry_safe(a_rule, tmp, &lst_fr.full_list, full_list){
          // printk(KERN_INFO "freeing node %s\n", a_rule->name);
-         hash_table_del_key_safe(&map_fr,(const char*)&a_rule->fr.base_rule, sizeof(struct filter_rule_base));
+         hash_table_del_key_safe(&map_fr,(const char*)&a_rule->fr.base, sizeof(struct filter_rule_base));
          list_del(&a_rule->full_list);
          kfree(a_rule);
 
@@ -273,9 +263,9 @@ void list_rules(struct sock * nl_sk,int destpid)
 
         if(++i%ACK_EVERY_N_MSG==0) { flags = NLM_F_ACK; };
 	
-	printk(KERN_INFO "#%d Src_addr: %X; dst_addr: %X; proto: %d; src_port: %d dst_port: %d\n", i,
-			a_rule->fr.base_rule.s_addr.addr, a_rule->fr.base_rule.d_addr.addr, 
-			a_rule->fr.base_rule.proto, a_rule->fr.base_rule.src_port, a_rule->fr.base_rule.dst_port);
+    PRINTK_DBG(KERN_INFO "#%d Src_addr: %X; dst_addr: %X; proto: %d; src_port: %d dst_port: %d\n", i,
+            a_rule->fr.base.s_addr.addr, a_rule->fr.base.d_addr.addr,
+            a_rule->fr.base.proto, a_rule->fr.base.src_port, a_rule->fr.base.dst_port);
 
 	a_rule->fr.id = i; 	
 	ret=nl_send_msg(nl_sk,destpid, MSG_DATA, flags,(char*)&a_rule->fr,sizeof(a_rule->fr));
@@ -297,14 +287,6 @@ void list_rules(struct sock * nl_sk,int destpid)
 
     nl_send_msg(nl_sk,destpid, MSG_DONE, 0, (char*)&fr,sizeof(fr));
 #endif
-//    {
-//	    struct filter_rule_list  *a_rule;
-//	    int i=0;
-//	    list_for_each_entry(a_rule, &lst_fr_in.chain_list, chain_list) {
-//		printk(KERN_INFO "#%d Src_addr: %X; dst_addr: %X; proto: %d; src_port: %d dst_port: %d\n", i++,a_rule->fr.base_rule.s_addr.addr, a_rule->fr.base_rule.d_addr.addr, a_rule->fr.base_rule.proto, a_rule->fr.base_rule.src_port, a_rule->fr.base_rule.dst_port);
-	    
-//	    }
-//    }
 
 }
 
@@ -387,11 +369,11 @@ static void work_handler(struct work_struct * work) {
         udp_header = (struct udphdr *)(skb_transport_header(skb) + ip_hdrlen(skb));
         tcp_header = (struct tcphdr *)(skb_transport_header(skb) + ip_hdrlen(skb));
 
-        fr.base_rule.proto = ip_header->protocol;
-        fr.base_rule.src_port =  ntohs(ip_header->protocol==IPPROTO_UDP? udp_header->source:tcp_header->source);
-        fr.base_rule.dst_port =  ntohs(ip_header->protocol==IPPROTO_UDP? udp_header->dest:tcp_header->dest);
-        fr.base_rule.s_addr.addr = ip_header->saddr;
-        fr.base_rule.d_addr.addr = ip_header->daddr;
+        fr.base.proto = ip_header->protocol;
+        fr.base.src_port =  ntohs(ip_header->protocol==IPPROTO_UDP? udp_header->source:tcp_header->source);
+        fr.base.dst_port =  ntohs(ip_header->protocol==IPPROTO_UDP? udp_header->dest:tcp_header->dest);
+        fr.base.s_addr.addr = ip_header->saddr;
+        fr.base.d_addr.addr = ip_header->daddr;
 
 //      PRINTFR(fr);
 
@@ -407,8 +389,8 @@ static struct proc_dir_entry *skb_filter;
 static int filter_value = 1;
 
 
-#define goto_drop { rcu_read_unlock(); \
-		  return NF_DROP; }
+#define goto_target(target) { rcu_read_unlock(); \
+          return target; }
 
 
 unsigned int hook_func(unsigned int hooknum, 
@@ -444,64 +426,55 @@ unsigned int hook_func(unsigned int hooknum,
     rcu_read_lock();
     
     list_for_each_entry_rcu(a_rule, chain_list /*&lst_fr_in.chain_list\*/, chain_list) {
-    if(ip_header->protocol == IPPROTO_UDP && a_rule->fr.base_rule.proto == IPPROTO_UDP){
+    if(ip_header->protocol == IPPROTO_UDP && a_rule->fr.base.proto == IPPROTO_UDP){
         udp_header = (struct udphdr *)(skb_transport_header(sock_buff) + ip_hdrlen(sock_buff));
         if(udp_header){
 	    
-		if( ( (a_rule->fr.base_rule.src_port>0)?(ntohs(udp_header->source) == a_rule->fr.base_rule.src_port):1) &&
-		    ((a_rule->fr.base_rule.dst_port>0)?(ntohs(udp_header->dest) == a_rule->fr.base_rule.dst_port):1) &&
-		    (a_rule->fr.base_rule.s_addr.addr>0?(ntohs(ip_header->saddr) == a_rule->fr.base_rule.s_addr.addr):1) &&
-		    (a_rule->fr.base_rule.d_addr.addr>0?(ntohs(ip_header->saddr) == a_rule->fr.base_rule.d_addr.addr):1) &&
-		    
-			!a_rule->fr.off){
-			printk(KERN_INFO "TID %d SRC: (%u.%u.%u.%u):%d --> DST: (%u.%u.%u.%u):%d proto: %d; \n", 
-				(int)current->pid, NIPQUAD(ip_header->saddr),ntohs(udp_header->source),
-				NIPQUAD(ip_header->daddr),ntohs(udp_header->dest), a_rule->fr.base_rule.proto);
+            if( ( (a_rule->fr.base.src_port>0)?(ntohs(udp_header->source) == a_rule->fr.base.src_port):1) &&
+                ((a_rule->fr.base.dst_port>0)?(ntohs(udp_header->dest) == a_rule->fr.base.dst_port):1) &&
+                (a_rule->fr.base.s_addr.addr>0?(ntohl(ip_header->saddr) == a_rule->fr.base.s_addr.addr):1) &&
+                (a_rule->fr.base.d_addr.addr>0?(ntohl(ip_header->saddr) == a_rule->fr.base.d_addr.addr):1) &&
 
-          //queue_work(bf_config.wq_logging, &bf_config.work_logging);
-            add_to_skb_list( &bf_config, skb);
+                !a_rule->fr.off){
 
-            goto_drop;//return NF_DROP;
-		}
+                PRINTFR(a_rule->fr);
+
+                //queue_work(bf_config.wq_logging, &bf_config.work_logging);
+                add_to_skb_list( &bf_config, skb);
+
+                goto_target(a_rule->fr.policy);
+            }
 
 
         }else
-            goto_drop;//return NF_DROP;
-    } else  if(ip_header->protocol == IPPROTO_TCP && a_rule->fr.base_rule.proto == IPPROTO_TCP){
-        //printk(KERN_INFO "---------- TCP -------------\n");
+            goto_target(NF_DROP);
+    } else  if(ip_header->protocol == IPPROTO_TCP && a_rule->fr.base.proto == IPPROTO_TCP){
+        PRINTK_DBG(KERN_INFO "---------- TCP -------------\n");
         tcp_header = (struct tcphdr *)(skb_transport_header(sock_buff) + ip_hdrlen(sock_buff));
         if(tcp_header){	
 
+            if( (a_rule->fr.base.src_port>0?(ntohs(tcp_header->source) == a_rule->fr.base.src_port):1) &&
+            (a_rule->fr.base.dst_port>0?(ntohs(tcp_header->dest) == a_rule->fr.base.dst_port):1) &&
+            (a_rule->fr.base.s_addr.addr>0?(ntohs(ip_header->saddr) == a_rule->fr.base.s_addr.addr):1) &&
+            (a_rule->fr.base.d_addr.addr>0?(ntohs(ip_header->saddr) == a_rule->fr.base.d_addr.addr):1) &&		!a_rule->fr.off){
+                PRINTFR(a_rule->fr);
+                goto_target(a_rule->fr.policy);
+            }
 
-	   //list_for_each_entry(a_rule, &lst_fr_tcp.protocol_list, protocol_list) {
-		if( (a_rule->fr.base_rule.src_port>0?(ntohs(tcp_header->source) == a_rule->fr.base_rule.src_port):1) &&
-		    (a_rule->fr.base_rule.dst_port>0?(ntohs(tcp_header->dest) == a_rule->fr.base_rule.dst_port):1) &&
-		    (a_rule->fr.base_rule.s_addr.addr>0?(ntohs(ip_header->saddr) == a_rule->fr.base_rule.s_addr.addr):1) &&
-		    (a_rule->fr.base_rule.d_addr.addr>0?(ntohs(ip_header->saddr) == a_rule->fr.base_rule.d_addr.addr):1) &&		!a_rule->fr.off){
-			printk(KERN_INFO "TID %d SRC: (%u.%u.%u.%u):%d --> DST: (%u.%u.%u.%u):%d proto: %d; \n", 
-				(int)current->pid, NIPQUAD(ip_header->saddr),ntohs(tcp_header->source),
-				NIPQUAD(ip_header->daddr),ntohs(tcp_header->dest), a_rule->fr.base_rule.proto);
-            goto_drop; //return NF_DROP;
-		}
-	   // }
-
-	
-            //printk(KERN_INFO "SRC: (%u.%u.%u.%u) --> DST: (%u.%u.%u.%u)\n",NIPQUAD(ip_header->saddr),NIPQUAD(ip_header->daddr));
-            //printk(KERN_INFO "ICMP type: %d - ICMP code: %d\n",icmp_header->type, icmp_header->code);
         }else
-            goto_drop; //return NF_DROP;
+            goto_target(NF_DROP);
     } else  if(ip_header->protocol == IPPROTO_ICMP){
-        //printk(KERN_INFO "---------- ICMP -------------\n");
+        PRINTK_DBG(KERN_INFO "---------- ICMP -------------\n");
         icmp_header = (struct icmphdr *)(skb_transport_header(sock_buff) + ip_hdrlen(sock_buff));
         if(icmp_header){		
 	    // printk(KERN_INFO "SRC: (%pM) --> DST: (%pM)\n",ethheader->h_source,ethheader->h_dest);
 
             if(ethheader && skb_mac_header_was_set(skb)) printk(KERN_INFO "SRC: (%pM) --> DST: (%pM)\n",ethheader->h_source,ethheader->h_dest); 
 
-            //printk(KERN_INFO "SRC: (%u.%u.%u.%u) --> DST: (%u.%u.%u.%u)\n",NIPQUAD(ip_header->saddr),NIPQUAD(ip_header->daddr));
-            //printk(KERN_INFO "ICMP type: %d - ICMP code: %d  in %s  out %s \n",icmp_header->type, icmp_header->code,in!=NULL?"true":"false",out!=NULL?"true":"false");
+            PRINTK_DBG(KERN_INFO "SRC: (%u.%u.%u.%u) --> DST: (%u.%u.%u.%u)\n",NIPQUAD(ip_header->saddr),NIPQUAD(ip_header->daddr));
+            PRINTK_DBG(KERN_INFO "ICMP type: %d - ICMP code: %d  in %s  out %s \n",icmp_header->type, icmp_header->code,in!=NULL?"true":"false",out!=NULL?"true":"false");
         }else
-            goto_drop;//return NF_DROP;
+            goto_target(NF_DROP);//return NF_DROP;
     }
     
     
@@ -588,7 +561,7 @@ int init_module()
         if( skb_filter )
             remove_proc_entry( bf_filter_name, &proc_root);
  
-        printk(KERN_INFO "Barrier Mini-Firewall: Could not allocate memory.\n");
+        printk(KERN_ERR "Barrier Mini-Firewall: Could not allocate memory.\n");
         goto error;
  
     }else{		
@@ -633,27 +606,27 @@ error:
  
 void cleanup_module()
 {
-    printk(KERN_INFO " %s:  nf_unregister_hook\n", __FUNCTION__);
+    PRINTK_DBG(KERN_INFO " %s:  nf_unregister_hook\n", __FUNCTION__);
     nf_unregister_hook(&bf_config.nfho_in);
     nf_unregister_hook(&bf_config.nfho_out);
 
-    printk(KERN_INFO " %s:  remove_proc_entry\n", __FUNCTION__);
+    PRINTK_DBG(KERN_INFO " %s:  remove_proc_entry\n", __FUNCTION__);
     if ( skb_filter )
         remove_proc_entry(bf_filter_name, NULL);
 
-    printk(KERN_INFO " %s:  flush_workqueue\n", __FUNCTION__);
+    PRINTK_DBG(KERN_INFO " %s:  flush_workqueue\n", __FUNCTION__);
 	flush_workqueue(bf_config.wq_logging);
 	destroy_workqueue(bf_config.wq_logging);  
 
-    printk(KERN_INFO " %s:  nl_exit\n", __FUNCTION__);
+    PRINTK_DBG(KERN_INFO " %s:  nl_exit\n", __FUNCTION__);
     nl_exit();
 
     // delete_rules();
-    printk(KERN_INFO " %s:  rcu_barrier\n", __FUNCTION__);
+    PRINTK_DBG(KERN_INFO " %s:  rcu_barrier\n", __FUNCTION__);
     rcu_barrier();
     //mutex_destroy(&list_mutex);
 
-    printk(KERN_INFO " %s:  cleanup_rules\n", __FUNCTION__);
+    PRINTK_DBG(KERN_INFO " %s:  cleanup_rules\n", __FUNCTION__);
     cleanup_rules();
     
     hash_table_finit(&map_fr);   

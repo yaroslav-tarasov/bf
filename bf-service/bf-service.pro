@@ -20,12 +20,13 @@ SOURCES += main.cpp \
     bfserviceprivate.cpp \
     qsyslog.cpp \
     bfrules.cpp \
-    bfconfig.cpp
+    bfconfig.cpp \
+    qwaitfordone.cpp
 
 include(../exts/qtservice/src/qtservice.pri)
 
 
-INCLUDEPATH += ../bf-ko ../bf-link
+INCLUDEPATH += ../bf-ko ../bf-ko/base ../bf-link
 
 DESTDIR = ../../bin
 LIBS += -L../../lib -lbf-link -lnl
@@ -37,4 +38,6 @@ HEADERS += \
     bfserviceprivate.h \
     qsyslog.h \
     bfrules.h \
-    bfconfig.h
+    bfconfig.h \
+    trx_data.h \
+    qwaitfordone.h

@@ -19,6 +19,9 @@
   #define get16bits(d) ((((const uint8_t *)(d))[1] << UINT32_C(8))\
  		                      +((const uint8_t *)(d))[0]) 
   #endif*/
+#ifdef __cplusplus
+namespace  utils {
+#endif
 
 static inline uint32_t __hash(const char *data, int len)
 {
@@ -68,5 +71,9 @@ static inline uint32_t __hash(const char *data, int len)
 
 	return hash;
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
