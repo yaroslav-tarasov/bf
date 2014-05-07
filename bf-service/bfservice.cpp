@@ -96,14 +96,14 @@ void BfService::startThreads()
 void BfService::stop()
 {
      QSyslog::instance().syslog(/*LOG_INFO*/6,QString("BfService::stop()"));
-     //QWaitForDone w(d);
+     // QWaitForDone w(d); Для синхронного получение правил бессмысленно
 
      d->stop();
 
      // w.start(20000);
 
      privateThread->quit();
-     if (!privateThread->wait(20000))
+     if (!privateThread->wait(1000))
      {
          privateThread->terminate();
      }

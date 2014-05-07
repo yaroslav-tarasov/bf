@@ -19,15 +19,13 @@ DEFINES += BFLINK_LIBRARY
 
 SOURCES += \ #bflink.cpp \
            bfcontrol.cpp \
-           netlink_socket.cpp \
            netlinksocket.cpp \
-    bflocalcontrol.cpp \
-    bfremotecontrol.cpp
+           bflocalcontrol.cpp \
+           bfremotecontrol.cpp
 
 HEADERS += \ #bflink.h\
         bfcontrol.h \
         bf-link_global.h\
-        netlink_socket.h \
         netlinksocket.h \
         bflocalcontrol.h \
         bfremotecontrol.h \

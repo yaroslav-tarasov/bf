@@ -47,6 +47,7 @@ void BfServicePrivate::started()
 
 void BfServicePrivate::stop()
 {
+    QSyslog::instance().syslog(/*LOG_INFO*/6,QString("Enter BfServicePrivate::stop()"));
     filter_rule_t fr;
     memset(&fr,0,sizeof(filter_rule_t));
     fr.base.chain = CHAIN_INPUT;
@@ -55,7 +56,8 @@ void BfServicePrivate::stop()
     mBfc->getRulesSync(fr,fr_list,10000);
     BfRules::getFromList(fr_list);
     BfRules::saveToFile(BFConfig::getRulesCachePath());
-    emit done();
+    QSyslog::instance().syslog(/*LOG_INFO*/6,QString("Leave BfServicePrivate::stop()"));
+
 }
 
 void BfServicePrivate::finished()
