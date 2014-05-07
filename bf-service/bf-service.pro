@@ -24,12 +24,12 @@ SOURCES += main.cpp \
     qwaitfordone.cpp
 
 include(../exts/qtservice/src/qtservice.pri)
-
+include(../common/libnl.pri)
 
 INCLUDEPATH += ../bf-ko ../bf-ko/base ../bf-link
 
 DESTDIR = ../../bin
-LIBS += -L../../lib -lbf-link -lnl
+LIBS += -L../../lib -lbf-link
 OBJECTS_DIR = ./tmp
 MOC_DIR = ./moc
 

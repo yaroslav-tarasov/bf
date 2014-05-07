@@ -2,16 +2,34 @@
 #include <netlink/netlink.h>
 #include <netlink/handlers.h>
 #include <netlink/msg.h>
-// #include <linux/netlink.h>
-#include <QDebug>
+#ifdef HAVENL3
+#include <netlink/version.h>
+#endif
 #include <thread>
 #include <linux/if_ether.h>
+
+#include <QDebug>
+
 #include "trx_data.h"
 
-//
-//   Maybe better?
-//   http://stackoverflow.com/questions/11033971/qt-thread-with-movetothread
-//
+//There have been some changes starting with 3.2 regarding where and how libnl
+//is being installed on the system in order to allow multiple libnl versions
+//to be installed in parallel:
+
+//   - Headers will be installed in ${prefix}/include/libnl3, therefore
+//     you will need to add "-I/usr/include/libnl3" to CFLAGS
+
+//   - The library basename was renamed to libnl-3, i.e. the SO names become
+//     libnl-3.so., libnl-route-3.so, etc.
+
+//   - libtool versioning was assumed, to ease detection of compatible library
+//     versions.
+
+//If you are using pkg-config for detecting and linking against the library
+//things will continue magically as if nothing every happened. If you are
+//linking manually you need to adapt your Makefiles or switch to using
+//pkg-config files.
+
 
 class NetlinkSocketPrivate
 {
@@ -21,16 +39,21 @@ public:
 
     inline int  create ()
     {
-#ifdef HAVE_LIBNL3
+#if  LIBNL_VER_MAJ>=3
      nls = nl_socket_alloc();
 #else
      nls = nl_handle_alloc();
 #endif
 
      struct nl_cb * p = nl_cb_alloc(NL_CB_DEFAULT);
-     nls = nl_handle_alloc_cb(p);
+#if  LIBNL_VER_MAJ>=3
+     nls = nl_socket_alloc_cb(p);
+#else
+    nls = nl_handle_alloc_cb(p);
+#endif
 
-      return nls?0:1;
+
+      return nls?0:-1;
     }
 
 
@@ -54,14 +77,14 @@ public:
     inline void destroy()
     {
         if(!nls) return ;
-    #ifdef HAVE_LIBNL3
+#if  LIBNL_VER_MAJ>=3
         nl_socket_free(nls);
-    #else
+#else
         nl_handle_destroy(nls);
-    #endif
+#endif
     }
 
-#ifdef HAVE_LIBNL3
+#if  LIBNL_VER_MAJ>=3
     struct nl_sock *nls;
 #else
     struct nl_handle *nls;
@@ -70,7 +93,6 @@ public:
 
     NetlinkSocket* mpp;
     std::thread*  t;
-    //    QThread* thread;
 };
 
 
@@ -78,7 +100,6 @@ NetlinkSocket::NetlinkSocket(QObject *parent) :
     QObject(parent),mRunning(true)
 {
     d.reset(new NetlinkSocketPrivate(this));
-    //d->nls->h_fd;
 }
 
 NetlinkSocket::~NetlinkSocket()
@@ -112,8 +133,11 @@ void NetlinkSocket::close()
     mRunning = false;
     if(d->nls)
     {
+#if  LIBNL_VER_MAJ>=3
+#else
         nl_close(d->nls);
         nl_handle_destroy(d->nls);
+#endif
         d->nls = NULL;
     }
 }

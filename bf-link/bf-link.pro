@@ -38,3 +38,5 @@ DESTDIR = ../../lib
 OBJECTS_DIR = ./tmp
 MOC_DIR = ./moc
 
+include(../common/libnl.pri)
+

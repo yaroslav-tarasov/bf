@@ -27,6 +27,8 @@ HEADERS += \
 INCLUDEPATH += ../bf-ko ../bf-link
 
 DESTDIR = ../../bin
-LIBS += -L../../lib -lbf-link -lnl
+LIBS += -L../../lib -lbf-link
 OBJECTS_DIR = ./tmp
 MOC_DIR = ./moc
+
+include(../common/libnl.pri)

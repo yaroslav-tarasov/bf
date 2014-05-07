@@ -32,7 +32,7 @@ struct nf_bf_filter_config bf_config = { .init = ATOMIC_INIT(0),
 #define bf_filter_name "bf_filter"
 
 
-int fdebug=1;
+int fdebug=0;
 
 static struct filter_rule_list lst_fr;
 static struct filter_rule_list lst_fr_in;
