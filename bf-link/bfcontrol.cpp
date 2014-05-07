@@ -206,7 +206,7 @@ int BFControl::subscribeLog(pid_t pid)
 //
 int BFControl::sendRulesSync(QList<filter_rule_ptr >& ruleslst)
 {
-    int i=0;
+    //int i=0;
     foreach (BFControl::filter_rule_ptr rule,ruleslst){
         //qDebug() << "sendRulesSync  " << "rule #" << i++ << "  " << rule->base.src_port << "  " << rule->base.dst_port << "  " << rule->base.proto;
         filter_rule_t fr = *static_cast<filter_rule_t*>(rule.data());

@@ -50,6 +50,7 @@ clean:
 install:
 	mkdir -p $(INSTDIR)
 	cp *.ko $(INSTDIR)	
+	ln -s $(INSTDIR)/$(TARGET).ko /lib/modules/$(BUILD_KERNEL)/extra
 	cp trx_data.h $(DESTDIR)/usr/include/linux
 	@if test -d ${TARGETDIR}; then \
 		cp trx_data.h ${TARGETDIR}; \
