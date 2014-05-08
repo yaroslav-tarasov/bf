@@ -175,6 +175,15 @@ int BFControl::addRule(filter_rule_t &pattern)
 }
 
 ///////////////////////////////////////
+//  Обновление правила
+//  не базовых параметров (off; policy;)
+
+int BFControl::updateRule(filter_rule_t &pattern)
+{
+    return this->sendMsg(MSG_UPDATE_RULE, &pattern, sizeof(filter_rule_t));
+}
+
+///////////////////////////////////////
 //  Установка цели для цепочки
 //
 

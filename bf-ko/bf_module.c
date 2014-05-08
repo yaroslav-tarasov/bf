@@ -32,7 +32,7 @@ struct nf_bf_filter_config bf_config = { .init = ATOMIC_INIT(0),
 #define bf_filter_name "bf_filter"
 
 
-int fdebug=0;
+int fdebug=1;
 
 static struct filter_rule_list lst_fr;
 static struct filter_rule_list lst_fr_in;
@@ -125,7 +125,7 @@ void add_rule(struct filter_rule* fr)
 	memcpy(&a_new_fr->fr,fr,sizeof(filter_rule_t));
 
 //spin_lock(&list_mutex);
-        list_add_tail_rcu(&(a_new_fr->full_list), &(lst_fr.full_list));//list_add_tail(&(a_new_fr->list), &(lst_fr.list));
+    list_add_tail_rcu(&(a_new_fr->full_list), &(lst_fr.full_list));//list_add_tail(&(a_new_fr->list), &(lst_fr.list));
 
     hash_table_insert(&map_fr, &a_new_fr->entry, (const char*)&a_new_fr->fr.base, sizeof(struct filter_rule_base));
     if(a_new_fr->fr.base.chain == CHAIN_INPUT)
@@ -143,6 +143,8 @@ void add_rule(struct filter_rule* fr)
 //spin_unlock(&list_mutex);
 	
 }
+
+
 
 inline int cmp_rule(struct filter_rule_base* fr1,struct filter_rule_base* fr2)
 {
@@ -290,17 +292,19 @@ void list_rules(struct sock * nl_sk,int destpid)
 
 }
 
-int find_rule(unsigned char* data)
+int find_rule(unsigned char* data,struct filter_rule_list **res)
 {
     struct hash_entry *hentry;
 	if ((hentry =
 	     hash_table_lookup_key(&map_fr, data,
 				   sizeof(filter_rule_base_t))) == NULL) {
+        if(res) *res = NULL;
 	return -1;
 	} else {
 		/* just like the listr_item() */
 		struct filter_rule_list *tmp;
 		tmp = hash_entry(hentry, struct filter_rule_list, entry);
+        if (res) *res=tmp;
 	return 0;	
 	}
 }
@@ -421,6 +425,8 @@ unsigned int hook_func(unsigned int hooknum,
 
     chain_list = in!=0?&lst_fr_in.chain_list:&lst_fr_out.chain_list;
 
+/// Работаем только с TCP и UDP все остальные  пакеты пропускаем
+
     if(ip_header->protocol == IPPROTO_UDP || ip_header->protocol == IPPROTO_TCP){
     
     rcu_read_lock();
@@ -449,7 +455,7 @@ unsigned int hook_func(unsigned int hooknum,
         }else
             goto_target(NF_DROP);
     } else  if(ip_header->protocol == IPPROTO_TCP && a_rule->fr.base.proto == IPPROTO_TCP){
-        PRINTK_DBG(KERN_INFO "---------- TCP -------------\n");
+        //PRINTK_DBG(KERN_INFO "---------- TCP -------------\n");
         tcp_header = (struct tcphdr *)(skb_transport_header(sock_buff) + ip_hdrlen(sock_buff));
         if(tcp_header){	
 
@@ -463,8 +469,8 @@ unsigned int hook_func(unsigned int hooknum,
 
         }else
             goto_target(NF_DROP);
-    } else  if(ip_header->protocol == IPPROTO_ICMP){
-        PRINTK_DBG(KERN_INFO "---------- ICMP -------------\n");
+    } /*else  if(ip_header->protocol == IPPROTO_ICMP){
+        //PRINTK_DBG(KERN_INFO "---------- ICMP -------------\n");
         icmp_header = (struct icmphdr *)(skb_transport_header(sock_buff) + ip_hdrlen(sock_buff));
         if(icmp_header){		
 	    // printk(KERN_INFO "SRC: (%pM) --> DST: (%pM)\n",ethheader->h_source,ethheader->h_dest);
@@ -475,16 +481,19 @@ unsigned int hook_func(unsigned int hooknum,
             PRINTK_DBG(KERN_INFO "ICMP type: %d - ICMP code: %d  in %s  out %s \n",icmp_header->type, icmp_header->code,in!=NULL?"true":"false",out!=NULL?"true":"false");
         }else
             goto_target(NF_DROP);//return NF_DROP;
-    }
+    }*/
     
     
     } // end of list_for_each_entry
 
     rcu_read_unlock();
-    }
 
 
     return in!=0 ? bf_config.chain_rule[0] : bf_config.chain_rule[1];
+
+    }
+
+    return NF_ACCEPT;
 }
  
 int skb_read(char *page, char **start, off_t off,

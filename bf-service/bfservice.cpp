@@ -36,7 +36,7 @@ void BfService::createApplication(int &argc, char **argv)
 
     BFConfig bc(this);
 
-    BfRules::getFromFile(BFConfig::getRulesCachePath());
+    BfRules::loadFromFile(BFConfig::getRulesCachePath());
 
 
 

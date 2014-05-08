@@ -31,6 +31,7 @@ public:
     int deleteRule(filter_rule_t &pattern);
     int deleteRules(filter_rule_t &pattern);
     int addRule(filter_rule_t &pattern);
+    int updateRule(filter_rule_t &pattern);
     int setChainPolicy(filter_rule_t &pattern);
     int subscribeLog(pid_t pid);
 

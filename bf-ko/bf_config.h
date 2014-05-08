@@ -39,7 +39,7 @@ int   nl_send_msg(struct sock * nl_sk,int destpid, int type,int flags,char* msg,
 int   nl_send_lst(struct sock * nl_sk,int destpid,  filter_rule_list_t* lst,int lst_size,int* end_list);
 
 
-int   find_rule(unsigned char* data);
+int   find_rule(unsigned char* data, struct filter_rule_list **res);
 void  add_rule(struct filter_rule* fr);
 void  delete_rule(struct filter_rule* fr);
 int   nl_send_msg(struct sock * nl_sk,int destpid, int type, int flags,char* msg,int msg_size);

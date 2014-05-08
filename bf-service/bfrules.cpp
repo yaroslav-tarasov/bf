@@ -34,7 +34,7 @@ QList<BFControl::filter_rule_ptr > BfRules::getByPattern(const filter_rule_t  &f
     return ruleslst;
 }
 
-QList<BFControl::filter_rule_ptr > BfRules::getFromFile(const QString &thename)
+QList<BFControl::filter_rule_ptr > BfRules::loadFromFile(const QString &thename)
 {
     //qDebug()<< "Enter BfRules::getFromFile";
     QList<BFControl::filter_rule_ptr > ruleslst;
@@ -79,7 +79,7 @@ bool BfRules::saveToFile(const QString &thename)
     return true;
 }
 
- void BfRules::getFromList(const QList<BFControl::filter_rule_ptr > &list)
+ void BfRules::loadFromList(const QList<BFControl::filter_rule_ptr > &list)
  {
      //qDebug()<< "Enter BfRules::getFromList";
      sRules.clear();

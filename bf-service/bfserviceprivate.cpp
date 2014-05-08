@@ -35,7 +35,7 @@ void BfServicePrivate::started()
 
         QList<BFControl::filter_rule_ptr > fr_list;
         mBfc->getRulesSync(fr,fr_list,10000);
-        BfRules::getFromList(fr_list);
+        BfRules::loadFromList(fr_list);
         BfRules::saveToFile(BFConfig::getRulesCachePath());
 
     }
@@ -54,7 +54,7 @@ void BfServicePrivate::stop()
 
     QList<BFControl::filter_rule_ptr > fr_list;
     mBfc->getRulesSync(fr,fr_list,10000);
-    BfRules::getFromList(fr_list);
+    BfRules::loadFromList(fr_list);
     BfRules::saveToFile(BFConfig::getRulesCachePath());
     QSyslog::instance().syslog(/*LOG_INFO*/6,QString("Leave BfServicePrivate::stop()"));
 

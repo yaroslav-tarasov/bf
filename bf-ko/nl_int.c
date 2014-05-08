@@ -77,7 +77,8 @@ nl_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
     int type;
     unsigned char *data;
     struct nlmsgerr *nlerr;
-    
+    filter_rule_list_t* fl;
+
     type = nlh->nlmsg_type;
     thrd_params.pid = nlh->nlmsg_pid;
 
@@ -88,7 +89,7 @@ nl_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
 	case MSG_ADD_RULE:
         data = NLMSG_DATA(nlh);
 
-        if(find_rule((unsigned char*)&((filter_rule_t*)data)->base)==0){
+        if(find_rule((unsigned char*)&((filter_rule_t*)data)->base,NULL)==0){
                     PRINTK_DBG("%s we have this rule ",__func__);
         }
 		else{
@@ -102,21 +103,39 @@ nl_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
             ((filter_rule_t*)data)->base.dst_port,((filter_rule_t*)data)->base.d_addr.addr,
             ((filter_rule_t*)data)->base.s_addr.addr,((filter_rule_t*)data)->base.proto);
 		
-        PRINTK_DBG("%s index: %d ",	__func__,s_rules_counter);
 		break;
-        case MSG_DELETE_RULE:
-        PRINTK_DBG("%s  --------------MSG_DELETE_RULE\n",__func__);
-	        data = NLMSG_DATA(nlh);
-                if(find_rule((unsigned char*)&((filter_rule_t*)data)->base)==0){
-            PRINTK_DBG("%s delete rule ",__func__);
-			delete_rule((filter_rule_t*)data);
-		}
-		else{
-            PRINTK_DBG("%s we don't have this rule ",__func__);
-			
-		}
+    case MSG_UPDATE_RULE:
 
-		break;
+        data = NLMSG_DATA(nlh);
+
+        if(find_rule((unsigned char*)&((filter_rule_t*)data)->base,&fl)==0){
+             PRINTK_DBG("%s we have this rule ",__func__);
+             fl->fr.off = ((filter_rule_t*)data)->off;
+             if (((filter_rule_t*)data)->policy != POLICY_NONE) fl->fr.policy = ((filter_rule_t*)data)->policy;
+        }
+        else{
+            PRINTK_DBG("%s we do not have rule  ",__func__);
+        }
+        // ((filter_rule_t*)data)->id = s_rules_counter;
+        PRINTK_DBG("%s from netlink  TID %d src port: %d  dst_port: %d d_addr: %d s_addr: %d proto: %d\n",__func__,(int)current->pid,
+            ((filter_rule_t*)data)->base.src_port,
+            ((filter_rule_t*)data)->base.dst_port,((filter_rule_t*)data)->base.d_addr.addr,
+            ((filter_rule_t*)data)->base.s_addr.addr,((filter_rule_t*)data)->base.proto);
+
+        break;
+    case MSG_DELETE_RULE:
+        PRINTK_DBG("%s  --------------MSG_DELETE_RULE\n",__func__);
+            data = NLMSG_DATA(nlh);
+                if(find_rule((unsigned char*)&((filter_rule_t*)data)->base,NULL)==0){
+            PRINTK_DBG("%s delete rule ",__func__);
+            delete_rule((filter_rule_t*)data);
+        }
+        else{
+            PRINTK_DBG("%s we don't have this rule ",__func__);
+
+        }
+
+        break;
     case MSG_DELETE_ALL_RULES:
         PRINTK_DBG("%s  --------------MSG_DELETE_ALL_RULES\n",__func__);
 		delete_rules();
@@ -183,7 +202,7 @@ nl_send_msg(struct sock * nl_sk,int destpid, int type, int flags,char* msg,int m
     struct sk_buff *skb_out;
     int res;
 
-    PRINTK_DBG(KERN_INFO "Entering: %s\n", __FUNCTION__);
+    //DL5 PRINTK_DBG(KERN_INFO "Entering: %s\n", __FUNCTION__);
     
 
     pid = destpid;

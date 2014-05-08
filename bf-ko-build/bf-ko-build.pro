@@ -5,6 +5,7 @@ PRE_TARGETDEPS += mytarget
 TEMPLATE = lib
 TARGET   =
 CONFIG  += no_link target_predeps staticlib
+CONFIG -= qt
 
 QMAKE_POST_LINK = @rm *.a
 
