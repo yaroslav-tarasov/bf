@@ -2,6 +2,7 @@
 #define BFRULES_H
 
 #include <QObject>
+#include <QMutex>
 #include "bfcontrol.h"
 
 class BfRules : public QObject
@@ -18,6 +19,7 @@ signals:
 public slots:
 
 private:
+    static QMutex  mMux;
     explicit BfRules(QObject *parent = 0);
     Q_DISABLE_COPY(BfRules)
 };
