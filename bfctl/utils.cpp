@@ -38,6 +38,17 @@ const char* get_proto_name(int proto) {
 }
 
 int
+get_switch(char* off) {
+    if (strcmp(off, "NO") == 0) {
+        return SWITCH_NO;
+    } else if (strcmp(off, "YES") == 0) {
+        return SWITCH_YES;
+    }
+
+    return SWITCH_NONE;
+}
+
+int
 get_chain(char* dir) {
     if (strcmp(dir, "ALL") == 0) {
         return CHAIN_ALL;
@@ -79,7 +90,9 @@ parse_cmd_args(int argc, char *argv[],filter_rule_t* fr,std::string& file_name)
             {"append", required_argument, NULL, 'A'},
             {"delete", required_argument, NULL, 'D'},
             {"flush", required_argument, NULL, 'F'},
+            {"update", required_argument, NULL, 'U'},
             {"policy", required_argument, NULL, 'P'},
+            {"off", required_argument, NULL, 'o'},
             {"srcip", required_argument, NULL, 's'},
             {"source", required_argument, NULL, 's'},
             //{"srcnetmask", required_argument, NULL, 'm'},
@@ -98,7 +111,7 @@ parse_cmd_args(int argc, char *argv[],filter_rule_t* fr,std::string& file_name)
             {0, 0, 0, 0}
         };
         int option_index = 0;
-        c = getopt_long(argc, argv, "L:A:D:F:P:s:1:d:2:p:f:j", long_options, &option_index);
+        c = getopt_long(argc, argv, "L:A:D:F:U:P:s:1:d:2:p:o:f:j", long_options, &option_index);
         /*Detect the end of the options. */
         if (c == -1)
             break;
@@ -153,6 +166,15 @@ parse_cmd_args(int argc, char *argv[],filter_rule_t* fr,std::string& file_name)
                  command = CMD_PRINT_HELP;
               }
               break;
+            case 'U':
+              command = CMD_UPDATE;       //delete
+              fr->base.chain = get_chain(optarg);
+              if (fr->base.chain == CHAIN_NONE)
+              {
+                 std::cout << "Пропущен обязательный параметр название цепочки " << std::endl ;
+                 command = CMD_PRINT_HELP;
+              }
+              break;
             case 's':
              {
               int s = inet_pton(AF_INET, optarg, &ipvalue);
@@ -172,6 +194,15 @@ parse_cmd_args(int argc, char *argv[],filter_rule_t* fr,std::string& file_name)
             break;
             case 'm':
               //mf_rule.src_netmask = optarg; //srcnetmask:
+              break;
+            case 'o':
+              fr->off = get_switch(optarg); //switch
+              if (fr->off==SWITCH_NONE){
+                std::cout << "Ошибка в параметре --off " << std::endl ;
+                command = CMD_PRINT_HELP;
+              }
+
+              proto_mandatory = true;
               break;
             case '1':
               fr->base.src_port = atoi(optarg);    //srcport:

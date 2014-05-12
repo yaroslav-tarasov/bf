@@ -110,7 +110,7 @@ nl_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
 
         if(find_rule((unsigned char*)&((filter_rule_t*)data)->base,&fl)==0){
              PRINTK_DBG("%s we have this rule ",__func__);
-             fl->fr.off = ((filter_rule_t*)data)->off;
+             if (((filter_rule_t*)data)->off != SWITCH_NONE) fl->fr.off = ((filter_rule_t*)data)->off;
              if (((filter_rule_t*)data)->policy != POLICY_NONE) fl->fr.policy = ((filter_rule_t*)data)->policy;
         }
         else{

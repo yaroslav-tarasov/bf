@@ -60,8 +60,8 @@ static  void init_rules(void)
     a_new_fr->fr.base_rule.s_addr.addr = 0;
     a_new_fr->fr.base_rule.proto = IPPROTO_UDP;// rb<128?IPPROTO_UDP:IPPROTO_TCP;
     a_new_fr->fr.base_rule.src_port = 53 + i;
-	a_new_fr->fr.base_rule.dst_port = 53 + i;
-	a_new_fr->fr.off = 0;
+    a_new_fr->fr.base_rule.dst_port = 53 + i;
+    a_new_fr->fr.off = SWITCH_NO;
     //INIT_LIST_HEAD(&a_new_fr->full_list);
     // add the new node to mylist
     list_add(&(a_new_fr->full_list), &(lst_fr.full_list));//list_add_tail(&(a_new_fr->list), &(lst_fr.list));
@@ -397,6 +397,19 @@ static int filter_value = 1;
           return target; }
 
 
+static inline int apply_policy(enum policy p)
+{
+    switch(p)
+    {
+    case POLICY_ACCEPT:
+        return NF_ACCEPT;
+    case POLICY_DROP:
+        return NF_DROP;
+    default:   // POLICY_NONE
+        return NF_DROP;
+    }
+}
+
 unsigned int hook_func(unsigned int hooknum, 
             struct sk_buff *skb, 
             const struct net_device *in, 
@@ -441,14 +454,14 @@ unsigned int hook_func(unsigned int hooknum,
                 (a_rule->fr.base.s_addr.addr>0?(ntohl(ip_header->saddr) == a_rule->fr.base.s_addr.addr):1) &&
                 (a_rule->fr.base.d_addr.addr>0?(ntohl(ip_header->saddr) == a_rule->fr.base.d_addr.addr):1) &&
 
-                !a_rule->fr.off){
+                a_rule->fr.off==SWITCH_NO){
 
                 PRINTFR(a_rule->fr);
 
                 //queue_work(bf_config.wq_logging, &bf_config.work_logging);
                 add_to_skb_list( &bf_config, skb);
 
-                goto_target(a_rule->fr.policy);
+                goto_target(apply_policy(a_rule->fr.policy));
             }
 
 
@@ -462,9 +475,9 @@ unsigned int hook_func(unsigned int hooknum,
             if( (a_rule->fr.base.src_port>0?(ntohs(tcp_header->source) == a_rule->fr.base.src_port):1) &&
             (a_rule->fr.base.dst_port>0?(ntohs(tcp_header->dest) == a_rule->fr.base.dst_port):1) &&
             (a_rule->fr.base.s_addr.addr>0?(ntohs(ip_header->saddr) == a_rule->fr.base.s_addr.addr):1) &&
-            (a_rule->fr.base.d_addr.addr>0?(ntohs(ip_header->saddr) == a_rule->fr.base.d_addr.addr):1) &&		!a_rule->fr.off){
+            (a_rule->fr.base.d_addr.addr>0?(ntohs(ip_header->saddr) == a_rule->fr.base.d_addr.addr):1) && a_rule->fr.off==SWITCH_NO){
                 PRINTFR(a_rule->fr);
-                goto_target(a_rule->fr.policy);
+                goto_target(apply_policy(a_rule->fr.policy));
             }
 
         }else

@@ -30,6 +30,7 @@ enum commands_t {
        //CMD_LIST_RULES=		0x1000U,
        //CMD_ZERO_NUM=		0x2000U,
        //CMD_CHECK=		0x4000U,
+       CMD_UPDATE= 0x8000U,
        CMD_GET_FROM_FILE,
        CMD_PRINT_HELP
 };

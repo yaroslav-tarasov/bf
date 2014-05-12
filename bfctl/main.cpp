@@ -64,6 +64,9 @@ int main(int argc, char *argv[])
     } else if (action == CMD_FLUSH) {
         qDebug() << "CMD_FLUSH\n";
         bfc->deleteRules(fr);
+    } else if (action == CMD_UPDATE) {
+        qDebug() << "CMD_UPDATE\n";
+        bfc->updateRule(fr);
     } else if (action == CMD_SET_POLICY) {
         qDebug() << "CMD_SET_POLICY";
         bfc->setChainPolicy(fr);

@@ -8,7 +8,11 @@
 #include <arpa/inet.h>
 #endif
 
+/**
+@brief
+    Цепочки правил
 
+*/
 // Для фильтра только CHAIN_INPUT,CHAIN_OUTPUT остальные значения не корректны для м.я.
 enum chain { CHAIN_NONE,                        //!< Отсутствие наличия цепи
              CHAIN_ALL,                         //!< все цепи сразу
@@ -24,6 +28,17 @@ enum policy {
              POLICY_NONE,                       //!< Отсутствие наличия политики
              POLICY_DROP,                       //!< Отбрасываем пакет
              POLICY_ACCEPT                      //!< Пропускаем пакет дальше
+            };
+
+/**
+@brief
+    Включение отключение правил
+
+*/
+enum switch_rules{                            //!<  Для поля off YES - выключено NO - включено
+             SWITCH_NO,                       //!<  Правило включено
+             SWITCH_YES,                      //!<  Правило отключено
+             SWITCH_NONE                      //!<  Отсутствие наличия правила выключения
             };
 
 enum {IPPROTO_NOTEXIST=65000,IPPROTO_ALL};      // Fake proto

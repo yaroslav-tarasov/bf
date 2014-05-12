@@ -26,6 +26,7 @@ enum commands_t {
        //CMD_LIST_RULES=		0x1000U,
        //CMD_ZERO_NUM=		0x2000U,
        //CMD_CHECK=		0x4000U,
+       CMD_UPDATE= 0x8000U,
        CMD_GET_FROM_FILE,
        CMD_PRINT_HELP
 };
@@ -40,6 +41,17 @@ get_proto(char* proto) {
         return IPPROTO_UDP;
     }
     return -1;
+}
+
+int
+get_switch(char* off) {
+    if (strcmp(off, "YES") == 0) {
+        return SWITCH_YES;
+    } else if (strcmp(off, "NO") == 0) {
+        return SWITCH_NO;
+    }
+
+    return SWITCH_NONE;
 }
 
 inline 	const char*  
@@ -111,12 +123,13 @@ parse_cmd_args(int argc, char *argv[],filter_rule_t* fr,const char* file_name)
             {"destport", required_argument, NULL, '2'},
             {"destination-port", required_argument, NULL, '2'},
             {"proto", required_argument, NULL, 'p'},
+            {"off", required_argument, NULL, 'o'},
             {"file", required_argument, NULL, 'f'},
             {"jump", required_argument, NULL, 'j'},
             {0, 0, 0, 0}
         };
         int option_index = 0;
-        c = getopt_long(argc, argv, "L:A:D:F:P:s:1:d:2:p:f:j", long_options, &option_index);
+        c = getopt_long(argc, argv, "L:A:D:F:P:s:1:d:2:p:o:f:j", long_options, &option_index);
         /*Detect the end of the options. */
         if (c == -1)
             break;
@@ -181,6 +194,15 @@ parse_cmd_args(int argc, char *argv[],filter_rule_t* fr,const char* file_name)
             break;
             case 'm':
               //mf_rule.src_netmask = optarg; //srcnetmask:
+              break;
+            case 'o':
+              fr->off = get_switch(optarg); //switch
+              if (fr->off==SWITCH_NONE){
+                  printf("Ошибка в параметре --off \n");
+                command = CMD_PRINT_HELP;
+              }
+
+              proto_mandatory = true;
               break;
             case '1':
               fr->base.src_port = atoi(optarg);    //srcport:
@@ -557,6 +579,10 @@ main(int argc, char *argv[])
 		//printf(".");		
 		//total_cb += ret;
     	}
+    } else if (action == CMD_UPDATE) {
+        // qDebug() << "CMD_UPDATE do not realized\n";
+        printf("CMD_UPDATE do not realized\n");
+        // bfc->updateRule(fr);
     } else if (action == CMD_PRINT_HELP) {
 	exit_printhelp();
     } 
