@@ -39,7 +39,6 @@ void BfService::createApplication(int &argc, char **argv)
     BfRules::loadFromFile(BFConfig::getRulesCachePath());
 
 
-
 //    InitMain::setupSearchPath();
 
 //    if (QDir("translations:").exists("adpService_ru.qm"))

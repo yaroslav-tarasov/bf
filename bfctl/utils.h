@@ -6,7 +6,6 @@
 namespace cmd_utils {
 
 int get_proto(char* proto);
-const char* get_proto_name(int proto);
 int get_chain(char* dir);
 int get_policy(char* policy);
 int parse_cmd_args(int argc, char *argv[], filter_rule_t* fr, std::string &file_name);

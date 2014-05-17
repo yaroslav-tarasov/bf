@@ -9,16 +9,19 @@ class QWaitForDone : public QObject
 {
     Q_OBJECT
 public:
-    explicit QWaitForDone(QObject *obj = 0);
+    enum con_t {DISCONNECT_DONE,CONNECT_DONE};
+    explicit QWaitForDone(QObject *obj = 0,con_t con = CONNECT_DONE);
 
 signals:
     void done();
 public slots:
     void start(int timeout);
+    void restart(){timer.start(mInterval);}
+    void quit();
 private:
     QEventLoop wait_for_done;
     QTimer timer;
-
+    int mInterval;
 };
 
 #endif // QWAITFORDONE_H

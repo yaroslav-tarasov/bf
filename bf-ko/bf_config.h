@@ -1,26 +1,29 @@
 #ifndef BF_CONFIG_H
 #define BF_CONFIG_H
 
+enum chain_p_t {INPUT,OUTPUT};
+
 /**
  * @brief: Main configuration structure
- * @member: netfilter_ops      Netfilter operations
- * @member: list               Lists containing the filtered data
+ * @member: nfho_in            Netfilter input hook
+ * @member: nfho_out           Netfilter output hook
  * @member: skb_list           Buffer list used between the pattern matching
  *                             and the packet enqueueing
- * @member: work_queue         Work queue used to (en/de)queue packets
+ * @member: wq_logging         Work queue used to logging
  */
 
 struct  nf_bf_filter_config {
-    struct nf_hook_ops      nfho_in;   //net filter hook option struct for input
-    struct nf_hook_ops      nfho_out;  //net filter hook option struct for output
-    struct work_struct      work_logging;
-    struct workqueue_struct *wq_logging;
-    struct sk_buff_head     *skb_list;
+    struct nf_hook_ops      nfho_in;   //!< net filter hook option struct for input
+    struct nf_hook_ops      nfho_out;  //!< net filter hook option struct for output
+    struct work_struct      work_logging; //!< Задача логгирования
+    struct workqueue_struct *wq_logging;  //!< Очередь для лога
+    struct sk_buff_head     *skb_list;    //!< Список отфильтрованных пакетов для лога
     
-    uint8_t  chain_rule[2]; // Конечное правило для цепочек INPUT OUTPUT, по умолчанию ACCEPT,
-                            // цепочек фиксированное колличество, 2 штуки, одна на входе и одна на выходе      
+    uint8_t  chain_policy[2]; //!< Конечное правило для цепочек INPUT OUTPUT, по умолчанию ACCEPT,
+                              //!< цепочек фиксированное колличество, 2 штуки, одна на входе и одна на выходе
     atomic_t init;
-    pid_t    pid_log;
+    pid_t    pid_log;         //!< Pid процесса подписчика на лог. Только один подписчик.
+
 };
 
 typedef struct filter_rule_list {
@@ -43,7 +46,7 @@ int   find_rule(unsigned char* data, struct filter_rule_list **res);
 void  add_rule(struct filter_rule* fr);
 void  delete_rule(struct filter_rule* fr);
 int   nl_send_msg(struct sock * nl_sk,int destpid, int type, int flags,char* msg,int msg_size);
-void  list_rules(struct sock * nl_sk,int destpid);
+void  list_rules(struct sock * nl_sk, int destpid, filter_rule_t* pfr_pattern);
 void  delete_rules(void);
 
 extern int fdebug;
@@ -56,6 +59,6 @@ inline static void __printfr(const char* func ,filter_rule_t fr)
 }
 
 #define  PRINTFR(fr)  __printfr(__FUNCTION__ , fr);
-#define  PRINTK_DBG if(fdebug) printk
+#define  PRINTK_DBG  if(fdebug) printk
 
 #endif // BF_CONFIG_H

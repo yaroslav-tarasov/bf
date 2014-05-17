@@ -36,10 +36,12 @@ public:
     int subscribeLog(pid_t pid);
 
 signals:
-    void data(QByteArray ba);
+    void data(filter_rule_t);
+    void data(QByteArray);
     void data(QList <filter_rule_ptr > );
     void log (filter_rule_t);
     void done();
+    void error (quint16);
 public slots:
 private slots:
     void process(QByteArray ba);

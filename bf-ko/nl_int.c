@@ -23,6 +23,7 @@ static int s_rules_counter = 0;
 typedef struct thrd_params{
 	// struct sock * nl_sk;
 	pid_t pid;
+    filter_rule_t fr;
 } tp_t;
 
 tp_t thrd_params = {
@@ -38,12 +39,13 @@ struct completion comp;
 static int 
 thread( void * data ) {
 	int pid = ((tp_t*)data)->pid;
-
+    filter_rule_t fr;
+    memcpy(&fr,&((tp_t*)data)->fr,sizeof(filter_rule_t));
 	// struct task_struct *curr = current; /* current - указатель на дескриптор текущей задачи */
     // daemonize("thread");
     // allow_signal(SIGKILL);
 	
-	list_rules(_nl_sock,pid);
+    list_rules(_nl_sock,pid,&fr);
 
     PRINTK_DBG(KERN_INFO "%s skb->pid: %d\n",__func__,pid);
     PRINTK_DBG(KERN_INFO "Leave %s \n",__func__);
@@ -59,13 +61,13 @@ static inline void
 set_chain_policy(filter_rule_t* fr )
 {
     if(fr->base.chain == CHAIN_INPUT)
-        bf_config.chain_rule[0] = fr->policy;
+        bf_config.chain_policy[INPUT] = fr->policy;
     else if(fr->base.chain == CHAIN_OUTPUT)
-        bf_config.chain_rule[1] = fr->policy;
+        bf_config.chain_policy[OUTPUT] = fr->policy;
     else if(fr->base.chain == CHAIN_ALL)
     {
-        bf_config.chain_rule[0] = fr->policy;
-        bf_config.chain_rule[1] = fr->policy;
+        bf_config.chain_policy[INPUT] = fr->policy;
+        bf_config.chain_policy[OUTPUT] = fr->policy;
     }
     else
         printk(KERN_ERR "%s Have no such chain\n",__func__);
@@ -90,9 +92,19 @@ nl_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
         data = NLMSG_DATA(nlh);
 
         if(find_rule((unsigned char*)&((filter_rule_t*)data)->base,NULL)==0){
-                    PRINTK_DBG("%s we have this rule ",__func__);
+            msg_err_t msg;
+            msg.code = BF_ERR_ALREADY_HAVE_RULE;
+            memcpy(&msg.fr,(filter_rule_t*)data,sizeof(filter_rule_t));
+
+            nl_send_msg(get_nl_sock(),thrd_params.pid, MSG_ERR, 0, (char*)&msg,sizeof(msg_err_t));
+            PRINTK_DBG("%s we have this rule ",__func__);
+
         }
-		else{
+        else{
+            msg_err_t msg;
+            msg.code = BF_ERR_OK;
+            nl_send_msg(get_nl_sock(),thrd_params.pid, MSG_ERR, 0, (char*)&msg,sizeof(msg_err_t));
+
             PRINTK_DBG("%s new rule added ",__func__);
 			add_rule((filter_rule_t*)data);
 			s_rules_counter++;
@@ -110,10 +122,23 @@ nl_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
 
         if(find_rule((unsigned char*)&((filter_rule_t*)data)->base,&fl)==0){
              PRINTK_DBG("%s we have this rule ",__func__);
-             if (((filter_rule_t*)data)->off != SWITCH_NONE) fl->fr.off = ((filter_rule_t*)data)->off;
-             if (((filter_rule_t*)data)->policy != POLICY_NONE) fl->fr.policy = ((filter_rule_t*)data)->policy;
+             if (((filter_rule_t*)data)->off != SW_NONE)
+                 fl->fr.off = ((filter_rule_t*)data)->off;
+             if (((filter_rule_t*)data)->policy != POLICY_NONE)
+                 fl->fr.policy = ((filter_rule_t*)data)->policy;
+
+             {
+                 msg_err_t msg;
+                 msg.code = BF_ERR_OK;
+                 nl_send_msg(get_nl_sock(),thrd_params.pid, MSG_ERR, 0, (char*)&msg,sizeof(msg_err_t));
+             }
         }
         else{
+            msg_err_t msg;
+            msg.code = BF_ERR_MISSING_RULE;
+            memcpy(&msg.fr,(filter_rule_t*)data,sizeof(filter_rule_t));
+
+            nl_send_msg(get_nl_sock(),thrd_params.pid, MSG_ERR, 0, (char*)&msg,sizeof(msg_err_t));
             PRINTK_DBG("%s we do not have rule  ",__func__);
         }
         // ((filter_rule_t*)data)->id = s_rules_counter;
@@ -129,10 +154,19 @@ nl_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
                 if(find_rule((unsigned char*)&((filter_rule_t*)data)->base,NULL)==0){
             PRINTK_DBG("%s delete rule ",__func__);
             delete_rule((filter_rule_t*)data);
+            {
+                msg_err_t msg;
+                msg.code = BF_ERR_OK;
+                nl_send_msg(get_nl_sock(),thrd_params.pid, MSG_ERR, 0, (char*)&msg,sizeof(msg_err_t));
+            }
         }
         else{
-            PRINTK_DBG("%s we don't have this rule ",__func__);
+            msg_err_t msg;
+            msg.code = BF_ERR_MISSING_RULE;
+            memcpy(&msg.fr,(filter_rule_t*)data,sizeof(filter_rule_t));
 
+            nl_send_msg(get_nl_sock(),thrd_params.pid, MSG_ERR, 0, (char*)&msg,sizeof(msg_err_t));
+            PRINTK_DBG("%s we don't have this rule ",__func__);
         }
 
         break;
@@ -157,11 +191,12 @@ nl_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
     case MSG_GET_RULES:
         PRINTK_DBG("%s  --------------MSG_GET_RULES\n",__func__);
 		data = NLMSG_DATA(nlh);
+        memcpy(&thrd_params.fr,((filter_rule_t*)data),sizeof(filter_rule_t));
         PRINTK_DBG(KERN_INFO "%s skb->pid: %d\n",__func__,nlh->nlmsg_pid);
 		thrd_params.pid = nlh->nlmsg_pid;
         kernel_thread(thread, &thrd_params, CLONE_FS | CLONE_FILES | CLONE_SIGHAND | SIGCHLD | CLONE_KERNEL);
 		break;
-        case MSG_DONE:
+    case MSG_DONE:
 		printk("%s  --------------MSG_DONE\n",__func__);
  		//s_rules_counter = 0;
 		break;
@@ -239,7 +274,7 @@ nl_send_lst(struct sock * nl_sk,int destpid,  filter_rule_list_t* lst,int lst_si
     struct filter_rule_list *a_rule=NULL;
     int pid;
     struct sk_buff *skb_out = NULL;
-    int res=0,flags=0,i=0,msg_size=sizeof(filter_rule_t),msg_cnt=1;
+    int res=0,flags=0,i=0,msg_size=sizeof(filter_rule_t),msg_cnt=1,rules_cnt=0;
 
     if(!lst_size)
         lst_size = NLMSG_DEFAULT_SIZE / (msg_size + NLMSG_HDRLEN);
@@ -265,6 +300,8 @@ nl_send_lst(struct sock * nl_sk,int destpid,  filter_rule_list_t* lst,int lst_si
 
         nlh=nlmsg_put(skb_out,0,0,MSG_DATA,msg_size,flags);
 
+        rules_cnt++;
+
         if(nlh){
             NETLINK_CB(skb_out).dst_group = 0; /* not in mcast group */
             memcpy(nlmsg_data(nlh),&a_rule->fr,msg_size);
@@ -285,6 +322,7 @@ nl_send_lst(struct sock * nl_sk,int destpid,  filter_rule_list_t* lst,int lst_si
             if(res<0)
             {
                 printk(KERN_ERR "Error while sending message to user err=%d msg_size=%d pid=%d\n",res,msg_size,pid);
+                return res;
             }
 
             if(msg_cnt++%2==0) {
@@ -300,10 +338,11 @@ nl_send_lst(struct sock * nl_sk,int destpid,  filter_rule_list_t* lst,int lst_si
     if(res<0)
     {
         printk(KERN_ERR "Error while sending message to user err=%d msg_size=%d pid=%d\n",res,msg_size,pid);
+        return res;
     }
 
 
-    return res;
+    return rules_cnt;
 }
 
 int

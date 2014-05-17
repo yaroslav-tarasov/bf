@@ -46,27 +46,14 @@ get_proto(char* proto) {
 int
 get_switch(char* off) {
     if (strcmp(off, "YES") == 0) {
-        return SWITCH_YES;
+        return SW_YES;
     } else if (strcmp(off, "NO") == 0) {
-        return SWITCH_NO;
+        return SW_NO;
     }
 
-    return SWITCH_NONE;
+    return SW_NONE;
 }
 
-inline 	const char*  
-get_proto_name(int proto) {
-    static const char* proto_names[]=
-    {"ALL","TCP","UDP"};
-    if (IPPROTO_NOTEXIST == proto) {
-        return proto_names[0];
-    } else if (IPPROTO_TCP == proto ) {
-        return proto_names[1];
-    } else if (IPPROTO_UDP == proto ) {
-        return proto_names[2];
-    }
-    return NULL;
-}
 
 int 
 get_chain(char* dir) {
@@ -197,7 +184,7 @@ parse_cmd_args(int argc, char *argv[],filter_rule_t* fr,const char* file_name)
               break;
             case 'o':
               fr->off = get_switch(optarg); //switch
-              if (fr->off==SWITCH_NONE){
+              if (fr->off==SW_NONE){
                   printf("Ошибка в параметре --off \n");
                 command = CMD_PRINT_HELP;
               }
@@ -530,7 +517,7 @@ main(int argc, char *argv[])
 		    }
         }
 
-        hdr = nlmsg_next(hdr, &n);
+        hdr = (struct nlmsghdr *)nlmsg_next(hdr, &n);
 	}
 
 	}while(/*hdr->nlmsg_type!=NLMSG_ERROR*/ nlerrr==0 && hdr->nlmsg_type!=MSG_DONE && msgn>0);
@@ -587,9 +574,9 @@ main(int argc, char *argv[])
 	exit_printhelp();
     } 
 
-    filter_rule_t msg;	
-    memset(&msg,0,sizeof(filter_rule_t));  
-    ret = nl_send_simple(nls, MSG_DONE, 0, &msg, sizeof(filter_rule_t));
+    msg_done_t msg;
+    memset(&msg,0,sizeof(msg_done_t));
+    ret = nl_send_simple(nls, MSG_DONE, 0, &msg, sizeof(msg_done_t));
 
     if (ret < 0) {
 #ifdef HAVE_LIBNL3

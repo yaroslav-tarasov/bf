@@ -26,11 +26,10 @@ signals:
     void data(QByteArray ba);
 
 protected:
-   std::shared_ptr<NetlinkSocketPrivate> d;
-   // std::shared_ptr<unsigned char> mBuff;
    int mProto;
    bool mRunning;
 private:
+   std::shared_ptr<NetlinkSocketPrivate> d;
    Q_DISABLE_COPY(NetlinkSocket)
 };
 

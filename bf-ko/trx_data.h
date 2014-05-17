@@ -14,34 +14,93 @@
 
 */
 // Для фильтра только CHAIN_INPUT,CHAIN_OUTPUT остальные значения не корректны для м.я.
-enum chain { CHAIN_NONE,                        //!< Отсутствие наличия цепи
+enum bf_chain_t {
+             CHAIN_NONE,                        //!< Отсутствие наличия цепи
              CHAIN_ALL,                         //!< все цепи сразу
              CHAIN_INPUT,                       //!< цепь входящих
              CHAIN_OUTPUT                       //!< цепь исходящих
-           };
+};
 /**
 @brief
     Политики фильтрации пакетов
 
 */
-enum policy {
+enum bf_policy_t {
              POLICY_NONE,                       //!< Отсутствие наличия политики
              POLICY_DROP,                       //!< Отбрасываем пакет
              POLICY_ACCEPT                      //!< Пропускаем пакет дальше
-            };
+};
 
 /**
 @brief
     Включение отключение правил
 
 */
-enum switch_rules{                            //!<  Для поля off YES - выключено NO - включено
-             SWITCH_NO,                       //!<  Правило включено
-             SWITCH_YES,                      //!<  Правило отключено
-             SWITCH_NONE                      //!<  Отсутствие наличия правила выключения
-            };
+enum bf_switch_rules_t {                            //!<  Для поля off YES - выключено NO - включено
+             SW_NO,                       //!<  Правило включено
+             SW_YES,                      //!<  Правило отключено
+             SW_NONE                      //!<  Отсутствие наличия правила выключения
+};
+
+enum bf_error_t {
+    BF_ERR_OK,
+    BF_ERR_ALREADY_HAVE_RULE,
+    BF_ERR_MISSING_RULE,
+    BF_ERR_SOCK
+};
+
 
 enum {IPPROTO_NOTEXIST=65000,IPPROTO_ALL};      // Fake proto
+
+static inline const char* get_sw_name(enum bf_switch_rules_t s) {
+    static const char* sw_names[]=
+    {"NO","YES","NONE"};
+    if ( SW_NO == s) {
+        return sw_names[0];
+    } else if (SW_YES == s ) {
+        return sw_names[1];
+    }
+
+    return sw_names[2];
+}
+
+static inline const char* get_policy_name(enum bf_policy_t p) {
+    static const char* p_names[]=
+    {"DROP","ACCEPT","NONE"};
+    if ( POLICY_DROP == p) {
+        return p_names[0];
+    } else if (POLICY_ACCEPT == p ) {
+        return p_names[1];
+    }
+
+    return p_names[2];
+}
+
+static inline const char* get_proto_name(int proto) {
+    static const char* proto_names[]=
+    {"ALL","TCP","UDP","NONE"};
+    if (IPPROTO_NOTEXIST == proto) {
+        return proto_names[0];
+    } else if (IPPROTO_TCP == proto ) {
+        return proto_names[1];
+    } else if (IPPROTO_UDP == proto ) {
+        return proto_names[2];
+    }
+    return proto_names[3];
+}
+
+static inline const char* get_chain_name(enum bf_chain_t chain) {
+    static const char* chain_names[]=
+    {"ALL","INPUT","OUTPUT","NONE"};
+    if ( CHAIN_ALL== chain) {
+        return chain_names[0];
+    } else if (CHAIN_INPUT == chain ) {
+        return chain_names[1];
+    } else if (CHAIN_OUTPUT == chain ) {
+        return chain_names[2];
+    }
+    return chain_names[3];
+}
 
 /**
 @brief
@@ -49,17 +108,17 @@ enum {IPPROTO_NOTEXIST=65000,IPPROTO_ALL};      // Fake proto
 
 */
 
-enum bf_messages {
+enum bf_messages_t {
                   MSG_ADD_RULE=NLMSG_MIN_TYPE + 2, //!< Добавление правила
                   MSG_DATA,                     //!< При пересылке данных из модуля ядра в  userspace
                   MSG_DONE,                     //!< По окончании пересылки данных из ядра
-                  MSG_RULE_ERR,
                   MSG_DELETE_RULE ,             //!< Удаление конкретного правила
                   MSG_DELETE_ALL_RULES,         //!< Удаление всех правил (не реализовано)
                   MSG_UPDATE_RULE,              //!< (не реализовано)
                   MSG_CHAIN_POLICY,             //!< Конечное правило для цепочки
                   MSG_GET_RULES,                //!< Получение правил из модуля ядра
                   MSG_OK,                       //!< Подтверждние
+                  MSG_ERR,                      //!< Ошибка
                   MSG_LOG,                      //!< Лог из модуля ядра
                   MSG_LOG_SUBSCRIBE             //!< Подписка на лог (реализован только один подписчик)
                  };
@@ -76,8 +135,12 @@ typedef struct _log_subscribe_msg
 #ifdef __cplusplus
    explicit _log_subscribe_msg(pid_t   pid=0):pid(pid){}
 #endif
-} _log_subscribe_msg_t;
+} log_subscribe_msg_t;
 
+typedef struct msg_done
+{
+    u_int32_t counter;
+} msg_done_t;
 
 typedef struct _ip_addr
 {
@@ -135,6 +198,12 @@ typedef struct filter_rule{
 #endif
 } filter_rule_t;
 
+typedef struct msg_err
+{
+    filter_rule_t fr;
+    u_int16_t code;
+} msg_err_t;
+
 #pragma pack ()
 
 #if !defined (__cplusplus) && !defined (__KERNEL__)
@@ -190,12 +259,13 @@ inline QDebug operator<<(QDebug dbg, const filter_rule_t &fr)
                   << "dst_port:" << fr.base.dst_port
                   << "s_addr.addr:" << QHostAddress(static_cast<quint32>(htonl(fr.base.s_addr.addr))).toString()
                   << "d_addr.addr:" << QHostAddress(static_cast<quint32>(htonl(fr.base.d_addr.addr))).toString()
-                  << "proto:" << fr.base.proto
-                  << "chain:" << fr.base.chain
-                  << "policy:" << fr.policy
-                  << "off:" << fr.off;
+                  << "proto:" << get_proto_name(fr.base.proto)
+                  << "chain:" << get_chain_name(static_cast<bf_chain_t>(fr.base.chain))
+                  << "policy:" << get_policy_name(static_cast<bf_policy_t>(fr.policy))
+                  << "off:" << get_sw_name(static_cast<bf_switch_rules_t>(fr.off));
     return dbg.space();
 }
+
 
 #endif
 

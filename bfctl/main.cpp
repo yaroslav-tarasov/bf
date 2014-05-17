@@ -35,44 +35,57 @@ int main(int argc, char *argv[])
 
     if (action == CMD_APPEND) {
         qDebug() << "CMD_APPEND";
-        bfc->addRule(fr);
-        printf("Add new rule src_addr: %X; dst_addr: %X; proto: %d; src_port: %d dst_port: %d\n", fr.base.s_addr.addr, fr.base.d_addr.addr, fr.base.proto, fr.base.src_port, fr.base.dst_port);
+        int ret = bfc->addRule(fr);
+        if(ret>0)
+            qDebug() << "Add new rule:" << fr;
+        else if(ret==-BF_ERR_ALREADY_HAVE_RULE)
+            qDebug() << "Already have this rule:" << fr;
 
     } else if (action == CMD_LIST) {
-        qDebug() <<"CMD_LIST\n";
+        qDebug() <<"CMD_LIST";
 
 #ifdef TEST_ASYNC_GET_RULES
         bfc->getRulesAsync(fr);
 #else
         QList<BFControl::filter_rule_ptr > ruleslst;
-        bfc->getRulesSync(fr,  ruleslst);
+        int ret =  bfc->getRulesSync(fr,  ruleslst);
 
         int i=0;
 
         foreach (BFControl::filter_rule_ptr rule,ruleslst){
-            // qDebug() << "rule #" << i++ << "  " << rule->base_rule.src_port << "  " << rule->base_rule.dst_port << "  " << cmd_utils::get_proto_name(rule->base_rule.proto);
             filter_rule_t fr = *static_cast<filter_rule_t*>(rule.data());
             qDebug() << "rule #" << i++ << "  " << fr;
         }
+
+        qDebug() << "getRulesSync(fr,  ruleslst) returns = "  << ret;
 #endif
 
 
     } else if (action == CMD_DELETE) {
-        qDebug() << "CMD_DELETE\n";
-        bfc->deleteRule(fr);
+        qDebug() << "CMD_DELETE";
+        int ret = bfc->deleteRule(fr);
+        if(ret>0)
+            qDebug() << "Rule deleted:" << fr;
+        else if(ret==-BF_ERR_MISSING_RULE)
+            qDebug() << "Do not have this rule:" << fr;
 
     } else if (action == CMD_FLUSH) {
-        qDebug() << "CMD_FLUSH\n";
+        qDebug() << "CMD_FLUSH";
         bfc->deleteRules(fr);
     } else if (action == CMD_UPDATE) {
-        qDebug() << "CMD_UPDATE\n";
-        bfc->updateRule(fr);
+        qDebug() << "CMD_UPDATE";
+        int ret = bfc->updateRule(fr);
+        if(ret>0)
+            qDebug() << "Rule updated:" << fr;
+        else if(ret==-BF_ERR_MISSING_RULE)
+            qDebug() << "Do not have this rule:" << fr;
+
     } else if (action == CMD_SET_POLICY) {
         qDebug() << "CMD_SET_POLICY";
         bfc->setChainPolicy(fr);
     } else if (action == CMD_GET_FROM_FILE) {
         QList<BFControl::filter_rule_ptr > ruleslst;
-        qDebug() << "CMD_GET_FROM_FILE\n";
+        qDebug() << "CMD_GET_FROM_FILE";
         QFile  file(QString::fromStdString(thename)) ;
         if (!file.open(QIODevice::ReadOnly))  return -1;
         QDataStream in(&file);

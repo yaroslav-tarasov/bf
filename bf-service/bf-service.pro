@@ -20,8 +20,7 @@ SOURCES += main.cpp \
     bfserviceprivate.cpp \
     qsyslog.cpp \
     bfrules.cpp \
-    bfconfig.cpp \
-    qwaitfordone.cpp
+    bfconfig.cpp
 
 include(../exts/qtservice/src/qtservice.pri)
 include(../common/libnl.pri)
@@ -39,5 +38,4 @@ HEADERS += \
     qsyslog.h \
     bfrules.h \
     bfconfig.h \
-    trx_data.h \
-    qwaitfordone.h
+    trx_data.h

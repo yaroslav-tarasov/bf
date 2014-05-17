@@ -21,7 +21,8 @@ SOURCES += \ #bflink.cpp \
            bfcontrol.cpp \
            netlinksocket.cpp \
            bflocalcontrol.cpp \
-           bfremotecontrol.cpp
+           bfremotecontrol.cpp \
+           qwaitfordone.cpp
 
 HEADERS += \ #bflink.h\
         bfcontrol.h \
@@ -29,7 +30,10 @@ HEADERS += \ #bflink.h\
         netlinksocket.h \
         bflocalcontrol.h \
         bfremotecontrol.h \
-        trx_data.h
+        trx_data.h \
+    errorreceiver.h \
+    timerproxy.h \
+    qwaitfordone.h
 
 
 INCLUDEPATH += ../bf-ko

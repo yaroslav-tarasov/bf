@@ -42,8 +42,8 @@ struct hash_table map_fr;
 static  void init_rules(void)
 {    
 
-    bf_config.chain_rule[0] = NF_ACCEPT;
-    bf_config.chain_rule[1] = NF_ACCEPT;  
+    bf_config.chain_policy[INPUT] = NF_ACCEPT;
+    bf_config.chain_policy[OUTPUT] = NF_ACCEPT;
     
     hash_table_init(&map_fr, 10, NULL);
 
@@ -254,31 +254,86 @@ void cleanup_rules(void)
     }
 }
 
-void list_rules(struct sock * nl_sk,int destpid)
+void list_rules(struct sock * nl_sk, int destpid, filter_rule_t* pfr_pattern)
 {
 
     int ret;
 #if 1
     struct filter_rule_list *a_rule;
     int i=0,flags = 0;
-    list_for_each_entry(a_rule, &lst_fr.full_list, full_list) {
+//    list_for_each_entry(a_rule, &lst_fr.full_list, full_list) {
+//        if(pfr_pattern->base.chain==CHAIN_ALL?true:fr_pattern(&a_rule->fr,pfr_pattern)){
 
-        if(++i%ACK_EVERY_N_MSG==0) { flags = NLM_F_ACK; };
-	
-    PRINTK_DBG(KERN_INFO "#%d Src_addr: %X; dst_addr: %X; proto: %d; src_port: %d dst_port: %d\n", i,
-            a_rule->fr.base.s_addr.addr, a_rule->fr.base.d_addr.addr,
-            a_rule->fr.base.proto, a_rule->fr.base.src_port, a_rule->fr.base.dst_port);
+//            if(++i%ACK_EVERY_N_MSG==0) { flags = NLM_F_ACK; };
 
-	a_rule->fr.id = i; 	
-	ret=nl_send_msg(nl_sk,destpid, MSG_DATA, flags,(char*)&a_rule->fr,sizeof(a_rule->fr));
-	if(ret<0)
-		 return;
-	
-        if(flags == NLM_F_ACK) {
-            flags = 0; wfc();
+//            PRINTK_DBG(KERN_INFO "#%d Src_addr: %X; dst_addr: %X; proto: %d; src_port: %d dst_port: %d\n", i,
+//                    a_rule->fr.base.s_addr.addr, a_rule->fr.base.d_addr.addr,
+//                    a_rule->fr.base.proto, a_rule->fr.base.src_port, a_rule->fr.base.dst_port);
+
+//            a_rule->fr.id = i;
+//            ret=nl_send_msg(nl_sk,destpid, MSG_DATA, flags,(char*)&a_rule->fr,sizeof(a_rule->fr));
+//            if(ret<0)
+//                 return;
+
+//            if(flags == NLM_F_ACK) {
+//                flags = 0; wfc();
+//            }
+//        }
+//    }
+
+    list_for_each_entry(a_rule, &lst_fr_in.chain_list, chain_list) {
+        if(pfr_pattern->base.chain==CHAIN_ALL?true:fr_pattern(&a_rule->fr,pfr_pattern)){
+
+            if(++i%ACK_EVERY_N_MSG==0) { flags = NLM_F_ACK; };
+
+            PRINTK_DBG(KERN_INFO "#%d Src_addr: %X; dst_addr: %X; proto: %d; src_port: %d dst_port: %d\n", i,
+                    a_rule->fr.base.s_addr.addr, a_rule->fr.base.d_addr.addr,
+                    a_rule->fr.base.proto, a_rule->fr.base.src_port, a_rule->fr.base.dst_port);
+
+            a_rule->fr.id = i;
+            ret=nl_send_msg(nl_sk,destpid, MSG_DATA, flags,(char*)&a_rule->fr,sizeof(a_rule->fr));
+            if(ret<0)
+                 return;
+
+            if(flags == NLM_F_ACK) {
+                flags = 0; wfc();
+            }
         }
     }
-    nl_send_msg(nl_sk,destpid, MSG_DONE, 0, (char*)&a_rule->fr,sizeof(a_rule->fr));
+
+#if 0
+    {
+        msg_err_t msg;
+        msg.code = 777;
+        nl_send_msg(nl_sk,destpid, MSG_ERR, 0, (char*)&msg,sizeof(msg_err_t));
+    }
+#endif
+
+    list_for_each_entry(a_rule, &lst_fr_out.chain_list, chain_list) {
+        if(pfr_pattern->base.chain==CHAIN_ALL?true:fr_pattern(&a_rule->fr,pfr_pattern)){
+
+            if(++i%ACK_EVERY_N_MSG==0) { flags = NLM_F_ACK; };
+
+            PRINTK_DBG(KERN_INFO "#%d Src_addr: %X; dst_addr: %X; proto: %d; src_port: %d dst_port: %d\n", i,
+                    a_rule->fr.base.s_addr.addr, a_rule->fr.base.d_addr.addr,
+                    a_rule->fr.base.proto, a_rule->fr.base.src_port, a_rule->fr.base.dst_port);
+
+            a_rule->fr.id = i;
+            ret=nl_send_msg(nl_sk,destpid, MSG_DATA, flags,(char*)&a_rule->fr,sizeof(a_rule->fr));
+            if(ret<0)
+                 return;
+
+            if(flags == NLM_F_ACK) {
+                flags = 0; wfc();
+            }
+        }
+    }
+
+    {
+        msg_done_t msg;
+        msg.counter = i;
+        nl_send_msg(nl_sk,destpid, MSG_DONE, 0, (char*)&msg,sizeof(msg_done_t));
+    }
 #else
     int end_list =0;
     filter_rule_t fr;
@@ -287,7 +342,9 @@ void list_rules(struct sock * nl_sk,int destpid)
     if(ret<0)
          return;
 
-    nl_send_msg(nl_sk,destpid, MSG_DONE, 0, (char*)&fr,sizeof(fr));
+    msg_done_t msg;
+    msg.counter = ret;
+    nl_send_msg(nl_sk,destpid, MSG_DONE, 0, (char*)&msg,sizeof(msg_done_t));
 #endif
 
 }
@@ -397,7 +454,7 @@ static int filter_value = 1;
           return target; }
 
 
-static inline int apply_policy(enum policy p)
+static inline int apply_policy(enum bf_policy_t p)
 {
     switch(p)
     {
@@ -445,6 +502,10 @@ unsigned int hook_func(unsigned int hooknum,
     rcu_read_lock();
     
     list_for_each_entry_rcu(a_rule, chain_list /*&lst_fr_in.chain_list\*/, chain_list) {
+
+    __u8 loc_policy = a_rule->fr.policy;
+
+
     if(ip_header->protocol == IPPROTO_UDP && a_rule->fr.base.proto == IPPROTO_UDP){
         udp_header = (struct udphdr *)(skb_transport_header(sock_buff) + ip_hdrlen(sock_buff));
         if(udp_header){
@@ -454,14 +515,14 @@ unsigned int hook_func(unsigned int hooknum,
                 (a_rule->fr.base.s_addr.addr>0?(ntohl(ip_header->saddr) == a_rule->fr.base.s_addr.addr):1) &&
                 (a_rule->fr.base.d_addr.addr>0?(ntohl(ip_header->saddr) == a_rule->fr.base.d_addr.addr):1) &&
 
-                a_rule->fr.off==SWITCH_NO){
+                a_rule->fr.off==SW_NO){
 
                 PRINTFR(a_rule->fr);
 
                 //queue_work(bf_config.wq_logging, &bf_config.work_logging);
                 add_to_skb_list( &bf_config, skb);
 
-                goto_target(apply_policy(a_rule->fr.policy));
+                goto_target(apply_policy(loc_policy));
             }
 
 
@@ -475,17 +536,17 @@ unsigned int hook_func(unsigned int hooknum,
             if( (a_rule->fr.base.src_port>0?(ntohs(tcp_header->source) == a_rule->fr.base.src_port):1) &&
             (a_rule->fr.base.dst_port>0?(ntohs(tcp_header->dest) == a_rule->fr.base.dst_port):1) &&
             (a_rule->fr.base.s_addr.addr>0?(ntohs(ip_header->saddr) == a_rule->fr.base.s_addr.addr):1) &&
-            (a_rule->fr.base.d_addr.addr>0?(ntohs(ip_header->saddr) == a_rule->fr.base.d_addr.addr):1) && a_rule->fr.off==SWITCH_NO){
+            (a_rule->fr.base.d_addr.addr>0?(ntohs(ip_header->saddr) == a_rule->fr.base.d_addr.addr):1) && a_rule->fr.off==SW_NO){
                 PRINTFR(a_rule->fr);
-                goto_target(apply_policy(a_rule->fr.policy));
+                goto_target(apply_policy(loc_policy));
             }
 
         }else
             goto_target(NF_DROP);
-    } /*else  if(ip_header->protocol == IPPROTO_ICMP){
+    } else  if(ip_header->protocol == IPPROTO_ICMP){
         //PRINTK_DBG(KERN_INFO "---------- ICMP -------------\n");
         icmp_header = (struct icmphdr *)(skb_transport_header(sock_buff) + ip_hdrlen(sock_buff));
-        if(icmp_header){		
+        /*if(icmp_header){
 	    // printk(KERN_INFO "SRC: (%pM) --> DST: (%pM)\n",ethheader->h_source,ethheader->h_dest);
 
             if(ethheader && skb_mac_header_was_set(skb)) printk(KERN_INFO "SRC: (%pM) --> DST: (%pM)\n",ethheader->h_source,ethheader->h_dest); 
@@ -493,8 +554,8 @@ unsigned int hook_func(unsigned int hooknum,
             PRINTK_DBG(KERN_INFO "SRC: (%u.%u.%u.%u) --> DST: (%u.%u.%u.%u)\n",NIPQUAD(ip_header->saddr),NIPQUAD(ip_header->daddr));
             PRINTK_DBG(KERN_INFO "ICMP type: %d - ICMP code: %d  in %s  out %s \n",icmp_header->type, icmp_header->code,in!=NULL?"true":"false",out!=NULL?"true":"false");
         }else
-            goto_target(NF_DROP);//return NF_DROP;
-    }*/
+            goto_target(NF_DROP);//return NF_DROP;*/
+    }
     
     
     } // end of list_for_each_entry
@@ -502,7 +563,7 @@ unsigned int hook_func(unsigned int hooknum,
     rcu_read_unlock();
 
 
-    return in!=0 ? bf_config.chain_rule[0] : bf_config.chain_rule[1];
+    return in!=0 ? bf_config.chain_policy[INPUT] : bf_config.chain_policy[OUTPUT];
 
     }
 

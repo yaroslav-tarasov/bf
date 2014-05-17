@@ -24,28 +24,15 @@ get_proto(char* proto) {
     return IPPROTO_NOTEXIST;
 }
 
-const char* get_proto_name(int proto) {
-    static const char* proto_names[]=
-    {"ALL","TCP","UDP"};
-    if (IPPROTO_NOTEXIST == proto) {
-        return proto_names[0];
-    } else if (IPPROTO_TCP == proto ) {
-        return proto_names[1];
-    } else if (IPPROTO_UDP == proto ) {
-        return proto_names[2];
-    }
-    return NULL;
-}
-
 int
 get_switch(char* off) {
     if (strcmp(off, "NO") == 0) {
-        return SWITCH_NO;
+        return SW_NO;
     } else if (strcmp(off, "YES") == 0) {
-        return SWITCH_YES;
+        return SW_YES;
     }
 
-    return SWITCH_NONE;
+    return SW_NONE;
 }
 
 int
@@ -59,6 +46,7 @@ get_chain(char* dir) {
     }
     return CHAIN_NONE;
 }
+
 
 
 int
@@ -197,7 +185,7 @@ parse_cmd_args(int argc, char *argv[],filter_rule_t* fr,std::string& file_name)
               break;
             case 'o':
               fr->off = get_switch(optarg); //switch
-              if (fr->off==SWITCH_NONE){
+              if (fr->off==SW_NONE){
                 std::cout << "Ошибка в параметре --off " << std::endl ;
                 command = CMD_PRINT_HELP;
               }
