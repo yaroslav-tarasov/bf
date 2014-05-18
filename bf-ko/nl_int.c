@@ -61,13 +61,13 @@ static inline void
 set_chain_policy(filter_rule_t* fr )
 {
     if(fr->base.chain == CHAIN_INPUT)
-        bf_config.chain_policy[INPUT] = fr->policy;
+        bf_config.chain_policy[INPUT] = apply_policy(fr->policy);
     else if(fr->base.chain == CHAIN_OUTPUT)
-        bf_config.chain_policy[OUTPUT] = fr->policy;
+        bf_config.chain_policy[OUTPUT] =apply_policy(fr->policy);
     else if(fr->base.chain == CHAIN_ALL)
     {
-        bf_config.chain_policy[INPUT] = fr->policy;
-        bf_config.chain_policy[OUTPUT] = fr->policy;
+        bf_config.chain_policy[INPUT] = apply_policy(fr->policy);
+        bf_config.chain_policy[OUTPUT] = apply_policy(fr->policy);
     }
     else
         printk(KERN_ERR "%s Have no such chain\n",__func__);

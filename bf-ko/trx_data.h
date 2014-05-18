@@ -266,7 +266,41 @@ inline QDebug operator<<(QDebug dbg, const filter_rule_t &fr)
     return dbg.space();
 }
 
+inline QTextStream& operator<<(QTextStream &out, const filter_rule_t &fr)
+{
+       return out << QHostAddress(static_cast<quint32>(htonl(fr.base.s_addr.addr))).toString()
+                  << fr.base.src_port
+                  << QHostAddress(static_cast<quint32>(htonl(fr.base.d_addr.addr))).toString()
+                  << fr.base.dst_port
+                  << get_proto_name(fr.base.proto)
+                  << get_chain_name(static_cast<bf_chain_t>(fr.base.chain))
+                  << get_policy_name(static_cast<bf_policy_t>(fr.policy))
+                  << get_sw_name(static_cast<bf_switch_rules_t>(fr.off)) ;
+}
 
+inline void printHeader(QTextStream &out)
+{
+    int width = out.fieldWidth();
+    out << qSetFieldWidth(10) << "rule #" << "s_addr" <<  "src_port"
+         << "d_addr" << "dst_port"
+         << "proto"
+         << "chain"
+         << "policy"
+         << "off" << qSetFieldWidth(width) << endl ;
+
+}
+
+inline void printHeader2(QTextStream &out)
+{
+    int width = out.fieldWidth();
+    out << qSetFieldWidth(10) << "s_addr" <<  "src_port"
+         << "d_addr" << "dst_port"
+         << "proto"
+         << "chain"
+         << "policy"
+         << "off" << qSetFieldWidth(width) << endl ;
+
+}
 #endif
 
 

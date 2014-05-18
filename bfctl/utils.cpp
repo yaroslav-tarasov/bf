@@ -117,6 +117,8 @@ parse_cmd_args(int argc, char *argv[],filter_rule_t* fr,std::string& file_name)
                    std::cout << "Пропущен обязательный параметр название цепочки " << std::endl ;
                    command = CMD_PRINT_HELP;
                 }
+
+
               break;
             case 'f':
                 command = CMD_GET_FROM_FILE;
@@ -229,12 +231,25 @@ parse_cmd_args(int argc, char *argv[],filter_rule_t* fr,std::string& file_name)
               proto_mandatory = true;
               break;
             case 'P':
-               fr->policy = get_policy(optarg);
-               command = CMD_SET_POLICY;
-               if (fr->policy==POLICY_NONE){
-                 std::cout << "Ошибка в параметре --policy " << std::endl ;
-                 command = CMD_PRINT_HELP;
+               fr->base.chain = get_chain(optarg);
+               if (fr->base.chain == CHAIN_NONE)
+               {
+                   std::cout << "Пропущен обязательный параметр название цепочки " << std::endl ;
+                   command = CMD_PRINT_HELP;
+                   break;
                }
+               if (optind < argc && argv[optind][0] != '-'
+                   && argv[optind][0] != '!'){
+                   fr->policy = get_policy(argv[optind++]);
+                   command = CMD_SET_POLICY;
+                   if (fr->policy==POLICY_NONE){
+                       std::cerr << "Ошибка в параметре policy(ACCEPT,DROP) " << std::endl ;
+                     command = CMD_PRINT_HELP;
+                   }
+               }
+               else
+                   std::cout << "Требуются и параметр chain(INPUT,OUTPUT) и параметр policy (ACCEPT,DROP)" << std::endl ;
+
               break;
             case 'j':
                fr->policy = get_policy(optarg);

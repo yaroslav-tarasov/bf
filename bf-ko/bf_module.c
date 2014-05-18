@@ -280,6 +280,25 @@ void list_rules(struct sock * nl_sk, int destpid, filter_rule_t* pfr_pattern)
 //            }
 //        }
 //    }
+    {
+        filter_rule_t fr;
+        memset(&fr,0,sizeof(filter_rule_t));
+        fr.policy = get_policy(bf_config.chain_policy[INPUT]);
+        fr.base.chain = CHAIN_INPUT;
+        ret=nl_send_msg(nl_sk,destpid, MSG_DATA, 0,(char*)&fr,sizeof(fr));
+        if(ret<0)
+             return;
+    }
+
+    {
+        filter_rule_t fr;
+        memset(&fr,0,sizeof(filter_rule_t));
+        fr.policy = get_policy(bf_config.chain_policy[OUTPUT]);
+        fr.base.chain = CHAIN_OUTPUT;
+        ret=nl_send_msg(nl_sk,destpid, MSG_DATA, 0,(char*)&fr,sizeof(fr));
+        if(ret<0)
+             return;
+    }
 
     list_for_each_entry(a_rule, &lst_fr_in.chain_list, chain_list) {
         if(pfr_pattern->base.chain==CHAIN_ALL?true:fr_pattern(&a_rule->fr,pfr_pattern)){
@@ -328,6 +347,8 @@ void list_rules(struct sock * nl_sk, int destpid, filter_rule_t* pfr_pattern)
             }
         }
     }
+
+
 
     {
         msg_done_t msg;
@@ -454,7 +475,7 @@ static int filter_value = 1;
           return target; }
 
 
-static inline int apply_policy(enum bf_policy_t p)
+int apply_policy(enum bf_policy_t p)
 {
     switch(p)
     {
@@ -467,6 +488,18 @@ static inline int apply_policy(enum bf_policy_t p)
     }
 }
 
+enum bf_policy_t get_policy(int p)
+{
+    switch(p)
+    {
+    case NF_ACCEPT:
+        return POLICY_ACCEPT;
+    case NF_DROP:
+        return POLICY_DROP;
+    default:   // POLICY_NONE
+        return POLICY_NONE;
+    }
+}
 unsigned int hook_func(unsigned int hooknum, 
             struct sk_buff *skb, 
             const struct net_device *in, 
