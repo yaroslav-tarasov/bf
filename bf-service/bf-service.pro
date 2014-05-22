@@ -3,34 +3,14 @@
 ######################################################################
 
 TEMPLATE = app
-TARGET = 
+TARGET =
+
+include(../common/base.pri)
+
 DEPENDPATH += .
-INCLUDEPATH += .
+
 QT -=  gui
-QT += core network
-CONFIG += c++11
-unix: QMAKE_CXXFLAGS += -std=c++0x
-
-OBJECTS_DIR = ./tmp
-MOC_DIR = ./moc
-
-# Input
-SOURCES += main.cpp \
-    bfservice.cpp \
-    bfserviceprivate.cpp \
-    qsyslog.cpp \
-    bfrules.cpp \
-    bfconfig.cpp
-
-include(../exts/qtservice/src/qtservice.pri)
-include(../common/libnl.pri)
-
-INCLUDEPATH += ../bf-ko ../bf-ko/base ../bf-link
-
-DESTDIR = ../../bin
-LIBS += -L../../lib -lbf-link
-OBJECTS_DIR = ./tmp
-MOC_DIR = ./moc
+QT += core network xml
 
 HEADERS += \
     bfservice.h \
@@ -38,4 +18,32 @@ HEADERS += \
     qsyslog.h \
     bfrules.h \
     bfconfig.h \
-    trx_data.h
+    filelogger.h \
+    logger.h
+
+# Input
+SOURCES += main.cpp \
+    bfservice.cpp \
+    bfserviceprivate.cpp \
+    qsyslog.cpp \
+    bfrules.cpp \
+    bfconfig.cpp \
+    filelogger.cpp \
+    logger.cpp
+
+#############
+# include  paths
+INCLUDEPATH += ../bf-ko ../bf-ko/base ../bf-link
+INCLUDEPATH += .
+INCLUDEPATH += $$BAR_SRC_PATH/BAudit/BAu \
+               $$BAR_SRC_PATH/BAudit/common \
+               $$BAR_SRC_PATH/defs
+
+#############
+# lib paths
+LIBS += -L../../lib -lbf-link
+LIBS += -L$$BAR_SRC_PATH/lib -lBAu
+
+include(../exts/qtservice/src/qtservice.pri)
+include(../common/libnl.pri)
+

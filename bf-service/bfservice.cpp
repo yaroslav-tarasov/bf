@@ -1,10 +1,19 @@
+#include <QDebug>
+//
 #include "bfservice.h"
 #include "bfserviceprivate.h"
 #include "qsyslog.h"
+#include "filelogger.h"
 #include "bfrules.h"
 #include "bfconfig.h"
-#include <QDebug>
 #include "qwaitfordone.h"
+//
+#include <iostream>
+//
+#include "cbau.h"
+#include "status.h"
+
+using namespace logging;
 
 BfService::BfService(int argc, char **argv,const QString &name):QtService<QCoreApplication>(argc, argv, name)
 {
@@ -20,23 +29,38 @@ BfService::BfService(int argc, char **argv,const QString &name):QtService<QCoreA
     connect(privateThread, SIGNAL(started()), d, SLOT(started()));
     connect(privateThread, SIGNAL(finished()), d, SLOT(finished()));
 
-    // QSyslog::instance().syslog(/*LOG_INFO*/6,QString("BfService::BfService()"));
+    // BFConfig::instance(); // Что бы не зацикливаться в qDebug()
+
+    logging::add_file_writer();
+    logging::add_syslog_writer();
 
 }
 
 BfService::~BfService()
 {
     // qLogInfo(objectName()) << tr("Destroyed");
+    T_INFO(QString("Destroyed"));
 }
 
 void BfService::createApplication(int &argc, char **argv)
 {
-    QSyslog::instance().syslog(/*LOG_INFO*/6,QString("Enter BfService::createApplication"));
+    T_INFO(QString("Enter BfService::createApplication"));
+
+#if 0
+    for (int i=0;i < argc;i++)
+    {
+        T_INFO(argv[i]);
+    }
+#endif
+
     QtService<QCoreApplication>::createApplication(argc, argv);
 
-    BFConfig bc(this);
 
-    BfRules::loadFromFile(BFConfig::getRulesCachePath());
+    BfRules::loadFromFile(BFConfig::instance().rulesCachePath());
+
+    StatusValueType state = StatusValueBad;
+    int8_t opCode = BAU_OP_SUCCESS;
+    BAu_sendIntegrityMessage(BAU_INTEGRITY_END,"damned fucking component", opCode);
 
 
 //    InitMain::setupSearchPath();
@@ -67,7 +91,7 @@ void BfService::createApplication(int &argc, char **argv)
 
 void BfService::start()
 {
-    QSyslog::instance().syslog(/*LOG_INFO*/6,QString("BfService::start()"));
+    T_INFO(QString("BfService::start()"));
 
 //    initLog4Qt();
 
@@ -94,7 +118,7 @@ void BfService::startThreads()
 
 void BfService::stop()
 {
-     QSyslog::instance().syslog(/*LOG_INFO*/6,QString("BfService::stop()"));
+     T_INFO(QString("BfService::stop()"));
      // QWaitForDone w(d); Для синхронного получение правил бессмысленно
 
      d->stop();

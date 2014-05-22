@@ -3,7 +3,7 @@
 
 #include <QObject>
 #include "bfcontrol.h"
-
+#include "bflocalserver.h"
 
 class BfServicePrivate : public QObject
 {
@@ -13,6 +13,7 @@ public:
 
 private:
     BFControl *mBfc;
+    BFLocalServer  *mLocalServer;
 signals:
     void done();
 public slots:

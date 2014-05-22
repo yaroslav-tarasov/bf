@@ -1,3 +1,9 @@
+#-------------------------------------------------
+#
+#  Фиктивный проект для сборки модуля ядра
+#
+#-------------------------------------------------
+
 mytarget.commands = make -C ../bf-ko
 QMAKE_EXTRA_TARGETS += mytarget
 PRE_TARGETDEPS += mytarget
@@ -14,5 +20,5 @@ OTHER_FILES += ../bf-ko/bf_cmd.c \
                ../bf-ko/nl_int.c \
                ../bf-ko/trx_data.h \
                ../bf-ko/bf_config.h \
-               ../bf-ko/nl_int.h \
+               ../bf-ko/nl_int.h
 

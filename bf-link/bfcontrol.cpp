@@ -111,19 +111,10 @@ void BFControl::close()
 
 int BFControl::getRulesSync(filter_rule_t& pattern, QList<filter_rule_ptr >& ruleslst,int timeout_ms)
 {
-    //QEventLoop wait_for_done;
-    //TimerProxy timer(timeout_ms);
     QWaitForDone w(this);
     ErrorReciever errr(this);
 
-    // timer.setSingleShot(true);
-
-    //QObject::connect(&timer, SIGNAL(timeout()), &wait_for_done, SLOT(quit()));
-    //QObject::connect(this, SIGNAL(done()), &wait_for_done, SLOT(quit()));
-    //QObject::connect(this, SIGNAL(data(filter_rule_t)), &timer, SLOT(restart())); //timeout_ms
-
-    QObject::connect(this, SIGNAL(data(filter_rule_t)), &w, SLOT(restart())); //timeout_ms
-
+    QObject::connect(this, SIGNAL(data(filter_rule_t)), &w, SLOT(restart()));
     QObject::connect(this, SIGNAL(error(quint16)), &errr, SLOT(setError(quint16)));
 
     d->ruleslst = &ruleslst;
@@ -139,20 +130,13 @@ int BFControl::getRulesSync(filter_rule_t& pattern, QList<filter_rule_ptr >& rul
     }
 
 
-    // timer.start(timeout_ms);
-    // wait_for_done.exec();
     w.start(timeout_ms);
 
-//    QObject::disconnect(this, SIGNAL(data(filter_rule_t)), &timer, SLOT(restart()));
     QObject::disconnect(this, SIGNAL(data(filter_rule_t)), &w, SLOT(restart()));
 
-//    if (timer.isActive()) {
-//        timer.stop();
-//    }
 
     if (errr.getError()>0)
         ret = -errr.getError();
-
     QObject::disconnect(this, SIGNAL(error(quint16)), &errr, SLOT(setError(quint16)));
 
     d->ruleslst = NULL;

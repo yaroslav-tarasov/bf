@@ -7,13 +7,13 @@ BfServicePrivate::BfServicePrivate(QObject *parent) :
     QObject(parent)
 {
 
-    mBfc = new BFControl(this);
-
+    mBfc = new BFControl();
+    mLocalServer = new BFLocalServer(this);
 }
 
 void BfServicePrivate::started()
 {
-    QSyslog::instance().syslog(/*LOG_INFO*/6,QString("BfServicePrivate::started()"));
+    T_INFO("BfServicePrivate::started()");
     if(mBfc->create()==0)
     {
         QObject::connect(mBfc,SIGNAL(log(filter_rule_t)),this,SLOT(gotLog(filter_rule_t)));
@@ -27,7 +27,7 @@ void BfServicePrivate::started()
         }
 
         mBfc->subscribeLog(getpid());
-        QSyslog::instance().syslog(/*LOG_INFO*/6,QString("Try to subscribe with pid %1").arg(getpid()));
+        T_INFO(QString("Try to subscribe with pid %1").arg(getpid()));
 
         filter_rule_t fr;
         memset(&fr,0,sizeof(filter_rule_t));
@@ -35,36 +35,38 @@ void BfServicePrivate::started()
 
         QList<BFControl::filter_rule_ptr > fr_list;
         mBfc->getRulesSync(fr,fr_list,10000);
-        BfRules::loadFromList(fr_list);
-        BfRules::saveToFile(BFConfig::getRulesCachePath());
+        //BfRules::loadFromList(fr_list);
+        BfRules::saveToFile(BFConfig::instance().rulesCachePath());
 
     }
     else
     {
-        QSyslog::instance().syslog(/*LOG_INFO*/6,QString("Can't create netlink socket)"));
+        T_INFO(QString("Can't create netlink socket)"));
     }
+
+    T_INFO(QString("Local server started with code %1").arg(mLocalServer->run()));
 }
 
 void BfServicePrivate::stop()
 {
-    QSyslog::instance().syslog(/*LOG_INFO*/6,QString("Enter BfServicePrivate::stop()"));
+    T_INFO(QString("Enter BfServicePrivate::stop()"));
     filter_rule_t fr;
     memset(&fr,0,sizeof(filter_rule_t));
     fr.base.chain = CHAIN_INPUT;
 
     QList<BFControl::filter_rule_ptr > fr_list;
     mBfc->getRulesSync(fr,fr_list,10000);
-    BfRules::loadFromList(fr_list);
-    BfRules::saveToFile(BFConfig::getRulesCachePath());
-    QSyslog::instance().syslog(/*LOG_INFO*/6,QString("Leave BfServicePrivate::stop()"));
+    //BfRules::loadFromList(fr_list);
+    BfRules::saveToFile(BFConfig::instance().rulesCachePath());
+    T_INFO(QString("Leave BfServicePrivate::stop()"));
 
 }
 
 void BfServicePrivate::finished()
 {
-    QSyslog::instance().syslog(/*LOG_INFO*/6,QString("Enter BfServicePrivate::finished()"));
+    T_INFO(QString("Enter BfServicePrivate::finished()"));
 
-    QSyslog::instance().syslog(/*LOG_INFO*/6,QString("Leave BfServicePrivate::finished()"));
+    T_INFO(QString("Leave BfServicePrivate::finished()"));
 }
 
 void BfServicePrivate::gotLog(filter_rule_t fr)

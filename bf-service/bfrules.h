@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QMutex>
+#include <QHash>
 #include "bfcontrol.h"
 
 class BfRules : public QObject
@@ -10,7 +11,7 @@ class BfRules : public QObject
     Q_OBJECT
 public:
     static QList<BFControl::filter_rule_ptr > loadFromFile(const QString& thename);
-    static bool   saveToFile(const QString &thename);
+    static bool saveToFile(const QString &thename);
     static void loadFromList(const QList<BFControl::filter_rule_ptr > &list);
     static QHash<filter_rule_base,BFControl::filter_rule_ptr> sRules;
     static QList<BFControl::filter_rule_ptr > getByPattern(const filter_rule_t  &fr);

@@ -8,6 +8,9 @@
 #include <arpa/inet.h>
 #endif
 
+#include <linux/if_ether.h>
+#include <linux/netlink.h>
+
 /**
 @brief
     Цепочки правил
@@ -36,17 +39,22 @@ enum bf_policy_t {
     Включение отключение правил
 
 */
-enum bf_switch_rules_t {                            //!<  Для поля off YES - выключено NO - включено
+enum bf_switch_rules_t {                  //!<  Для поля off YES - выключено NO - включено
              SW_NO,                       //!<  Правило включено
              SW_YES,                      //!<  Правило отключено
              SW_NONE                      //!<  Отсутствие наличия правила выключения
 };
 
+/**
+@brief
+    Ошибки
+
+*/
 enum bf_error_t {
-    BF_ERR_OK,
-    BF_ERR_ALREADY_HAVE_RULE,
-    BF_ERR_MISSING_RULE,
-    BF_ERR_SOCK
+            BF_ERR_OK,                    //!< Успешная опереация
+            BF_ERR_ALREADY_HAVE_RULE,     //!< Правило есть в наличии
+            BF_ERR_MISSING_RULE,          //!< Операция применяется к отсутствующему правилу
+            BF_ERR_SOCK                   //!< Ошибка сокета
 };
 
 
@@ -299,8 +307,47 @@ inline void printHeader2(QTextStream &out)
          << "chain"
          << "policy"
          << "off" << qSetFieldWidth(width) << endl ;
-
 }
+
+#ifdef  BOOST_REFLECTION
+
+REFL_STRUCT(ip_addr_t)
+    REFL_ENTRY(addr)
+REFL_END()
+
+REFL_STRUCT(filter_rule_base_t)
+    REFL_ENTRY(chain)
+    REFL_ENTRY(proto)
+    REFL_ENTRY(src_port)
+    REFL_ENTRY(dst_port)
+    REFL_ENTRY(s_addr)
+    REFL_ENTRY(d_addr)
+REFL_END()
+
+REFL_STRUCT(filter_rule_t)
+    REFL_ENTRY(base)
+    REFL_ENTRY(off)
+    REFL_ENTRY(policy)
+    REFL_ENTRY(id)
+REFL_END()
+
+typedef vector<filter_rule_t> rules_t;
+
+typedef struct config
+{
+    vector<uint8_t> chain_policy;
+    rules_t         rules;
+    config():chain_policy(2){};
+} config_t;
+
+REFL_STRUCT(config_t)
+    REFL_ENTRY(chain_policy)
+    REFL_ENTRY(rules)
+REFL_END()
+
+
+#endif
+
 #endif
 
 

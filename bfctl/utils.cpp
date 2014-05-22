@@ -11,6 +11,9 @@
 #include "trx_data.h"
 #include "utils.h"
 
+static const char * prog_name = "bf_ctrl";
+static const char * prog_vers = "0.0.1a";
+
 namespace cmd_utils {
 int
 get_proto(char* proto) {
@@ -60,10 +63,12 @@ get_policy(char* policy) {
 }
 
 int
-parse_cmd_args(int argc, char *argv[],filter_rule_t* fr,std::string& file_name)
+parse_cmd_args(int argc, char *argv[], cmd_args& ca )
 {
     int c; int command = CMD_PRINT_HELP;
     struct in_addr ipvalue;
+    filter_rule_t* fr = &ca.fr;
+    std::string& file_name = ca.file_name;
 
     memset(fr,0,sizeof(filter_rule_t));
 
@@ -114,14 +119,14 @@ parse_cmd_args(int argc, char *argv[],filter_rule_t* fr,std::string& file_name)
                 fr->base.chain = get_chain(optarg);
                 if (fr->base.chain == CHAIN_NONE)
                 {
-                   std::cout << "Пропущен обязательный параметр название цепочки " << std::endl ;
+                   std::cerr << "Пропущен обязательный параметр название цепочки " << std::endl ;
                    command = CMD_PRINT_HELP;
                 }
 
 
               break;
             case 'f':
-                command = CMD_GET_FROM_FILE;
+                command = CMD_LOAD_FROM_FILE;
                 if(optarg)
                     file_name = optarg;
                 else
@@ -133,7 +138,7 @@ parse_cmd_args(int argc, char *argv[],filter_rule_t* fr,std::string& file_name)
                 fr->base.chain = get_chain(optarg);
                 if (fr->base.chain == CHAIN_NONE)
                 {
-                   std::cout << "Пропущен обязательный параметр название цепочки " << std::endl ;
+                   std::cerr << "Пропущен обязательный параметр название цепочки " << std::endl ;
                    command = CMD_PRINT_HELP;
                 }
                 //printf("chain in_out = %d\n", fr->base.chain);
@@ -143,7 +148,7 @@ parse_cmd_args(int argc, char *argv[],filter_rule_t* fr,std::string& file_name)
               fr->base.chain = get_chain(optarg);
               if (fr->base.chain == CHAIN_NONE)
               {
-                 std::cout << "Пропущен обязательный параметр название цепочки " << std::endl ;
+                 std::cerr << "Пропущен обязательный параметр название цепочки " << std::endl ;
                  command = CMD_PRINT_HELP;
               }
               break;
@@ -152,7 +157,7 @@ parse_cmd_args(int argc, char *argv[],filter_rule_t* fr,std::string& file_name)
               fr->base.chain = get_chain(optarg);
               if (fr->base.chain == CHAIN_NONE)
               {
-                 std::cout << "Пропущен обязательный параметр название цепочки " << std::endl ;
+                 std::cerr << "Пропущен обязательный параметр название цепочки " << std::endl ;
                  command = CMD_PRINT_HELP;
               }
               break;
@@ -161,7 +166,7 @@ parse_cmd_args(int argc, char *argv[],filter_rule_t* fr,std::string& file_name)
               fr->base.chain = get_chain(optarg);
               if (fr->base.chain == CHAIN_NONE)
               {
-                 std::cout << "Пропущен обязательный параметр название цепочки " << std::endl ;
+                 std::cerr << "Пропущен обязательный параметр название цепочки " << std::endl ;
                  command = CMD_PRINT_HELP;
               }
               break;
@@ -182,13 +187,13 @@ parse_cmd_args(int argc, char *argv[],filter_rule_t* fr,std::string& file_name)
                 }
             }
             break;
-            case 'm':
+            //case 'm':
               //mf_rule.src_netmask = optarg; //srcnetmask:
-              break;
+            //  break;
             case 'o':
               fr->off = get_switch(optarg); //switch
               if (fr->off==SW_NONE){
-                std::cout << "Ошибка в параметре --off " << std::endl ;
+                std::cerr << "Ошибка в параметре --off " << std::endl ;
                 command = CMD_PRINT_HELP;
               }
 
@@ -224,7 +229,7 @@ parse_cmd_args(int argc, char *argv[],filter_rule_t* fr,std::string& file_name)
             case 'p':
               fr->base.proto = get_proto(optarg); //proto
               if (fr->base.proto==IPPROTO_NOTEXIST){
-                std::cout << "Ошибка в параметре --proto " << std::endl ;
+                std::cerr << "Ошибка в параметре --proto " << std::endl ;
                 command = CMD_PRINT_HELP;
               }
 
@@ -234,7 +239,7 @@ parse_cmd_args(int argc, char *argv[],filter_rule_t* fr,std::string& file_name)
                fr->base.chain = get_chain(optarg);
                if (fr->base.chain == CHAIN_NONE)
                {
-                   std::cout << "Пропущен обязательный параметр название цепочки " << std::endl ;
+                   std::cerr << "Пропущен обязательный параметр название цепочки " << std::endl ;
                    command = CMD_PRINT_HELP;
                    break;
                }
@@ -248,13 +253,13 @@ parse_cmd_args(int argc, char *argv[],filter_rule_t* fr,std::string& file_name)
                    }
                }
                else
-                   std::cout << "Требуются и параметр chain(INPUT,OUTPUT) и параметр policy (ACCEPT,DROP)" << std::endl ;
+                   std::cerr << "Требуются и параметр chain(INPUT,OUTPUT) и параметр policy (ACCEPT,DROP)" << std::endl ;
 
               break;
             case 'j':
                fr->policy = get_policy(optarg);
                if (fr->policy==POLICY_NONE){
-                 std::cout << "Ошибка в параметре --jump " << std::endl ;
+                 std::cerr << "Ошибка в параметре --jump " << std::endl ;
                  command = CMD_PRINT_HELP;
                }
               break;
@@ -279,9 +284,91 @@ parse_cmd_args(int argc, char *argv[],filter_rule_t* fr,std::string& file_name)
    if(!proto_mandatory && (command == CMD_APPEND || command == CMD_DELETE ))
    {
        command = CMD_PRINT_HELP;
-       std::cout << "- пропущен обязательный параметр --proto " << std::endl ;
+       std::cerr << "- пропущен обязательный параметр --proto " << std::endl ;
    }
    return command;
+}
+
+void exit_printhelp()
+{
+    printf("%s v%s\n\n"
+"Usage: %s -[AD] chain rule-specification [options]\n"
+//"       %s -I chain [rulenum] rule-specification [options]\n"
+//"       %s -R chain rulenum rule-specification [options]\n"
+"       %s -U chain  rule-specification [options]\n"
+//"       %s -D chain rulenum [options]\n"
+"       %s -L [chain [rulenum]] [options]\n"
+"       %s -F [chain] [options]\n"
+// "       %s -[NX] chain\n"
+// "       %s -E old-chain-name new-chain-name\n"
+"       %s -P chain target [options]\n"
+"       %s -h (print this help information)\n\n",
+           prog_name, prog_vers, prog_name, prog_name,
+           prog_name, prog_name, prog_name , prog_name/*,
+           prog_name,prog_name, prog_name, prog_name*/);
+
+    printf(
+"Commands:\n"
+"Either long or short options are allowed.\n"
+"  --append  -A chain		Append to chain\n"
+//"  --check   -C chain		Check for the existence of a rule\n"
+"  --delete  -D chain		Delete matching rule from chain\n"
+//"  --delete  -D chain rulenum\n"
+//"				Delete rule rulenum (1 = first) from chain\n"
+"  --update  -U chain		Update matching rule target or/and turn rule on/off\n"
+
+//"  --insert  -I chain [rulenum]\n"
+//"				Insert in chain as rulenum (default 1=first)\n"
+//"  --replace -R chain rulenum\n"
+//"				Replace rule rulenum (1 = first) in chain\n"
+"  --list    -L [chain [rulenum]]\n"
+"				List the rules in a chain or all chains\n"
+//"  --list-rules -S [chain [rulenum]]\n"
+//"				Print the rules in a chain or all chains\n"
+"  --flush   -F [chain]		Delete all rules in  chain or all chains\n"
+//"  --zero    -Z [chain [rulenum]]\n"
+//"				Zero counters in chain or all chains\n"
+//"  --new     -N chain		Create a new user-defined chain\n"
+//"  --delete-chain\n"
+//"            -X [chain]		Delete a user-defined chain\n"
+"  --policy  -P chain target\n"
+"				Change policy on chain to target\n"
+//"  --rename-chain\n"
+//"            -E old-chain new-chain\n"
+//"				Change chain name, (moving any references)\n"
+
+"Options:\n"
+//"    --ipv4	-4		Nothing (line is ignored by ip6tables-restore)\n"
+//"    --ipv6	-6		Error (line is ignored by iptables-restore)\n"
+"[!] --proto	-p proto	protocol: by number or name, eg. `tcp'\n"
+"[!] --source	-s address[/mask][...]\n"
+"				source specification\n"
+"[!] --destination -d address[/mask][...]\n"
+"				destination specification\n"
+//"[!] --in-interface -i input name[+]\n"
+//"				network interface name ([+] for wildcard)\n"
+" --jump	-j target\n"
+"				target for rule (may load target extension)\n"
+#ifdef IPT_F_GOTO
+"  --goto      -g chain\n"
+"                              jump to chain with no return\n"
+#endif
+//"  --match	-m match\n"
+//"				extended match (may load extension)\n"
+//"  --numeric	-n		numeric output of addresses and ports\n"
+//"[!] --out-interface -o output name[+]\n"
+//"				network interface name ([+] for wildcard)\n"
+//"  --table	-t table	table to manipulate (default: `filter')\n"
+//"  --verbose	-v		verbose mode\n"
+//"  --line-numbers		print line numbers when listing\n"
+"//  --exact	-x		expand numbers (display exact values)\n"
+//"[!] --fragment	-f		match second or further fragments only\n"
+//"  --modprobe=<command>		try to insert modules using this command\n"
+//"  --set-counters PKTS BYTES	set the counter during insert/append\n"
+"[!] --version	-V		print package version.\n");
+
+    // print_extension_helps(xtables_targets, matches);
+    // exit(0);
 }
 
 }

@@ -1,34 +1,36 @@
 #-------------------------------------------------
 #
-# Project created by QtCreator 2014-04-09T17:16:19
+# Консольная  управляющая программа для модуля ядра
 #
 #-------------------------------------------------
 
-QT       += core network
+TEMPLATE = app
+TARGET = bfctl
 
+include(../common/base.pri)
+
+QT       += core network
 QT       -= gui
 
-TARGET = bfctl
 CONFIG   += console thread
 CONFIG   -= app_bundle
 
-TEMPLATE = app
-
-QMAKE_CXXFLAGS += -std=c++0x
+HEADERS += \
+    utils.h
 
 SOURCES += main.cpp \
     utils.cpp
 
-HEADERS += \
-    utils.h \
-    trx_data.h
 
+#############
+# include paths
 
 INCLUDEPATH += ../bf-ko ../bf-link
 
-DESTDIR = ../../bin
-LIBS += -L../../lib -lbf-link
-OBJECTS_DIR = ./tmp
-MOC_DIR = ./moc
+
+#############
+# lib paths
+
+LIBS += -L../../lib  -lbf-link
 
 include(../common/libnl.pri)

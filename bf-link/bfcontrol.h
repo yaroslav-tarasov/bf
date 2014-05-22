@@ -45,9 +45,6 @@ signals:
 public slots:
 private slots:
     void process(QByteArray ba);
-#ifdef TEST_ASYNC_GET_RULES
-    void process(QList <filter_rule_ptr > ruleslst);
-#endif
 private:
     std::shared_ptr<struct BFControlPrivate> d;
 };

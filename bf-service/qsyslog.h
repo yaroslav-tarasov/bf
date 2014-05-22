@@ -1,24 +1,40 @@
 #ifndef QSYSLOG_H
 #define QSYSLOG_H
 
-#include <QObject>
+#include <logger.h>
 
-class QSyslog : public QObject
+
+class QSyslog : public logging::Writer
 {
-    Q_OBJECT
 
 public:
+    explicit QSyslog();
     ~QSyslog();
+    virtual void write_msg(logging::level l, const QString &msg);
+    virtual void write_msg(logging::level l, const char* msg);
 
-    static void setAppName(QString appName) { QSyslog::appName = appName; }
-    static QSyslog& instance();          // singleton accessor
+    static void setAppName(const std::string& appName) { QSyslog::appName = appName; }
 
     static void syslog(int level, QString message);
+
 private:
-    QSyslog(QObject *parent = 0);
+
     Q_DISABLE_COPY(QSyslog)
 
-    static QString appName;
+    static std::string appName;
 };
+
+
+namespace logging
+{
+
+inline void add_syslog_writer()
+{
+    Logger& __lg__ = Logger::instance();
+    __lg__.add_writer(Logger::writer_t(new QSyslog));
+};
+
+}
+
 
 #endif // QSYSLOG_H

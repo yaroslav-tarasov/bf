@@ -8,6 +8,6 @@ int main(int argc, char **argv)
 	QCoreApplication::setOrganizationName("VNIIRA");
 	// QCoreApplication::setApplicationVersion(QString("%1").arg(VERSION_FULL));
 
-     BfService service(argc, argv, "bf-service");
-	 return service.exec();
+    BfService service(argc, argv, "bf-service");
+    return service.exec();
 }

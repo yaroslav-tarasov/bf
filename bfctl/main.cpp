@@ -4,6 +4,7 @@
 #include <QStringList>
 #include <QFile>
 #include <QProcessEnvironment>
+#include <QSharedPointer>
 
 #include <iostream>
 #include <linux/if_ether.h>
@@ -18,41 +19,44 @@
 #include "trx_data.h"
 #include "utils.h"
 
+
+
+namespace {
 const int fieldWidth = 10;
 int fieldWidthSaved;
 
-int main(int argc, char *argv[])
+template<typename T>
+void  inline printMessage( QTextStream &out, T msg, filter_rule_t fr)
 {
-    QCoreApplication a(argc, argv);
+    out << msg << endl;
+    printHeader2(out);
+    out << qSetFieldWidth(fieldWidth) << fr;
+    out << qSetFieldWidth(fieldWidthSaved) << endl;
+}
+
+
+int processCommand(int action,cmd_utils::cmd_args& ca)
+{
     QTextStream qout(stdout);
     fieldWidthSaved = qout.fieldWidth();
 
-    QStringList cmdline_args = QCoreApplication::arguments();
+    filter_rule_t& fr = ca.fr;
+    std::string& thename = ca.file_name;
 
-    BFControl *bfc = new BFControl(&a);
+    BFControl bfc(QCoreApplication::instance());
 
-    if(bfc->create()==0)
+    if(bfc.create()==0)
     {
-
-    filter_rule_t fr;
-    std::string thename;
-    int action = cmd_utils::parse_cmd_args(argc, argv,&fr,thename);
 
     if (action == CMD_APPEND) {
         //qDebug() << "CMD_APPEND";
-        int ret = bfc->addRule(fr);
+        int ret = bfc.addRule(fr);
         if(ret>=0){
-            qout << "Add new rule:" << endl;
-            printHeader2(qout);
-            qout << qSetFieldWidth(fieldWidth) << fr;
-            qout << qSetFieldWidth(fieldWidthSaved) << endl;
+            printMessage(qout,"Add new rule:",fr);
         }
         else if(ret==-BF_ERR_ALREADY_HAVE_RULE)
         {
-            qout << "Already have this rule:" << endl;
-            printHeader2(qout);
-            qout << qSetFieldWidth(fieldWidth) << fr;
-            qout << qSetFieldWidth(fieldWidthSaved) << endl;
+            printMessage(qout,"Already have this rule:",fr);
         }
     } else if (action == CMD_LIST) {
         //qDebug() <<"CMD_LIST";
@@ -61,7 +65,7 @@ int main(int argc, char *argv[])
         bfc->getRulesAsync(fr);
 #else
         QList<BFControl::filter_rule_ptr > ruleslst;
-        int ret =  bfc->getRulesSync(fr,  ruleslst);
+        int ret =  bfc.getRulesSync(fr,  ruleslst);
         int i;
         qout.setFieldAlignment(QTextStream::AlignLeft);
 
@@ -103,48 +107,45 @@ int main(int argc, char *argv[])
 
     } else if (action == CMD_DELETE) {
         //qDebug() << "CMD_DELETE";
-        int ret = bfc->deleteRule(fr);
+        int ret = bfc.deleteRule(fr);
         if(ret>=0){
-            qout << "Rule deleted:" << endl;
-            printHeader2(qout);
-            qout << qSetFieldWidth(fieldWidth) << fr;
-            qout << qSetFieldWidth(fieldWidthSaved) << endl;
+            printMessage(qout,"Rule deleted:",fr);
         }
         else if(ret==-BF_ERR_MISSING_RULE)
         {
-            qout << "Do not have this rule:"<< endl;
-            printHeader2(qout);
-            qout << qSetFieldWidth(fieldWidth) << fr;
-            qout << qSetFieldWidth(fieldWidthSaved) << endl;
+            printMessage(qout,"Do not have this rule:",fr);
         }
 
     } else if (action == CMD_FLUSH) {
         //qDebug() << "CMD_FLUSH";
-        bfc->deleteRules(fr);
+        bfc.deleteRules(fr);
     } else if (action == CMD_UPDATE) {
         //qDebug() << "CMD_UPDATE";
-        int ret = bfc->updateRule(fr);
+        int ret = bfc.updateRule(fr);
         if(ret>=0)
         {
-            qout << "Rule updated:"<< endl;
-            printHeader2(qout);
-            qout << qSetFieldWidth(fieldWidth) << fr;
-            qout << qSetFieldWidth(fieldWidthSaved) << endl;
+            printMessage(qout,"Rule updated:",fr);
         }
         else if(ret==-BF_ERR_MISSING_RULE)
         {
-            qout << "Do not have this rule:"<< endl;
-            printHeader2(qout);
-            qout << qSetFieldWidth(fieldWidth) << fr;
-            qout << qSetFieldWidth(fieldWidthSaved) << endl;
+            printMessage(qout,"Do not have this rule:",fr);
         }
 
     } else if (action == CMD_SET_POLICY) {
         //qDebug() << "CMD_SET_POLICY";
-        bfc->setChainPolicy(fr);
-    } else if (action == CMD_GET_FROM_FILE) {
+        int ret = bfc.setChainPolicy(fr);
+        if(ret>=0)
+        {
+            printMessage(qout,"Set policy for chain:",fr);
+        }
+        else if(ret==-BF_ERR_SOCK)
+        {
+            printMessage(qout,"Can not set policy for  chain:",fr);
+        }
+
+    } else if (action == CMD_LOAD_FROM_FILE) {
         QList<BFControl::filter_rule_ptr > ruleslst;
-        //qDebug() << "CMD_GET_FROM_FILE";
+        //qDebug() << "CMD_LOAD_FROM_FILE";
         QFile  file(QString::fromStdString(thename)) ;
         if (!file.open(QIODevice::ReadOnly))  return -1;
         QDataStream in(&file);
@@ -157,12 +158,11 @@ int main(int argc, char *argv[])
         file.close();
 
         if(ruleslst.size()>0)
-            bfc->sendRulesSync(ruleslst);
+            bfc.sendRulesSync(ruleslst);
 
     } else if (action == CMD_PRINT_HELP) {
         // qDebug() << "CMD_PRINT_HELP";
-        // exit_printhelp();
-        qout << "Something wrong in command string";
+        cmd_utils::exit_printhelp();
     }
 
     }
@@ -171,14 +171,27 @@ int main(int argc, char *argv[])
         qCritical() << "Can't connect to bf module \n";
     }
 
- #ifdef TEST_ASYNC_GET_RULES
-    std::cout << "Press  any key" << std::endl;
-    std::cin.get();
-    bfc->close();
-    QTimer::singleShot(10, &a, SLOT(quit()));
-    return a.exec();
-#else
-    bfc->close();
+    bfc.close();
     return 0;
-#endif
+}
+
+
+}
+
+int main(int argc, char *argv[])
+{
+    QCoreApplication a(argc, argv);
+
+
+    QStringList cmdline_args = QCoreApplication::arguments();
+
+
+    filter_rule_t fr;
+    std::string thename;
+    cmd_utils::cmd_args ca(fr,thename);
+    int action = cmd_utils::parse_cmd_args(argc, argv,ca);
+    int ret = processCommand(action,ca);
+
+    return 0;
+
 }
