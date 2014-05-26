@@ -1,71 +1,94 @@
 #include "bflocalcontrol.h"
-
-#include <QBuffer>
-#include <QDataStream>
-#include <QDateTime>
+#include "bflocalcontrolprivate.h"
 
 BFLocalControl::BFLocalControl(QObject *parent) :
-    QObject(parent)
+    QObject(parent),d (new BFLocalControlPrivate)
 {
-    mLocalSocket = new QLocalSocket(this);
+
+}
+
+
+int  BFLocalControl::init(const QString& serverName)
+{
+    return d->init(serverName);
+}
+
+void BFLocalControl::close()
+{
+    /*return*/ d->close();
 }
 
 
 
-void BFLocalControl::init(const QString& serverName) {
-    mLocalSocket->connectToServer(serverName);
-    //TODO// m_SocketWantedData = 0;
-    connect(mLocalSocket, SIGNAL(connected()), SLOT(onConnected()));
-    connect(mLocalSocket, SIGNAL(readyRead()), SLOT(onReadyRead()));
-    connect(mLocalSocket, SIGNAL(disconnected()), SLOT(onDisconnected()));
-    connect(mLocalSocket, SIGNAL(error(QLocalSocket::LocalSocketError)), SLOT(onSocketError(QLocalSocket::LocalSocketError)));
-    // return 0;
+////////////////////////////////////////////////
+//
+//   Взаимодействие с сервисом
+//
+////////////////////////////////////////////////
+
+
+///////////////////////////////////////
+//   Удаление правила
+//
+
+int BFLocalControl::deleteRule(const filter_rule_t &pattern)
+{
+    return d->deleteRule(pattern);
+}
+
+///////////////////////////////////////
+//   Удаление всех правил
+//
+
+int BFLocalControl::deleteRules(const filter_rule_t &pattern)
+{
+    return     d->deleteRules(pattern);
+}
+
+///////////////////////////////////////
+//  Добавление правила
+//
+
+int BFLocalControl::addRule(const filter_rule_t &pattern)
+{
+    return d->addRule(pattern);
+}
+
+///////////////////////////////////////
+//  Обновление правила
+//  не базовых параметров (off; policy;)
+
+int BFLocalControl::updateRule(const filter_rule_t &pattern)
+{
+    return d->updateRule(pattern);
+}
+
+////////////////////
+// Получаем правила синхронно
+// Каждое пришедшее сообщение продлевает действие таймера на timeout_ms
+// По истечении timeout_ms считаем что передача завершена
+// Полученные сообщения складываются в ruleslst
+// Состав желаемых для получения правил определяется шаблоном pattern
+
+int BFLocalControl::getRulesSync(const filter_rule_t& pattern, QList<filter_rule_ptr >& ruleslst,int timeout_ms)
+{
+    return d->getRulesSync(pattern,ruleslst,timeout_ms);
+}
+
+///////////////////////////////////////
+//  Установка политики для цепочки
+//
+
+int BFLocalControl::setChainPolicy(const filter_rule_t &pattern)
+{
+    return d->setChainPolicy(pattern);
 }
 
 
-void BFLocalControl::onConnected() {
-//    if(!m_CommandQueue.isEmpty()) {
-//        sendCommand(m_CommandQueue.takeFirst());
-//    }
-}
-
-void BFLocalControl::onReadyRead() {
-
-    if(mSocketWantedData <= 0) {
-        if(mLocalSocket->bytesAvailable() >= (qint64)sizeof(int)) {
-            mLocalSocket->read((char *)&mSocketWantedData, sizeof(int));
-        }
-    }
-
-    if(mSocketWantedData > 0 && mLocalSocket->bytesAvailable() >= mSocketWantedData) {
-        QByteArray ba = mLocalSocket->read(mSocketWantedData);
-        QBuffer bu(&ba);
-        bu.open(QIODevice::ReadOnly);
-        QDataStream s(&bu);
-
-//        RemoteDaemonResponse response;
-
-//        s >> response;
-
-
-//        if(m_SentCommands.contains(response.m_Sequence)) {
-//            emit commandResponse(m_SentCommands[response.m_Sequence], response);
-//        }
-        mSocketWantedData = 0;
-
-        if(mLocalSocket->bytesAvailable() > 0) {
-            onReadyRead();
-        }
-    }
-}
-
-void BFLocalControl::onDisconnected() {
-     mSocketWantedData = 0;
-}
-
-void BFLocalControl::onSocketError(QLocalSocket::LocalSocketError err) {
-    qWarning() << "WARNING: Socket error:"
-               << mLocalSocket->errorString() << "(" << err << ")";
-    mLocalSocket->disconnectFromServer();
-    mSocketWantedData = 0;
+///////////////////////////////////////
+//    Добавление правил
+//
+int BFLocalControl::sendRulesSync(const QList<filter_rule_ptr> &ruleslst)
+{
+    return d->sendRulesSync(ruleslst);
 }

@@ -2,16 +2,17 @@
 #include <QDebug>
 #include <QEventLoop>
 #include <QTimer>
+
 #include "netlinksocket.h"
 #include "errorreceiver.h"
 #include "timerproxy.h"
 #include "qwaitfordone.h"
 
-const int commandWaitTime = 500; // в миллисекундах
+// const int commandWaitTime = 500; // в миллисекундах
 
 struct BFControlPrivate
 {
-    explicit BFControlPrivate(NetlinkSocket *pNS):mNS(pNS){};
+    explicit BFControlPrivate(NetlinkSocket *pNS):mNS(pNS){}
     NetlinkSocket *mNS;
     QList<BFControl::filter_rule_ptr >* ruleslst;
 };
@@ -91,9 +92,9 @@ int BFControl::create()
     return d->mNS->create(NETLINK_USERSOCK);
 }
 
-int  BFControl::sendMsg(int type,void* msg,size_t size)
+int  BFControl::sendMsg(int type,const void* msg,size_t size)
 {
-    return d->mNS->sendMsg(type,msg,size);
+    return d->mNS->sendMsg(type,const_cast<void *>(msg),size);
 }
 
 
@@ -109,7 +110,7 @@ void BFControl::close()
 // Полученные сообщения складываются в ruleslst
 // Состав желаемых для получения правил определяется шаблоном pattern
 
-int BFControl::getRulesSync(filter_rule_t& pattern, QList<filter_rule_ptr >& ruleslst,int timeout_ms)
+int BFControl::getRulesSync(const filter_rule_t& pattern, QList<filter_rule_ptr >& ruleslst,int timeout_ms)
 {
     QWaitForDone w(this);
     ErrorReciever errr(this);
@@ -147,7 +148,7 @@ int BFControl::getRulesSync(filter_rule_t& pattern, QList<filter_rule_ptr >& rul
 ///////////////////////////////////////
 //  По окончании процесса получения будет прислано событие rules(QList<filter_rules_t>)
 //
-int BFControl::getRulesAsync(filter_rule_t &pattern)
+int BFControl::getRulesAsync(const filter_rule_t &pattern)
 {
     d->ruleslst = new QList<filter_rule_ptr >;
     int ret = this->sendMsg(MSG_GET_RULES,&pattern,sizeof(filter_rule_t));
@@ -171,7 +172,7 @@ int BFControl::getRulesAsync(filter_rule_t &pattern)
 //   Удаление правила
 //
 
-int BFControl::deleteRule(filter_rule_t &pattern)
+int BFControl::deleteRule(const filter_rule_t &pattern)
 {
     QWaitForDone w(this,QWaitForDone::DISCONNECT_DONE);
     ErrorReciever errr(this);
@@ -196,7 +197,7 @@ int BFControl::deleteRule(filter_rule_t &pattern)
 //   Удаление правил
 //
 
-int BFControl::deleteRules(filter_rule_t &pattern)
+int BFControl::deleteRules(const filter_rule_t &pattern)
 {
     int ret = this->sendMsg(MSG_DELETE_ALL_RULES, &pattern, sizeof(filter_rule_t));
     if(ret<0)
@@ -215,7 +216,7 @@ int BFControl::deleteRules(filter_rule_t &pattern)
 //  Добавление правила
 //
 
-int BFControl::addRule(filter_rule_t &pattern)
+int BFControl::addRule(const filter_rule_t &pattern)
 {
     QWaitForDone w(this,QWaitForDone::DISCONNECT_DONE);
     ErrorReciever errr(this);
@@ -240,7 +241,7 @@ int BFControl::addRule(filter_rule_t &pattern)
 //  Обновление правила
 //  не базовых параметров (off; policy;)
 
-int BFControl::updateRule(filter_rule_t &pattern)
+int BFControl::updateRule(const filter_rule_t &pattern)
 {
      QWaitForDone w(this,QWaitForDone::DISCONNECT_DONE);
      ErrorReciever errr(this);
@@ -262,10 +263,10 @@ int BFControl::updateRule(filter_rule_t &pattern)
 }
 
 ///////////////////////////////////////
-//  Установка цели для цепочки
+//  Установка политики для цепочки
 //
 
-int BFControl::setChainPolicy(filter_rule_t &pattern)
+int BFControl::setChainPolicy(const filter_rule_t &pattern)
 {
     filter_rule_t p;
     memset(&p,0,sizeof(filter_rule_t));
@@ -311,7 +312,7 @@ int BFControl::subscribeLog(pid_t pid)
 ///////////////////////////////////////
 //    Добавление правил
 //
-int BFControl::sendRulesSync(QList<filter_rule_ptr >& ruleslst)
+int BFControl::sendRulesSync(const QList<filter_rule_ptr> &ruleslst)
 {
     //int i=0;
     foreach (BFControl::filter_rule_ptr rule,ruleslst){

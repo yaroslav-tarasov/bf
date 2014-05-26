@@ -25,7 +25,8 @@ HEADERS += \
         errorreceiver.h \
         timerproxy.h \
         qwaitfordone.h \
-    bflocalserver.h
+        bflocalserver.h \
+    bflocalcontrolprivate.h
 
 SOURCES += \
         bfcontrol.cpp \
@@ -33,7 +34,8 @@ SOURCES += \
         bflocalcontrol.cpp \
         bfremotecontrol.cpp \
         qwaitfordone.cpp \
-    bflocalserver.cpp
+        bflocalserver.cpp \
+    bflocalcontrolprivate.cpp
 
 #############
 # include paths

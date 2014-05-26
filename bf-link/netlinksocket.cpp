@@ -34,8 +34,8 @@
 class NetlinkSocketPrivate
 {
 public:
-    explicit NetlinkSocketPrivate(NetlinkSocket * pp): nls(NULL),mpp(pp){};
-    ~NetlinkSocketPrivate(){destroy();};
+    explicit NetlinkSocketPrivate(NetlinkSocket * pp): nls(NULL),mpp(pp),mRunning(true){}
+    ~NetlinkSocketPrivate(){destroy();}
 
     inline int  create ()
     {
@@ -91,13 +91,15 @@ public:
 #endif
 
 
-    NetlinkSocket* mpp;
-    std::thread*  t;
+    int             mProto;
+    NetlinkSocket*  mpp;
+    bool            mRunning;
+    std::thread*    t;
 };
 
 
 NetlinkSocket::NetlinkSocket(QObject *parent) :
-    QObject(parent),mRunning(true)
+    QObject(parent)
 {
     d.reset(new NetlinkSocketPrivate(this));
 }
@@ -110,11 +112,11 @@ NetlinkSocket::~NetlinkSocket()
 
 int NetlinkSocket::create(int proto)
 {
-    mProto = proto;
+    d->mProto = proto;
     int ret=0;
     if((ret = d->create())==0)
     {
-       if((ret = d->connect(mProto))==0)
+       if((ret = d->connect(d->mProto))==0)
        {
            d->t =  new std::thread(threadStart,this);
 
@@ -130,7 +132,7 @@ int NetlinkSocket::create(int proto)
 
 void NetlinkSocket::close()
 {
-    mRunning = false;
+    d->mRunning = false;
     if(d->nls)
     {
 #if  LIBNL_VER_MAJ>=3
@@ -146,7 +148,7 @@ void NetlinkSocket::runListener()
 {
     int ret=0;
     unsigned char *nl_msg;
-    while (mRunning)
+    while (d->mRunning)
     {
         if( (ret = d->recv (NULL, &nl_msg, NULL)) > 0)
         {
@@ -167,7 +169,7 @@ void NetlinkSocket::runListener()
         }
         else
         {
-            if(mRunning)
+            if(d->mRunning)
                 emit error(QString("Got error on recieve: %1").arg(ret));
         }
     }

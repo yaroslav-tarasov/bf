@@ -6,29 +6,29 @@
 BFLocalServer::BFLocalServer(QObject *parent) :
     QObject(parent)
 {
-    m_LocalServer = new QLocalServer(this);
+    mLocalServer = new QLocalServer(this);
 }
 
 int BFLocalServer::run(QString serverName) {
     QFile::remove(serverName);
-    if(!m_LocalServer->listen(serverName)) {
+    if(!mLocalServer->listen(serverName)) {
         qWarning() << "!!!WARNING!!! Can't start server on"
-                   << serverName << ":" << m_LocalServer->errorString();
+                   << serverName << ":" << mLocalServer->errorString();
         return -1;
     }
-    connect(m_LocalServer, SIGNAL(newConnection()), SLOT(onLocalNewConnection()));
+    connect(mLocalServer, SIGNAL(newConnection()), SLOT(onLocalNewConnection()));
 
     qDebug() << "Listening on path:" << serverName;
     return 0;
 }
 
 void BFLocalServer::onLocalNewConnection() {
-    if(m_LocalServer->hasPendingConnections()) {
-        QLocalSocket *s = m_LocalServer->nextPendingConnection();
+    if(mLocalServer->hasPendingConnections()) {
+        QLocalSocket *s = mLocalServer->nextPendingConnection();
         connect(s, SIGNAL(readyRead()), SLOT(onLocalReadyRead()));
         connect(s, SIGNAL(disconnected()), SLOT(onLocalDisconnected()));
         connect(s, SIGNAL(error(QLocalSocket::LocalSocketError)), SLOT(onLocalError(QLocalSocket::LocalSocketError)));
-        m_ReadSizes[s] = -1;
+        mReadSizes[s] = -1;
     }
 }
 
@@ -37,27 +37,27 @@ void BFLocalServer::onLocalReadyRead() {
     if(o->inherits("QLocalSocket")) {
         QLocalSocket *s = qobject_cast<QLocalSocket*>(o);
         if(s) {
-            if(m_ReadSizes[s] <= 0) {
+            if(mReadSizes[s] <= 0) {
                 if(s->bytesAvailable() >= (qint64)sizeof(int)) {
                     int msgSize;
                     s->read((char *)&msgSize, sizeof(int));
-                    m_ReadSizes[s] = msgSize;
+                    mReadSizes[s] = msgSize;
                 }
             }
-            if(m_ReadSizes[s] > 0 && s->bytesAvailable() >= m_ReadSizes[s]) {
-                QByteArray ba = s->read(m_ReadSizes[s]);
+            if(mReadSizes[s] > 0 && s->bytesAvailable() >= mReadSizes[s]) {
+                QByteArray ba = s->read(mReadSizes[s]);
 
                 QBuffer bu(&ba);
                 bu.open(QIODevice::ReadOnly);
                 QDataStream stream(&bu);
 
-                //TODO// BacsNS::RemoteDaemonCommand cmd;
-                //TODO// stream >> cmd;
+                bf::BfCmd cmd;
+                stream >> cmd;
 
-                //TODO// m_UnixClientCommands[cmd.m_Sequence] = s;
+                mClientCommands[cmd.mSequence] = s;
 
-                //TODO// processMessage(cmd);
-                m_ReadSizes[s] = 0;
+                processMessage(cmd);
+                mReadSizes[s] = 0;
             }
         }
     }
@@ -76,11 +76,11 @@ void BFLocalServer::onLocalDisconnected() {
 void BFLocalServer::destroySocket(QLocalSocket *s) {
     bool found;
     while(true) {
-        QList<quint32> keys = m_UnixClientCommands.keys();
+        QList<quint32> keys = mClientCommands.keys();
         found = false;
         foreach(quint32 key, keys) {
-            if(m_UnixClientCommands[key] == s) {
-                m_UnixClientCommands.remove(key);
+            if(mClientCommands[key] == s) {
+                mClientCommands.remove(key);
                 s->disconnectFromServer();
                 s->deleteLater();
                 found = true;
@@ -102,5 +102,30 @@ void BFLocalServer::onLocalError(QLocalSocket::LocalSocketError err) {
                        << "(" << err << ")";
             destroySocket(s);
         }
+    }
+}
+
+void BFLocalServer::processMessage(bf::BfCmd& cmd) {
+    using namespace bf;
+
+    switch(cmd.mType) {
+        case BF_CMD_ADD_RULE: {
+            qDebug() << "Get command.  Value" << cmd.mType
+                     << "seq." << cmd.mSequence;
+
+//TODO            RemoteDaemonResponse res;
+//TODO            res.m_Code = 0;
+//TODO            res.m_Sequence = cmd.m_Sequence;
+//TODO            res.m_Type = RD_RES_OK;
+//TODO            sendResponse(res);
+            return;
+        }
+        default:
+            qWarning() << "Unhandled command type:" << cmd.mType;
+    }
+    // Удалим клиента из отправителей команды
+    if(mClientCommands.contains(cmd.mSequence)) {
+        mClientCommands[cmd.mSequence]->flush();
+        mClientCommands.remove(cmd.mSequence);
     }
 }

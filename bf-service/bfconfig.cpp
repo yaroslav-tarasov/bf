@@ -36,12 +36,12 @@ void BFConfig::init()
     mLogCount = 0;
     mLogMaxFileSize = BARRIER_CONFIG_BF_LOG_MAX_SIZE;
 
-    // Сначала пытаемся загрузить конфигурацию аудита из файла по пути BARRIER_CONFIG_BAU_DEFAULT
+    // Сначала пытаемся загрузить конфигурацию аудита из файла по пути BARRIER_CONFIG_BF_DEFAULT
     if(QFile::exists(BARRIER_CONFIG_BF_DEFAULT)) {
         mFilePath = BARRIER_CONFIG_BF_DEFAULT;
     }
 
-    // Если неудалось с файлом по умолчанию, загружаем конфигурацию аудита из файла, указанного в переменной окружения по ключу BARRIER_CONFIG_BAU_ENVKEY
+    // Если неудалось с файлом по умолчанию, загружаем конфигурацию аудита из файла, указанного в переменной окружения по ключу BARRIER_CONFIG_BF_ENVKEY
     if(mFilePath.isEmpty()) {
         QProcessEnvironment pe = QProcessEnvironment::systemEnvironment();
         mFilePath = pe.value(BARRIER_CONFIG_BF_ENVKEY);

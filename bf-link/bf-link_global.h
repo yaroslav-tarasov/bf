@@ -9,4 +9,7 @@
 #  define BFLINKSHARED_EXPORT Q_DECL_IMPORT
 #endif
 
+
+const int commandWaitTime = 500; // в миллисекундах
+
 #endif // BFLINK_GLOBAL_H

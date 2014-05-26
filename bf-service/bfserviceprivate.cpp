@@ -44,6 +44,8 @@ void BfServicePrivate::started()
         T_INFO(QString("Can't create netlink socket)"));
     }
 
+    mLocalServer->run();
+
     T_INFO(QString("Local server started with code %1").arg(mLocalServer->run()));
 }
 

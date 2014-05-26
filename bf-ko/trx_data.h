@@ -5,6 +5,7 @@
 #include <QDataStream>
 #include <QDebug>
 #include <QHostAddress>
+#include <QSharedPointer>
 #include <arpa/inet.h>
 #endif
 
@@ -118,17 +119,17 @@ static inline const char* get_chain_name(enum bf_chain_t chain) {
 
 enum bf_messages_t {
                   MSG_ADD_RULE=NLMSG_MIN_TYPE + 2, //!< Добавление правила
-                  MSG_DATA,                     //!< При пересылке данных из модуля ядра в  userspace
-                  MSG_DONE,                     //!< По окончании пересылки данных из ядра
-                  MSG_DELETE_RULE ,             //!< Удаление конкретного правила
-                  MSG_DELETE_ALL_RULES,         //!< Удаление всех правил (не реализовано)
-                  MSG_UPDATE_RULE,              //!< (не реализовано)
-                  MSG_CHAIN_POLICY,             //!< Конечное правило для цепочки
-                  MSG_GET_RULES,                //!< Получение правил из модуля ядра
-                  MSG_OK,                       //!< Подтверждние
-                  MSG_ERR,                      //!< Ошибка
-                  MSG_LOG,                      //!< Лог из модуля ядра
-                  MSG_LOG_SUBSCRIBE             //!< Подписка на лог (реализован только один подписчик)
+                  MSG_DATA,                        //!< При пересылке данных из модуля ядра в  userspace
+                  MSG_DONE,                        //!< По окончании пересылки данных из ядра
+                  MSG_DELETE_RULE ,                //!< Удаление конкретного правила
+                  MSG_DELETE_ALL_RULES,            //!< Удаление всех правил
+                  MSG_UPDATE_RULE,                 //!< (не реализовано)
+                  MSG_CHAIN_POLICY,                //!< Конечное правило для цепочки
+                  MSG_GET_RULES,                   //!< Получение правил из модуля ядра
+                  MSG_OK,                          //!< Подтверждние
+                  MSG_ERR,                         //!< Ошибка
+                  MSG_LOG,                         //!< Лог из модуля ядра
+                  MSG_LOG_SUBSCRIBE                //!< Подписка на лог (реализован только один подписчик)
                  };
 
 #pragma pack (1)
@@ -261,6 +262,56 @@ inline QDataStream &operator >>(QDataStream &stream, filter_rule_t &fr)
     return stream;
 }
 
+namespace bf {
+
+enum bf_cmd_t {
+                  BF_CMD_ADD_RULE,                 //!< Добавление правила
+                  BF_CMD_DATA,                     //!< При пересылке данных из модуля ядра в  userspace
+                  BF_CMD_DONE,                     //!< По окончании пересылки данных из ядра
+                  BF_CMD_DELETE_RULE ,             //!< Удаление конкретного правила
+                  BF_CMD_DELETE_ALL_RULES,         //!< Удаление всех правил
+                  BF_CMD_UPDATE_RULE,              //!< (не реализовано)
+                  BF_CMD_CHAIN_POLICY,             //!< Конечное правило для цепочки
+                  BF_CMD_GET_RULES,                //!< Получение правил из модуля ядра
+                  BF_CMD_OK,                       //!< Подтверждние
+                  BF_CMD_ERR,                      //!< Ошибка
+                  BF_CMD_LOG,                      //!< Лог из модуля ядра
+                  BF_CMD_LOG_SUBSCRIBE             //!< Подписка на лог (реализован только один подписчик)
+                 };
+
+class BfCmd {
+    public:
+        bf_cmd_t      mType;                            // Тип команды BF_CMD_*
+        quint32       mSequence;                        // Последовательный номер команды. Копируется в поле номера ответа. Для ориентации в потоке ответов.
+        filter_rule_t mFr;
+    public:
+        friend QDataStream& operator<< (QDataStream& stream, const BfCmd& cmd) {
+            unsigned char type = cmd.mType;
+            stream << type
+                   << cmd.mSequence
+                   << cmd.mFr;
+            return stream;
+        }
+
+        friend QDataStream& operator>> (QDataStream& stream, BfCmd& cmd) {
+            unsigned char type;
+            stream >> type;
+            cmd.mType = bf_cmd_t(type);
+            stream >> cmd.mSequence;
+            stream >> cmd.mFr;
+            return stream;
+        }
+};
+
+typedef QSharedPointer<BfCmd> bf_cmd_ptr_t;
+
+}
+
+/////////////////////////////////
+//         Отладочная печать
+//
+
+
 inline QDebug operator<<(QDebug dbg, const filter_rule_t &fr)
 {
     dbg.space() <<  "src_port:" << fr.base.src_port
@@ -273,6 +324,10 @@ inline QDebug operator<<(QDebug dbg, const filter_rule_t &fr)
                   << "off:" << get_sw_name(static_cast<bf_switch_rules_t>(fr.off));
     return dbg.space();
 }
+
+/////////////////////////////////
+//          Вывод в поток
+//
 
 inline QTextStream& operator<<(QTextStream &out, const filter_rule_t &fr)
 {

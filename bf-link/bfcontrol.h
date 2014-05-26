@@ -4,11 +4,14 @@
 #include <QObject>
 #include <QSharedPointer>
 #include <QList>
+
 #include <memory>
+
 #include <arpa/inet.h>
 #include <netinet/ip.h>
 #include <linux/if_ether.h>
 #include <linux/netlink.h>
+
 #include "trx_data.h"
 #include "bf-link_global.h"
 
@@ -23,17 +26,20 @@ public:
 
     explicit BFControl(QObject *parent = 0);
     int  create();
-    int  sendMsg(int type,void* msg,size_t size);
     void close();
-    int getRulesSync(filter_rule_t& pattern, QList<filter_rule_ptr >& ruleslst,int timeout_ms=3000);
-    int getRulesAsync(filter_rule_t& pattern);
-    int sendRulesSync(QList<filter_rule_ptr >& ruleslst );
-    int deleteRule(filter_rule_t &pattern);
-    int deleteRules(filter_rule_t &pattern);
-    int addRule(filter_rule_t &pattern);
-    int updateRule(filter_rule_t &pattern);
-    int setChainPolicy(filter_rule_t &pattern);
-    int subscribeLog(pid_t pid);
+    int getRulesSync   (const filter_rule_t& pattern, QList<filter_rule_ptr >& ruleslst,int timeout_ms=3000);
+    int getRulesAsync  (const filter_rule_t& pattern);
+    int sendRulesSync  (const QList<filter_rule_ptr >& ruleslst );
+    int deleteRule     (const filter_rule_t &pattern);
+    int deleteRules    (const filter_rule_t &pattern);
+    int addRule        (const filter_rule_t &pattern);
+    int updateRule     (const filter_rule_t &pattern);
+    int setChainPolicy (const filter_rule_t &pattern);
+    int subscribeLog   (pid_t pid);
+
+private:
+    inline int  sendMsg(int type, const void *msg, size_t size);
+
 
 signals:
     void data(filter_rule_t);

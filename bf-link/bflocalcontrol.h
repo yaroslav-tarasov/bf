@@ -4,9 +4,7 @@
 #include <QObject>
 #include <QSharedPointer>
 #include <QList>
-#include <QLocalSocket>
 
-#include <memory>
 #include <arpa/inet.h>
 #include <netinet/ip.h>
 #include <linux/if_ether.h>
@@ -14,6 +12,7 @@
 
 #include "trx_data.h"
 #include "bf-link_global.h"
+#include "bf_defs.h"
 
 class BFLINKSHARED_EXPORT BFLocalControl : public QObject
 {
@@ -22,22 +21,23 @@ public:
 
     typedef QSharedPointer <filter_rule_t > filter_rule_ptr;
 
-
     explicit    BFLocalControl (QObject *parent = 0);
-    void        init           (const QString& serverName);
-signals:
-    
-public slots:
-
-private slots:
-    void onConnected();
-    void onReadyRead();
-    void onDisconnected();
-    void onSocketError(QLocalSocket::LocalSocketError err);
+    int         init           (const QString& serverName = BARRIER_BF_LOCAL_SOCK);
+    // int         create();
+    void        close();
+    int         getRulesSync   (const filter_rule_t& pattern, QList<filter_rule_ptr >& ruleslst,int timeout_ms=3000);
+    int         getRulesAsync  (const filter_rule_t& pattern);
+    int         sendRulesSync  (const QList<filter_rule_ptr >& ruleslst );
+    int         deleteRule     (const filter_rule_t &pattern);
+    int         deleteRules    (const filter_rule_t &pattern);
+    int         addRule        (const filter_rule_t &pattern);
+    int         updateRule     (const filter_rule_t &pattern);
+    int         setChainPolicy (const filter_rule_t &pattern);
+    int         subscribeLog   (/*pid_t pid*/);
 
 private:
-    QLocalSocket *mLocalSocket;
-    int           mSocketWantedData;
+    class BFLocalControlPrivate;
+    BFLocalControlPrivate*  d;
 };
 
 #endif // BFLOCALCONTROL_H

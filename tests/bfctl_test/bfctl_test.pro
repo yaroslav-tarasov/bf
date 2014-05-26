@@ -8,6 +8,8 @@ QT       += core network
 
 QT       -= gui
 
+include(../../common/base.pri)
+
 TARGET = bfctl_test
 CONFIG   += console thread
 CONFIG   -= app_bundle
