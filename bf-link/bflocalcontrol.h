@@ -19,8 +19,6 @@ class BFLINKSHARED_EXPORT BFLocalControl : public QObject
     Q_OBJECT
 public:
 
-    typedef QSharedPointer <filter_rule_t > filter_rule_ptr;
-
     explicit    BFLocalControl (QObject *parent = 0);
     int         init           (const QString& serverName = BARRIER_BF_LOCAL_SOCK);
     // int         create();
@@ -34,6 +32,14 @@ public:
     int         updateRule     (const filter_rule_t &pattern);
     int         setChainPolicy (const filter_rule_t &pattern);
     int         subscribeLog   (/*pid_t pid*/);
+
+signals:
+    void data(filter_rule_t);
+    void data(QByteArray);
+    void data(QList <filter_rule_ptr > );
+    void log (filter_rule_t);
+    void done();
+    void error (quint16);
 
 private:
     class BFLocalControlPrivate;

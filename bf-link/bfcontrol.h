@@ -22,7 +22,6 @@ class BFLINKSHARED_EXPORT BFControl : public QObject
 
     Q_OBJECT
 public:
-    typedef QSharedPointer <filter_rule_t > filter_rule_ptr;
 
     explicit BFControl(QObject *parent = 0);
     int  create();

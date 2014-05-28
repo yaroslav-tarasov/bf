@@ -4,7 +4,8 @@
 BFLocalControl::BFLocalControl(QObject *parent) :
     QObject(parent),d (new BFLocalControlPrivate)
 {
-
+    registerBfTypes();
+    connect(d,SIGNAL(error (quint16)),SIGNAL(error (quint16)));
 }
 
 

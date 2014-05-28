@@ -26,7 +26,7 @@ int BFLocalControl::BFLocalControlPrivate::init(const QString& serverName) {
 
     mLocalSocket->connectToServer(serverName);
 
-    if (mLocalSocket->waitForConnected(20*commandWaitTime))
+    if (mLocalSocket->waitForConnected(/*commandWaitTime*/))
     {
         mSocketWantedData = 0;
         connect( mLocalSocket, SIGNAL(connected()), SLOT(onConnected()));
@@ -70,14 +70,38 @@ void BFLocalControl::BFLocalControlPrivate::onReadyRead() {
         bu.open(QIODevice::ReadOnly);
         QDataStream s(&bu);
 
-//        RemoteDaemonResponse response;
+        BfCmd cmd;
 
-//        s >> response;
+        s >> cmd;
 
+        if(cmd.mType == BF_CMD_ERR)
+        {
+                msg_err_t errr = cmd.mValue.value<msg_err_t>();
 
-//        if(m_SentCommands.contains(response.m_Sequence)) {
-//            emit commandResponse(m_SentCommands[response.m_Sequence], response);
-//        }
+                qDebug() << "Get BF_CMD_ERR.  Code" << errr.code
+                         << "seq." << cmd.mSequence;
+
+                emit error(quint16(errr.code));
+
+//            if(mSentCommands.contains(response.m_Sequence)) {
+//                emit commandResponse(mSentCommands[response.m_Sequence], response);
+//            }
+        }
+        else   if (cmd.mType==BF_CMD_DATA )
+        {
+           filter_rule_t fr = cmd.mValue.value<filter_rule_t>();
+           if(BFLocalControlPrivate::ruleslst)
+               BFLocalControlPrivate::ruleslst->append(filter_rule_ptr(new filter_rule_t(fr)));
+
+           emit data(fr);
+        }
+        else   if (cmd.mType==BF_CMD_DONE )
+        {
+           msg_done_t mdone = cmd.mValue.value<msg_done_t>();
+           emit data (*BFLocalControlPrivate::ruleslst);
+           emit done();
+           BFLocalControlPrivate::ruleslst = NULL;
+        }
 
         mSocketWantedData = 0;
 
@@ -116,7 +140,7 @@ int BFLocalControl::BFLocalControlPrivate::deleteRule(const filter_rule_t &patte
     ErrorReciever errr(this);
     QObject::connect(this, SIGNAL(error(quint16)), &errr, SLOT(setError(quint16)));
     QObject::connect(this, SIGNAL(error(quint16)), &w, SLOT(quit()));
-    int ret = this->sendMsg(MSG_DELETE_RULE, &pattern, sizeof(filter_rule_t));
+    int ret = this->sendMsg(BF_CMD_DELETE_RULE, pattern, sizeof(filter_rule_t));
     if(ret<0)
     {
         qWarning() << "Can't send command MSG_DELETE_RULE socket error:"
@@ -137,7 +161,7 @@ int BFLocalControl::BFLocalControlPrivate::deleteRule(const filter_rule_t &patte
 
 int BFLocalControl::BFLocalControlPrivate::deleteRules(const filter_rule_t &pattern)
 {
-    int ret = this->sendMsg(MSG_DELETE_ALL_RULES, &pattern, sizeof(filter_rule_t));
+    int ret = this->sendMsg(BF_CMD_DELETE_ALL_RULES, pattern, sizeof(filter_rule_t));
     if(ret<0)
     {
         qWarning() << "Can't send command MSG_DELETE_ALL_RULES socket error:"
@@ -160,7 +184,7 @@ int BFLocalControl::BFLocalControlPrivate::addRule(const filter_rule_t &pattern)
     ErrorReciever errr(this);
     QObject::connect(this, SIGNAL(error(quint16)), &errr, SLOT(setError(quint16)));
     QObject::connect(this, SIGNAL(error(quint16)), &w, SLOT(quit()));
-    int ret = this->sendMsg(MSG_ADD_RULE, &pattern, sizeof(filter_rule_t));
+    int ret = this->sendMsg(BF_CMD_ADD_RULE, pattern, sizeof(filter_rule_t));
     if(ret<0)
     {
         qWarning() << "Can't send command MSG_ADD_RULE socket error:"
@@ -185,7 +209,7 @@ int BFLocalControl::BFLocalControlPrivate::updateRule(const filter_rule_t &patte
      ErrorReciever errr(this);
      QObject::connect(this, SIGNAL(error(quint16)), &errr, SLOT(setError(quint16)));
      QObject::connect(this, SIGNAL(error(quint16)), &w, SLOT(quit()));
-     int ret = this->sendMsg(MSG_UPDATE_RULE, &pattern, sizeof(filter_rule_t));
+     int ret = this->sendMsg(BF_CMD_UPDATE_RULE, pattern, sizeof(filter_rule_t));
      if(ret<0)
      {
          qWarning() << "Can't send command MSG_UPDATE_RULE socket error:"
@@ -216,7 +240,7 @@ int BFLocalControl::BFLocalControlPrivate::getRulesSync(const filter_rule_t& pat
     QObject::connect(this, SIGNAL(error(quint16)), &errr, SLOT(setError(quint16)));
 
     BFLocalControlPrivate::ruleslst = &ruleslst;
-    int ret = this->sendMsg(MSG_GET_RULES,&pattern,sizeof(filter_rule_t));
+    int ret = this->sendMsg(BF_CMD_GET_RULES,pattern,sizeof(filter_rule_t));
 
     if(ret<0)
     {
@@ -252,7 +276,7 @@ int BFLocalControl::BFLocalControlPrivate::setChainPolicy(const filter_rule_t &p
     memset(&p,0,sizeof(filter_rule_t));
     p.policy = pattern.policy;
     p.base.chain = pattern.base.chain;
-    int ret = this->sendMsg(MSG_CHAIN_POLICY, &p, sizeof(filter_rule_t));
+    int ret = this->sendMsg(BF_CMD_CHAIN_POLICY, p, sizeof(filter_rule_t));
     if(ret<0)
     {
         qWarning() << "Can't send command MSG_CHAIN_POLICY socket error:"
@@ -271,7 +295,7 @@ int BFLocalControl::BFLocalControlPrivate::setChainPolicy(const filter_rule_t &p
 int BFLocalControl::BFLocalControlPrivate::sendRulesSync(const QList<filter_rule_ptr> &ruleslst)
 {
     //int i=0;
-    foreach (BFLocalControl::filter_rule_ptr rule,ruleslst){
+    foreach (filter_rule_ptr rule,ruleslst){
         //qDebug() << "sendRulesSync  " << "rule #" << i++ << "  " << rule->base.src_port << "  " << rule->base.dst_port << "  " << rule->base.proto;
         filter_rule_t fr = *static_cast<filter_rule_t*>(rule.data());
         int ret = addRule(fr);
@@ -286,13 +310,13 @@ int BFLocalControl::BFLocalControlPrivate::sendRulesSync(const QList<filter_rule
 
 }
 
-
-int  BFLocalControl::BFLocalControlPrivate::sendMsg(int type,const filter_rule_t* msg,size_t size)
+template<typename T>
+int  BFLocalControl::BFLocalControlPrivate::sendMsg(bf_cmd_t type,const T& msg,size_t size)
 {
-    bf_cmd_ptr_t cmd;
+    bf_cmd_ptr_t cmd(new BfCmd);
     cmd->mType = bf_cmd_t(type);
     cmd->mSequence = generateSeq();
-    cmd->mFr = *msg;
+    cmd->mValue = QVariant::fromValue(msg);
     return sendCommand(cmd);
 }
 

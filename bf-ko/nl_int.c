@@ -97,7 +97,7 @@ nl_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
             memcpy(&msg.fr,(filter_rule_t*)data,sizeof(filter_rule_t));
 
             nl_send_msg(get_nl_sock(),thrd_params.pid, MSG_ERR, 0, (char*)&msg,sizeof(msg_err_t));
-            PRINTK_DBG("%s we have this rule ",__func__);
+            PRINTK_DBG("seq = %d %s we have this rule ",nlh->nlmsg_seq,__func__);
 
         }
         else{
@@ -105,7 +105,7 @@ nl_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
             msg.code = BF_ERR_OK;
             nl_send_msg(get_nl_sock(),thrd_params.pid, MSG_ERR, 0, (char*)&msg,sizeof(msg_err_t));
 
-            PRINTK_DBG("%s new rule added ",__func__);
+            PRINTK_DBG("seq = %d %s new rule added ",nlh->nlmsg_seq,__func__);
 			add_rule((filter_rule_t*)data);
 			s_rules_counter++;
 		}

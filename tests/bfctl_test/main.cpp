@@ -33,6 +33,8 @@ int main(int argc, char *argv[])
     std::string thename;
     cmd_utils::cmd_args ca(fr,thename);
     int action = cmd_utils::parse_cmd_args(argc, argv,ca);
+    fr = ca.fr;
+    thename = ca.file_name;
 
     if (action == CMD_APPEND) {
         qDebug() << "CMD_APPEND";
@@ -45,12 +47,12 @@ int main(int argc, char *argv[])
 #ifdef TEST_ASYNC_GET_RULES
         bfc->getRulesAsync(fr);
 #else
-        QList<BFLocalControl::filter_rule_ptr > ruleslst;
+        QList<filter_rule_ptr > ruleslst;
         bfc->getRulesSync(fr,  ruleslst);
 
         int i=0;
 
-        foreach (BFLocalControl::filter_rule_ptr rule,ruleslst){
+        foreach (filter_rule_ptr rule,ruleslst){
             // qDebug() << "rule #" << i++ << "  " << rule->base_rule.src_port << "  " << rule->base_rule.dst_port << "  " << cmd_utils::get_proto_name(rule->base_rule.proto);
             filter_rule_t fr = *static_cast<filter_rule_t*>(rule.data());
             qDebug() << "rule #" << i++ << "  " << fr;
@@ -69,7 +71,7 @@ int main(int argc, char *argv[])
         qDebug() << "CMD_SET_POLICY";
         bfc->setChainPolicy(fr);
     } else if (action == CMD_LOAD_FROM_FILE) {
-        QList<BFLocalControl::filter_rule_ptr > ruleslst;
+        QList<filter_rule_ptr > ruleslst;
         qDebug() << "CMD_GET_FROM_FILE\n";
         QFile  file(QString::fromStdString(thename)) ;
         if (!file.open(QIODevice::ReadOnly))  return -1;
@@ -78,7 +80,7 @@ int main(int argc, char *argv[])
         while(!in.atEnd()){
             filter_rule_t fr;
             in >>  fr;
-            ruleslst.append(BFLocalControl::filter_rule_ptr(new filter_rule_t(fr)));;
+            ruleslst.append(filter_rule_ptr(new filter_rule_t(fr)));;
         }
         file.close();
 

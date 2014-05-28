@@ -18,10 +18,10 @@ void BfServicePrivate::started()
     {
         QObject::connect(mBfc,SIGNAL(log(filter_rule_t)),this,SLOT(gotLog(filter_rule_t)));
 
-        QList<BFControl::filter_rule_ptr > rules_list;
+        QList<filter_rule_ptr > rules_list;
         rules_list << BfRules::getByPattern(filter_rule_t(0,0,0,CHAIN_INPUT)) << BfRules::getByPattern(filter_rule_t(0,0,0,CHAIN_OUTPUT));
 
-        foreach(BFControl::filter_rule_ptr p,rules_list)
+        foreach(filter_rule_ptr p,rules_list)
         {
             qDebug() << "BfServicePrivate::started" <<  *p;
         }
@@ -33,7 +33,7 @@ void BfServicePrivate::started()
         memset(&fr,0,sizeof(filter_rule_t));
         fr.base.chain = CHAIN_INPUT;
 
-        QList<BFControl::filter_rule_ptr > fr_list;
+        QList<filter_rule_ptr > fr_list;
         mBfc->getRulesSync(fr,fr_list,10000);
         //BfRules::loadFromList(fr_list);
         BfRules::saveToFile(BFConfig::instance().rulesCachePath());
@@ -44,7 +44,6 @@ void BfServicePrivate::started()
         T_INFO(QString("Can't create netlink socket)"));
     }
 
-    mLocalServer->run();
 
     T_INFO(QString("Local server started with code %1").arg(mLocalServer->run()));
 }
@@ -56,7 +55,7 @@ void BfServicePrivate::stop()
     memset(&fr,0,sizeof(filter_rule_t));
     fr.base.chain = CHAIN_INPUT;
 
-    QList<BFControl::filter_rule_ptr > fr_list;
+    QList<filter_rule_ptr > fr_list;
     mBfc->getRulesSync(fr,fr_list,10000);
     //BfRules::loadFromList(fr_list);
     BfRules::saveToFile(BFConfig::instance().rulesCachePath());

@@ -133,23 +133,7 @@ enum bf_messages_t {
                  };
 
 #pragma pack (1)
-/**
-@brief
-    Подписка на лог из ko
 
-*/
-typedef struct _log_subscribe_msg
-{
-   pid_t   pid;
-#ifdef __cplusplus
-   explicit _log_subscribe_msg(pid_t   pid=0):pid(pid){}
-#endif
-} log_subscribe_msg_t;
-
-typedef struct msg_done
-{
-    u_int32_t counter;
-} msg_done_t;
 
 typedef struct _ip_addr
 {
@@ -207,11 +191,40 @@ typedef struct filter_rule{
 #endif
 } filter_rule_t;
 
+/**
+@brief
+    Сообщение об ошибке
+
+*/
 typedef struct msg_err
 {
     filter_rule_t fr;
     u_int16_t code;
+#ifdef __cplusplus
+    explicit  msg_err(u_int16_t code=0):code(code){}
+#endif
 } msg_err_t;
+
+/**
+@brief
+    Подписка на лог из ko
+
+*/
+typedef struct _log_subscribe_msg
+{
+   pid_t   pid;
+#ifdef __cplusplus
+   explicit _log_subscribe_msg(pid_t   pid=0):pid(pid){}
+#endif
+} log_subscribe_msg_t;
+
+typedef struct msg_done
+{
+    u_int32_t counter;
+#ifdef __cplusplus
+   explicit msg_done(u_int32_t   counter=0):counter(counter){}
+#endif
+} msg_done_t;
 
 #pragma pack ()
 
@@ -236,31 +249,101 @@ static inline bool fr_pattern(const filter_rule_t *fr1, const filter_rule_t *fr2
 #if defined (__cplusplus) && defined(QT_VERSION)
 inline QDataStream &operator <<(QDataStream &stream,const filter_rule_t &fr)
 {
-    stream << fr.base.src_port;
-    stream << fr.base.dst_port;
-    stream << fr.base.s_addr.addr;
-    stream << fr.base.d_addr.addr;
-    stream << fr.base.proto;
-    stream << fr.base.chain;
-    stream << fr.policy;
-    stream << fr.off;
+    stream << fr.base.src_port
+           << fr.base.dst_port
+           << fr.base.s_addr.addr
+           << fr.base.d_addr.addr
+           << fr.base.proto
+           << fr.base.chain
+           << fr.policy
+           << fr.off;
 
     return stream;
 }
 
 inline QDataStream &operator >>(QDataStream &stream, filter_rule_t &fr)
 {
-    stream >> fr.base.src_port;
-    stream >> fr.base.dst_port;
-    stream >> fr.base.s_addr.addr;
-    stream >> fr.base.d_addr.addr;
-    stream >> fr.base.proto;
-    stream >> fr.base.chain;
-    stream >> fr.policy;
-    stream >> fr.off;
+    stream >> fr.base.src_port
+           >> fr.base.dst_port
+           >> fr.base.s_addr.addr
+           >> fr.base.d_addr.addr
+           >> fr.base.proto
+           >> fr.base.chain
+           >> fr.policy
+           >> fr.off;
 
     return stream;
 }
+
+inline QDataStream &operator <<(QDataStream &stream,const msg_err_t &err)
+{
+    stream << err.fr
+           << err.code;
+
+    return stream;
+}
+
+inline QDataStream &operator >>(QDataStream &stream, msg_err_t &err)
+{
+    stream >> err.fr
+           >> err.code;
+
+    return stream;
+}
+
+inline QDataStream &operator <<(QDataStream &stream,const log_subscribe_msg_t &ls)
+{
+    stream << ls.pid;
+
+    return stream;
+}
+
+inline QDataStream &operator >>(QDataStream &stream, log_subscribe_msg_t &ls)
+{
+    stream >> ls.pid;
+
+    return stream;
+}
+
+inline QDataStream &operator <<(QDataStream &stream,const msg_done_t &msg)
+{
+    stream << msg.counter;
+
+    return stream;
+}
+
+inline QDataStream &operator >>(QDataStream &stream, msg_done_t &msg)
+{
+    stream >> msg.counter;
+
+    return stream;
+}
+
+typedef QSharedPointer <filter_rule_t > filter_rule_ptr;
+
+Q_DECLARE_METATYPE(filter_rule_t)
+Q_DECLARE_METATYPE(msg_done_t)
+Q_DECLARE_METATYPE(msg_err_t)
+Q_DECLARE_METATYPE(log_subscribe_msg_t)
+
+inline static void registerBfTypes()
+{
+    qRegisterMetaType<filter_rule_t >(" filter_rule_t ");
+    qRegisterMetaTypeStreamOperators<filter_rule_t >(" filter_rule_t ");
+
+    qRegisterMetaType<msg_err_t >(" msg_err_t ");
+    qRegisterMetaTypeStreamOperators<msg_err_t >(" msg_err_t ");
+
+    qRegisterMetaType<msg_done_t >(" msg_done_t ");
+    qRegisterMetaTypeStreamOperators<msg_done_t >(" msg_done_t ");
+
+    qRegisterMetaType<log_subscribe_msg_t >(" log_subscribe_msg_t ");
+    qRegisterMetaTypeStreamOperators<log_subscribe_msg_t >(" log_subscribe_msg_t ");
+
+    qRegisterMetaType<QList<filter_rule_ptr > >(" QList<filter_rule_ptr> ");
+}
+
+
 
 namespace bf {
 
@@ -279,17 +362,21 @@ enum bf_cmd_t {
                   BF_CMD_LOG_SUBSCRIBE             //!< Подписка на лог (реализован только один подписчик)
                  };
 
+
+
 class BfCmd {
     public:
         bf_cmd_t      mType;                            // Тип команды BF_CMD_*
         quint32       mSequence;                        // Последовательный номер команды. Копируется в поле номера ответа. Для ориентации в потоке ответов.
-        filter_rule_t mFr;
+        // filter_rule_t mFr;
+        QVariant      mValue;
     public:
         friend QDataStream& operator<< (QDataStream& stream, const BfCmd& cmd) {
             unsigned char type = cmd.mType;
             stream << type
                    << cmd.mSequence
-                   << cmd.mFr;
+                   << cmd.mValue;
+                   //<< cmd.mFr;
             return stream;
         }
 
@@ -298,7 +385,8 @@ class BfCmd {
             stream >> type;
             cmd.mType = bf_cmd_t(type);
             stream >> cmd.mSequence;
-            stream >> cmd.mFr;
+            stream >> cmd.mValue;
+            //stream >> cmd.mFr;
             return stream;
         }
 };

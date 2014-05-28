@@ -7,7 +7,7 @@
 #include <QFile>
 
 
-QHash<filter_rule_base,BFControl::filter_rule_ptr> BfRules::sRules;
+QHash<filter_rule_base,filter_rule_ptr> BfRules::sRules;
 QMutex BfRules::mMux;
 
 uint qHash(const filter_rule_base& s)
@@ -21,13 +21,13 @@ BfRules::BfRules(QObject *parent) :
 
 }
 
-QList<BFControl::filter_rule_ptr > BfRules::getByPattern(const filter_rule_t  &fr)
+QList<filter_rule_ptr > BfRules::getByPattern(const filter_rule_t  &fr)
 {
-    QList<BFControl::filter_rule_ptr > ruleslst;
+    QList<filter_rule_ptr > ruleslst;
     QMutexLocker lock_(&mMux);
     //qDebug()<< "Enter BfRules::getByPattern";
     //qDebug() << fr;
-    foreach (BFControl::filter_rule_ptr p,sRules)
+    foreach (filter_rule_ptr p,sRules)
     {
         //qDebug() << "rule: "<< *p;
         if(fr_pattern(&*p,&fr) )
@@ -40,12 +40,12 @@ QList<BFControl::filter_rule_ptr > BfRules::getByPattern(const filter_rule_t  &f
     return ruleslst;
 }
 
-QList<BFControl::filter_rule_ptr > BfRules::loadFromFile(const QString &thename)
+QList<filter_rule_ptr > BfRules::loadFromFile(const QString &thename)
 {
     std::ifstream is((thename+".xml").toStdString());
 
     //qDebug()<< "Enter BfRules::getFromFile";
-    QList<BFControl::filter_rule_ptr > ruleslst;
+    QList<filter_rule_ptr > ruleslst;
     QFile  file(thename) ;
     if (!file.open(QIODevice::ReadOnly))  return ruleslst;
     QDataStream in(&file);
@@ -55,7 +55,7 @@ QList<BFControl::filter_rule_ptr > BfRules::loadFromFile(const QString &thename)
     while(!in.atEnd()){
         filter_rule_t fr;
         in >>  fr;
-        BFControl::filter_rule_ptr p = BFControl::filter_rule_ptr(new filter_rule_t(fr));
+        filter_rule_ptr p = filter_rule_ptr(new filter_rule_t(fr));
         ruleslst.append(p);
         sRules[fr.base]= p;
     }
@@ -83,7 +83,7 @@ QList<BFControl::filter_rule_ptr > BfRules::loadFromFile(const QString &thename)
 
 bool BfRules::saveToFile(const QString &thename)
 {
-    QList<BFControl::filter_rule_ptr > ruleslst;
+    QList<filter_rule_ptr > ruleslst;
     std::ofstream os((thename+".xml").toStdString());
 
     QFile  file(thename);
@@ -95,7 +95,7 @@ bool BfRules::saveToFile(const QString &thename)
 
     config_t cfg;
 
-    foreach (BFControl::filter_rule_ptr p,sRules)
+    foreach (filter_rule_ptr p,sRules)
     {
         out << *(p.data());
         cfg.rules.push_back(*p);
@@ -124,12 +124,12 @@ bool BfRules::saveToFile(const QString &thename)
     return true;
 }
 
- void BfRules::loadFromList(const QList<BFControl::filter_rule_ptr > &list)
+ void BfRules::loadFromList(const QList<filter_rule_ptr > &list)
  {
      //qDebug()<< "Enter BfRules::getFromList";
      QMutexLocker lock_(&mMux);
      sRules.clear();
-     foreach(BFControl::filter_rule_ptr p,list)
+     foreach(filter_rule_ptr p,list)
      {
          sRules[p->base]= p;
 

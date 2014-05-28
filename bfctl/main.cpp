@@ -64,7 +64,7 @@ int processCommand(int action,cmd_utils::cmd_args& ca)
 #ifdef TEST_ASYNC_GET_RULES
         bfc->getRulesAsync(fr);
 #else
-        QList<BFControl::filter_rule_ptr > ruleslst;
+        QList<filter_rule_ptr > ruleslst;
         int ret =  bfc.getRulesSync(fr,  ruleslst);
         int i;
         qout.setFieldAlignment(QTextStream::AlignLeft);
@@ -84,7 +84,7 @@ int processCommand(int action,cmd_utils::cmd_args& ca)
 
             i=0;
 
-        foreach (BFControl::filter_rule_ptr rule,ruleslst){
+        foreach (filter_rule_ptr rule,ruleslst){
             filter_rule_t fr_out = *static_cast<filter_rule_t*>(rule.data());
             if (i<ch_num)
             {
@@ -144,7 +144,7 @@ int processCommand(int action,cmd_utils::cmd_args& ca)
         }
 
     } else if (action == CMD_LOAD_FROM_FILE) {
-        QList<BFControl::filter_rule_ptr > ruleslst;
+        QList<filter_rule_ptr > ruleslst;
         //qDebug() << "CMD_LOAD_FROM_FILE";
         QFile  file(QString::fromStdString(thename)) ;
         if (!file.open(QIODevice::ReadOnly))  return -1;
@@ -153,7 +153,7 @@ int processCommand(int action,cmd_utils::cmd_args& ca)
         while(!in.atEnd()){
             filter_rule_t fr;
             in >>  fr;
-            ruleslst.append(BFControl::filter_rule_ptr(new filter_rule_t(fr)));;
+            ruleslst.append(filter_rule_ptr(new filter_rule_t(fr)));;
         }
         file.close();
 

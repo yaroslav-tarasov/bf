@@ -7,6 +7,6 @@
 #define BARRIER_CONFIG_BF_ENVKEY        "BARRIER_CONFIG_BF"
 #define BARRIER_CONFIG_BF_DEFAULT       "/etc/barrier.conf.d/bf.conf.xml"
 #define BARRIER_CONFIG_BF_LOG_MAX_SIZE  200000000
-#define BARRIER_BF_LOCAL_SOCK           "/tmp/bf.sock"
+#define BARRIER_BF_LOCAL_SOCK           "bf.service"
 
 #endif // BF_DEFS_H

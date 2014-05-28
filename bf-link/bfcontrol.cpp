@@ -14,15 +14,15 @@ struct BFControlPrivate
 {
     explicit BFControlPrivate(NetlinkSocket *pNS):mNS(pNS){}
     NetlinkSocket *mNS;
-    QList<BFControl::filter_rule_ptr >* ruleslst;
+    QList<filter_rule_ptr >* ruleslst;
 };
 
 
 BFControl::BFControl(QObject *parent) :
     QObject(parent)
 {
-    qRegisterMetaType<QList<filter_rule_ptr > >(" QList<filter_rule_ptr> ");
-    qRegisterMetaType<filter_rule_t >(" filter_rule_t ");
+
+    registerBfTypes();
 
     d.reset(new BFControlPrivate(new NetlinkSocket(this)));
     QObject::connect( d->mNS,SIGNAL(data(QByteArray)),this,SLOT(process(QByteArray)));
@@ -315,7 +315,7 @@ int BFControl::subscribeLog(pid_t pid)
 int BFControl::sendRulesSync(const QList<filter_rule_ptr> &ruleslst)
 {
     //int i=0;
-    foreach (BFControl::filter_rule_ptr rule,ruleslst){
+    foreach (filter_rule_ptr rule,ruleslst){
         //qDebug() << "sendRulesSync  " << "rule #" << i++ << "  " << rule->base.src_port << "  " << rule->base.dst_port << "  " << rule->base.proto;
         filter_rule_t fr = *static_cast<filter_rule_t*>(rule.data());
         int ret = addRule(fr);

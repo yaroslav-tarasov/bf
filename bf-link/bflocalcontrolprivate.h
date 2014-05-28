@@ -36,10 +36,17 @@ public:
     int         setChainPolicy (const filter_rule_t &pattern);
     int         subscribeLog   (/*pid_t pid*/);
 private:
-    inline int  sendMsg(int type,const filter_rule_t* msg,size_t size);
+    template<typename T>
+    inline int  sendMsg(bf::bf_cmd_t type,const T& msg,size_t size = sizeof(T));
     int         sendCommand(const bf::bf_cmd_ptr_t& cmd);
 
 signals:
+    void data(filter_rule_t);
+    void data(QByteArray);
+    void data(QList <filter_rule_ptr > );
+    void log (filter_rule_t);
+    void done();
+    void error (quint16);
 
 public slots:
 
@@ -50,12 +57,12 @@ private slots:
     void        onSocketError(QLocalSocket::LocalSocketError err);
 
 private:
-    int           mSocketWantedData;
+    int                                      mSocketWantedData;
 private:
-    QLocalSocket *mLocalSocket;
-    QHash<quint32, bf::bf_cmd_ptr_t> mSentCommands;
-    QList<bf::bf_cmd_ptr_t> mCommandQueue;
-    QList<BFLocalControl::filter_rule_ptr >* ruleslst;
+    QLocalSocket                            *mLocalSocket;
+    QHash<quint32, bf::bf_cmd_ptr_t>         mSentCommands;
+    QList<bf::bf_cmd_ptr_t>                  mCommandQueue;
+    QList<filter_rule_ptr >* ruleslst;
 };
 
 #endif // BFLOCALCONTROLPRIVATE_H

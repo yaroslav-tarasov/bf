@@ -67,6 +67,7 @@ public:
     {
         if(!nls) return -1;
         return nl_send_simple(nls, type, flags, buf, size);
+
     }
 
     inline int recv ( struct sockaddr_nl *nla, unsigned char **buf, struct ucred **creds)
