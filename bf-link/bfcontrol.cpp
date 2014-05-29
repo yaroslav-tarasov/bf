@@ -8,7 +8,6 @@
 #include "timerproxy.h"
 #include "qwaitfordone.h"
 
-// const int commandWaitTime = 500; // в миллисекундах
 
 struct BFControlPrivate
 {
@@ -24,7 +23,7 @@ BFControl::BFControl(QObject *parent) :
 
     registerBfTypes();
 
-    d.reset(new BFControlPrivate(new NetlinkSocket(this)));
+    d.reset(new BFControlPrivate(new NetlinkSocket(/*this*/)));
     QObject::connect( d->mNS,SIGNAL(data(QByteArray)),this,SLOT(process(QByteArray)));
     QObject::connect( d->mNS,SIGNAL(data(QByteArray)),this,SIGNAL(data(QByteArray)));
 

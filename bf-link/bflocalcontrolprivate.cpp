@@ -78,8 +78,8 @@ void BFLocalControl::BFLocalControlPrivate::onReadyRead() {
         {
                 msg_err_t errr = cmd.mValue.value<msg_err_t>();
 
-                qDebug() << "Get BF_CMD_ERR.  Code" << errr.code
-                         << "seq." << cmd.mSequence;
+//                qDebug() << "Get BF_CMD_ERR.  Code" << errr.code
+//                         << "seq." << cmd.mSequence;
 
                 emit error(quint16(errr.code));
 
@@ -161,6 +161,10 @@ int BFLocalControl::BFLocalControlPrivate::deleteRule(const filter_rule_t &patte
 
 int BFLocalControl::BFLocalControlPrivate::deleteRules(const filter_rule_t &pattern)
 {
+    QWaitForDone w(this,QWaitForDone::DISCONNECT_DONE);
+    ErrorReciever errr(this);
+    QObject::connect(this, SIGNAL(error(quint16)), &errr, SLOT(setError(quint16)));
+    QObject::connect(this, SIGNAL(error(quint16)), &w, SLOT(quit()));
     int ret = this->sendMsg(BF_CMD_DELETE_ALL_RULES, pattern, sizeof(filter_rule_t));
     if(ret<0)
     {
@@ -171,7 +175,11 @@ int BFLocalControl::BFLocalControlPrivate::deleteRules(const filter_rule_t &patt
         return -BF_ERR_SOCK;
     }
 
-    return BF_ERR_OK;
+    w.start(commandWaitTime);
+
+    return -errr.getError();
+
+
 }
 
 ///////////////////////////////////////
@@ -327,7 +335,7 @@ int  BFLocalControl::BFLocalControlPrivate::sendCommand(const bf_cmd_ptr_t& cmd)
     {
         mCommandQueue << cmd;
         qWarning() << "Local socket not connected. Command queued and will be send later when connection would be established";
-        return 0;
+        return -1;
     }
 
     QByteArray ba;

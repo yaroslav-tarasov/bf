@@ -19,15 +19,16 @@ BFLocalServer::~BFLocalServer()
 
 int BFLocalServer::run(QString serverName) {
 
-    QFile::remove("/tmp/" + serverName);
+    QFile::remove("/tmp/"+serverName);
     if(!mLocalServer->listen(serverName)) {
         qWarning() << "!!!WARNING!!! Can't start server on"
                    << serverName << ":" << mLocalServer->errorString();
         return -1;
     }
+
     connect(mLocalServer, SIGNAL(newConnection()), SLOT(onLocalNewConnection()));
 
-    qDebug() << "Listening on path:" << serverName;
+    qDebug() << "Listening on path:" << mLocalServer->fullServerName();
 
 
     mBfc->create();
@@ -134,14 +135,14 @@ void BFLocalServer::onLocalError(QLocalSocket::LocalSocketError err) {
 void BFLocalServer::processMessage(bf::BfCmd& cmd) {
     using namespace bf;
 
+    qDebug() << "Get command.  Value" << cmd.mType
+             << "seq." << cmd.mSequence;
+
     switch(cmd.mType) {
         case BF_CMD_ADD_RULE:
         {
             filter_rule_t fr = cmd.mValue.value<filter_rule_t>();
-            int rv = mBfc->addRule(fr/*cmd.mFr*/);
-
-            qDebug() << "Get command.  Value" << cmd.mType
-                     << "seq." << cmd.mSequence;
+            int rv = mBfc->addRule(fr);
 
             msg_err_t errr(-rv);
             sendMsg(BF_CMD_ERR, cmd.mSequence, errr);
@@ -151,10 +152,7 @@ void BFLocalServer::processMessage(bf::BfCmd& cmd) {
         case BF_CMD_UPDATE_RULE:
         {
             filter_rule_t fr = cmd.mValue.value<filter_rule_t>();
-            int rv = mBfc->updateRule(fr/*cmd.mFr*/);
-
-            qDebug() << "Get command.  Value" << cmd.mType
-                     << "seq." << cmd.mSequence;
+            int rv = mBfc->updateRule(fr);
 
             msg_err_t errr(-rv);
             sendMsg(BF_CMD_ERR, cmd.mSequence, errr);
@@ -164,10 +162,7 @@ void BFLocalServer::processMessage(bf::BfCmd& cmd) {
         case BF_CMD_DELETE_RULE:
         {
             filter_rule_t fr = cmd.mValue.value<filter_rule_t>();
-            int rv = mBfc->deleteRule(fr/*cmd.mFr*/);
-
-            qDebug() << "Get command.  Value" << cmd.mType
-                     << "seq." << cmd.mSequence;
+            int rv = mBfc->deleteRule(fr);
 
             msg_err_t errr(-rv);
             sendMsg(BF_CMD_ERR, cmd.mSequence, errr);
@@ -177,10 +172,7 @@ void BFLocalServer::processMessage(bf::BfCmd& cmd) {
         case BF_CMD_DELETE_ALL_RULES:
         {
             filter_rule_t fr = cmd.mValue.value<filter_rule_t>();
-            int rv = mBfc->deleteRules(fr/*cmd.mFr*/);
-
-            qDebug() << "Get command.  Value" << cmd.mType
-                     << "seq." << cmd.mSequence;
+            int rv = mBfc->deleteRules(fr);
 
             msg_err_t errr(-rv);
             sendMsg(BF_CMD_ERR, cmd.mSequence, errr);
@@ -190,10 +182,7 @@ void BFLocalServer::processMessage(bf::BfCmd& cmd) {
         case BF_CMD_CHAIN_POLICY:
         {
             filter_rule_t fr = cmd.mValue.value<filter_rule_t>();
-            int rv = mBfc->setChainPolicy(fr/*cmd.mFr*/);
-
-            qDebug() << "Get command.  Value" << cmd.mType
-                     << "seq." << cmd.mSequence;
+            int rv = mBfc->setChainPolicy(fr);
 
             msg_err_t errr(-rv);
             sendMsg(BF_CMD_ERR, cmd.mSequence, errr);
@@ -205,9 +194,6 @@ void BFLocalServer::processMessage(bf::BfCmd& cmd) {
             filter_rule_t fr = cmd.mValue.value<filter_rule_t>();
             QList<filter_rule_ptr > ruleslst;
             int rv =  mBfc->getRulesSync(fr,  ruleslst);
-
-            qDebug() << "Get command.  Value" << cmd.mType
-                     << "seq." << cmd.mSequence;
 
             if(rv>=0)
             {

@@ -7,6 +7,7 @@
 #include "bfrules.h"
 #include "bfconfig.h"
 #include "qwaitfordone.h"
+#include "barrier_integration.h"
 //
 #include <iostream>
 //
@@ -58,12 +59,10 @@ void BfService::createApplication(int &argc, char **argv)
 
     BfRules::loadFromFile(BFConfig::instance().rulesCachePath());
 
-    StatusValueType state = StatusValueBad;
+    StatusValueType state = StatusValueOk;
     int8_t opCode = BAU_OP_SUCCESS;
-    BAu_sendIntegrityMessage(BAU_INTEGRITY_END,"damned fucking component", opCode);
+    BAu_sendMessage(BAU_FW_RULE_ADD, opCode, "woooooooot" );
 
-
-//    InitMain::setupSearchPath();
 
 //    if (QDir("translations:").exists("adpService_ru.qm"))
 //    {
@@ -72,21 +71,6 @@ void BfService::createApplication(int &argc, char **argv)
 //        QCoreApplication::installTranslator(translator);
 //    }
 
-//    if (!config())
-//        throw QString();
-
-//    if (!StukInteraction::instance("Adp service")->init())
-//        qDebug() << tr("Could not init STUK");
-
-//    connect(StukInteraction::instance(), SIGNAL(becomeMain()), SLOT(onBecomeMaster()));
-//    connect(StukInteraction::instance(), SIGNAL(becomeReserv()), SLOT(onBecomeSlave()));
-
-//    connect(outerWorker, SIGNAL(cksBad()), StukInteraction::instance(), SLOT(aftnLost()));
-//    connect(outerWorker, SIGNAL(cksGood()), StukInteraction::instance(), SLOT(aftnFound()));
-
-//    connect(outerWorker, SIGNAL(pivpUndefined()), StukInteraction::instance(), SLOT(pivpUndefined()));
-//    connect(outerWorker, SIGNAL(pivpBad()), StukInteraction::instance(), SLOT(pivpLost()));
-//    connect(outerWorker, SIGNAL(pivpGood()), StukInteraction::instance(), SLOT(pivpFound()));
 }
 
 void BfService::start()
@@ -119,11 +103,8 @@ void BfService::startThreads()
 void BfService::stop()
 {
      T_INFO(QString("BfService::stop()"));
-     // QWaitForDone w(d); Для синхронного получение правил бессмысленно
 
      d->stop();
-
-     // w.start(20000);
 
      privateThread->quit();
      if (!privateThread->wait(1000))
@@ -131,12 +112,6 @@ void BfService::stop()
          privateThread->terminate();
      }
 
-//    if (threadsStarted)
-//        stopThreads();
-
-//    qLogInfo(objectName()) << tr("Service stopped");
-//    using namespace Log4Qt;
-//    LogManager::rootLogger()->removeAllAppenders();
 }
 
 void BfService::stopThreads()
