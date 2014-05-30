@@ -16,7 +16,7 @@ public:
     inline qint64           logMaxFileSize() const { return mLogMaxFileSize; }
     inline const QString&   logFile()        const { return mLogFile; }
     int                     load(const QString& fPath);
-    void                    init();
+
 
 signals:
     
@@ -24,6 +24,7 @@ public slots:
 private:
     Q_DISABLE_COPY(BFConfig)
     explicit                 BFConfig(QObject *parent = 0);
+    void                     init    ();    
     int                      parseServiceConfig(QDomElement& serviceConfigElement);
 //// Параметры системы
     qint8    mInitializedState; // Состояние  (0 - неинициализировано, 1 - инициализировано)
