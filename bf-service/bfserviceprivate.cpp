@@ -2,11 +2,13 @@
 #include "qsyslog.h"
 #include "bfrules.h"
 #include "bfconfig.h"
+#include "signalcatcher.h"
+
+#include <QCoreApplication>
 
 BfServicePrivate::BfServicePrivate(QObject *parent) :
     QObject(parent)
 {
-
     mBfc = new BFControl(this);
     mLocalServer = new BFLocalServer(this);
 }
@@ -14,6 +16,13 @@ BfServicePrivate::BfServicePrivate(QObject *parent) :
 void BfServicePrivate::started()
 {
     T_INFO("BfServicePrivate::started()");
+
+    SignalCatcher::init();
+    connect(&SignalCatcher::instance(),SIGNAL(sigHup()),SLOT(onSignalHUP()));
+    connect(&SignalCatcher::instance(),SIGNAL(sigInt()),SLOT(onSignalINT()));
+    connect(&SignalCatcher::instance(),SIGNAL(sigTerm()),SLOT(onSignalTERM()));
+    connect(&SignalCatcher::instance(),SIGNAL(sigUsr()),SLOT(onSignalUSR()));
+
     if(mBfc->create()==0)
     {
         QObject::connect(mBfc,SIGNAL(log(filter_rule_t)),this,SLOT(gotLog(filter_rule_t)));
@@ -41,7 +50,7 @@ void BfServicePrivate::started()
     }
     else
     {
-        T_INFO(QString("Can't create netlink socket)"));
+        T_ERROR(QString("Can't create netlink socket)"));
     }
 
 
@@ -75,5 +84,41 @@ void BfServicePrivate::gotLog(filter_rule_t fr)
     //QSyslog::instance().syslog(/*LOG_INFO*/6,QString("gotLog(filter_rule_t)"));
 
     qDebug() << fr;
+
+}
+
+bool     BfServicePrivate::event (QEvent *e)
+{
+    if (e->type() == QEvent::ThreadChange)
+    {
+
+    }
+
+    return QObject::event(e);
+}
+
+
+void BfServicePrivate::onSignalHUP ()
+{
+    T_WARN(QString("HUP catched"));
+
+}
+
+void BfServicePrivate::onSignalINT ()
+{
+    T_WARN(QString("INT catched"));
+
+}
+
+void BfServicePrivate::onSignalTERM()
+{
+    T_WARN(QString("TERM catched"));
+    qDebug() << "Terminating application...";
+    QCoreApplication::exit();
+}
+
+void BfServicePrivate::onSignalUSR ()
+{
+    T_WARN(QString("USR catched"));
 
 }

@@ -19,7 +19,9 @@ HEADERS += \
     bfrules.h \
     bfconfig.h \
     filelogger.h \
-    logger.h
+    logger.h \
+    signalcatcher.h \
+    utils.h
 
 # Input
 SOURCES += main.cpp \
@@ -29,7 +31,9 @@ SOURCES += main.cpp \
     bfrules.cpp \
     bfconfig.cpp \
     filelogger.cpp \
-    logger.cpp
+    logger.cpp \
+    signalcatcher.cpp \
+    utils.cpp
 
 #############
 # include  paths

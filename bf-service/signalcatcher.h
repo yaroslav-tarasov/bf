@@ -10,6 +10,7 @@ class SignalCatcher : public QObject
 
 public:
     static void init();
+    static SignalCatcher& instance();
 private:
     // Unix signal handlers.
     static void intSignalHandler     (int unused);
@@ -17,29 +18,27 @@ private:
     static void termSignalHandler    (int unused);
     static void hupSignalHandler     (int unused);
     static int  installSignalHandlers();
-    void        initSignalHandles    ();
+           void initSignalHandles    ();
 
 public slots:
     // Qt signal handlers.
-    void        handleSigInt ();
-    void        handleSigUsr ();
-    void        handleSigTerm();
-    void        handleSigHup ();
+           void handleSigInt ();
+           void handleSigUsr ();
+           void handleSigTerm();
+           void handleSigHup ();
 
 
 signals:
-    void      sigInt ();
-    void      sigUsr ();
-    void      sigTerm();
-    void      sigHup ();
+           void sigInt ();
+           void sigUsr ();
+           void sigTerm();
+           void sigHup ();
 public slots:
 
 private:
     explicit SignalCatcher(QObject *parent = 0);
     Q_DISABLE_COPY(SignalCatcher)
-    
-    static SignalCatcher& instance();
-    
+
     QSocketNotifier *m_SockNotifierInt;
     QSocketNotifier *m_SockNotifierUsr;
     QSocketNotifier *m_SockNotifierTerm;

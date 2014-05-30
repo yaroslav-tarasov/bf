@@ -1,4 +1,9 @@
 #include "signalcatcher.h"
+#include <QDebug>
+
+#include <signal.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 
 
 int SignalCatcher::sigIntFd [2];
@@ -7,10 +12,11 @@ int SignalCatcher::sigTermFd[2];
 int SignalCatcher::sigHupFd [2];
 
 
-SignalCatcher::SignalCatcher()
+SignalCatcher::SignalCatcher(QObject *parent):
+    QObject(parent)
 {
-  installSignalHandlers();
   initSignalHandles();
+  installSignalHandlers();
 }
 
 void SignalCatcher::init()
@@ -21,7 +27,7 @@ void SignalCatcher::init()
 
 SignalCatcher& SignalCatcher::instance()
 {
-    SignalCatcher sc;
+    static SignalCatcher sc;
     return sc;
 }
 
@@ -61,7 +67,7 @@ int SignalCatcher::installSignalHandlers()
 {
     struct sigaction intr, usr, term, hup;
 
-    intr.sa_handler = &BfService::intSignalHandler;
+    intr.sa_handler = &SignalCatcher::intSignalHandler;
     sigemptyset(&intr.sa_mask);
     intr.sa_flags = SA_SIGINFO;
     if(sigaction(SIGINT, &intr, NULL) < 0) {
@@ -69,7 +75,7 @@ int SignalCatcher::installSignalHandlers()
         return -1;
     }
 
-    usr.sa_handler = &BfService::usrSignalHandler;
+    usr.sa_handler = &SignalCatcher::usrSignalHandler;
     sigemptyset(&usr.sa_mask);
     usr.sa_flags = SA_SIGINFO;
     if(sigaction(SIGUSR2, &usr, NULL) < 0) {
@@ -77,7 +83,7 @@ int SignalCatcher::installSignalHandlers()
         return -1;
     }
 
-    term.sa_handler = &BfService::termSignalHandler;
+    term.sa_handler = &SignalCatcher::termSignalHandler;
     sigemptyset(&term.sa_mask);
     term.sa_flags = SA_SIGINFO;
     if(sigaction(SIGTERM, &term, NULL) < 0) {
@@ -85,7 +91,7 @@ int SignalCatcher::installSignalHandlers()
         return -1;
     }
 
-    hup.sa_handler = &BfService::hupSignalHandler;
+    hup.sa_handler = &SignalCatcher::hupSignalHandler;
     sigemptyset(&hup.sa_mask);
     hup.sa_flags = SA_SIGINFO;
     if(sigaction(SIGHUP, &hup, NULL) < 0) {
@@ -93,6 +99,7 @@ int SignalCatcher::installSignalHandlers()
         return -1;
     }
 
+    return 0;
 }
 
 void SignalCatcher::initSignalHandles()

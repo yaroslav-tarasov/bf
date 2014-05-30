@@ -185,7 +185,6 @@ int main(int argc, char *argv[])
 
     QStringList cmdline_args = QCoreApplication::arguments();
 
-
     filter_rule_t fr;
     std::string thename;
     cmd_utils::cmd_args ca(fr,thename);

@@ -8,5 +8,6 @@
 #define BARRIER_CONFIG_BF_DEFAULT       "/etc/barrier.conf.d/bf.conf.xml"
 #define BARRIER_CONFIG_BF_LOG_MAX_SIZE  200000000
 #define BARRIER_BF_LOCAL_SOCK           "bf.service"
+#define BARRIER_BF_BOOTTIMEFILE         "/tmp/bf.boottime"
 
 #endif // BF_DEFS_H
