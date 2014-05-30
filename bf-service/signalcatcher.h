@@ -8,6 +8,9 @@ class SignalCatcher : public QObject
 {
     Q_OBJECT
 
+public:
+    static void init();
+    static SignalCatcher& instance();
 private:
     // Unix signal handlers.
     static void intSignalHandler     (int unused);
