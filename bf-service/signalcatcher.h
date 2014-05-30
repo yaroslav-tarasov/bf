@@ -10,7 +10,6 @@ class SignalCatcher : public QObject
 
 public:
     static void init();
-    static SignalCatcher& instance();
 private:
     // Unix signal handlers.
     static void intSignalHandler     (int unused);
@@ -38,7 +37,9 @@ public slots:
 private:
     explicit SignalCatcher(QObject *parent = 0);
     Q_DISABLE_COPY(SignalCatcher)
-
+    
+    static SignalCatcher& instance();
+    
     QSocketNotifier *m_SockNotifierInt;
     QSocketNotifier *m_SockNotifierUsr;
     QSocketNotifier *m_SockNotifierTerm;
