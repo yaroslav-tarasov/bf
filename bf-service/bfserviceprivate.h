@@ -12,11 +12,13 @@ class BfServicePrivate : public QObject
 public:
     explicit BfServicePrivate(QObject *parent = 0);
     virtual bool     event   (QEvent *e);
+    void             setRebooted(bool r){mRebooted=r;}
 protected:
 
 private:
     BFControl*      mBfc;
     BFLocalServer*  mLocalServer;
+    bool            mRebooted;
 signals:
     void done();
 

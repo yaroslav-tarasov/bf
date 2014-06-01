@@ -7,7 +7,7 @@
 #include <QCoreApplication>
 
 BfServicePrivate::BfServicePrivate(QObject *parent) :
-    QObject(parent)
+    QObject(parent),mRebooted(false)
 {
     mBfc = new BFControl(this);
     mLocalServer = new BFLocalServer(this);

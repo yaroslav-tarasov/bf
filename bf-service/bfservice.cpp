@@ -38,9 +38,6 @@ BfService::BfService(int argc, char **argv,const QString &name):QtService<QCoreA
 
     logging::add_file_writer();
     logging::add_syslog_writer();
-
-    T_INFO(QString("BfService rebooted %1").arg(sys_utils::isReboot(BARRIER_BF_BOOTTIMEFILE)?"true":"false"));
-
 }
 
 BfService::~BfService()
@@ -89,6 +86,9 @@ void BfService::start()
 //    qLogInfo(objectName()) << tr("Log path: '%1'").arg(QFileInfo(config()->logPath()).canonicalFilePath());
 //    qLogInfo(objectName()) << tr("Aerodromes: '%1'").arg(config()->allAirports().join("', '"));
 
+     bool rebooted = sys_utils::isReboot(BARRIER_BF_BOOTTIMEFILE);
+     T_INFO(QString("BfService: computer was rebooted %1").arg(rebooted?"true":"false"));
+     d->setRebooted(rebooted);
      privateThread->start();
 }
 
