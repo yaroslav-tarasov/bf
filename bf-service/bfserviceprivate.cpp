@@ -27,13 +27,26 @@ void BfServicePrivate::started()
     {
         QObject::connect(mBfc,SIGNAL(log(filter_rule_t)),this,SLOT(gotLog(filter_rule_t)));
 
+        BfRules::loadFromFile(BFConfig::instance().rulesCachePath());
         QList<filter_rule_ptr > rules_list;
         rules_list << BfRules::getByPattern(filter_rule_t(0,0,0,CHAIN_INPUT)) << BfRules::getByPattern(filter_rule_t(0,0,0,CHAIN_OUTPUT));
 
+        qDebug() << "Rules saved at last session " << BFConfig::instance().rulesCachePath();
+
         foreach(filter_rule_ptr p,rules_list)
         {
-            qDebug() << "BfServicePrivate::started" <<  *p;
+            qDebug() <<  *p;
         }
+
+        qDebug() << "End of rules saved at last session";
+
+        qDebug() << "Trying to load rules to k/o";
+
+        // TODO Ежели мы перезагружались, целиком загрузим правила
+        //if(mRebooted)
+        mBfc->sendRulesSync(rules_list);
+
+        qDebug() << "----------------------------------";
 
         mBfc->subscribeLog(getpid());
         T_INFO(QString("Try to subscribe with pid %1").arg(getpid()));
@@ -44,7 +57,8 @@ void BfServicePrivate::started()
 
         QList<filter_rule_ptr > fr_list;
         mBfc->getRulesSync(fr,fr_list,10000);
-        //BfRules::loadFromList(fr_list);
+
+        BfRules::loadFromList(fr_list);
         BfRules::saveToFile(BFConfig::instance().rulesCachePath());
 
     }
@@ -62,11 +76,19 @@ void BfServicePrivate::stop()
     T_INFO(QString("Enter BfServicePrivate::stop()"));
     filter_rule_t fr;
     memset(&fr,0,sizeof(filter_rule_t));
-    fr.base.chain = CHAIN_INPUT;
+    fr.base.chain = CHAIN_ALL;
 
     QList<filter_rule_ptr > fr_list;
     mBfc->getRulesSync(fr,fr_list,10000);
-    //BfRules::loadFromList(fr_list);
+
+    qDebug() << "Rules at that session";
+
+    foreach(filter_rule_ptr p,fr_list)
+    {
+        qDebug() <<  *p;
+    }
+
+    BfRules::loadFromList(fr_list);
     BfRules::saveToFile(BFConfig::instance().rulesCachePath());
     T_INFO(QString("Leave BfServicePrivate::stop()"));
 

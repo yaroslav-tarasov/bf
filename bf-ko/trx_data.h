@@ -118,7 +118,7 @@ static inline const char* get_chain_name(enum bf_chain_t chain) {
 */
 
 enum bf_messages_t {
-                  MSG_ADD_RULE=NLMSG_MIN_TYPE + 2, //!< Добавление правила
+                  MSG_ADD_RULE=NLMSG_MIN_TYPE + 2, //!< Добавление правила  обычно 0x10 + 2
                   MSG_DATA,                        //!< При пересылке данных из модуля ядра в  userspace
                   MSG_DONE,                        //!< По окончании пересылки данных из ядра
                   MSG_DELETE_RULE ,                //!< Удаление конкретного правила
@@ -177,6 +177,19 @@ typedef struct filter_rule_base {
     }
 #endif
 } filter_rule_base_t;
+
+//
+//   Специальное правило для установки политики цепочки
+//   Все БАЗОВЫЕ поля кроме ид цепочки равны 0
+//
+static inline int policy_rule(struct filter_rule_base* fr)
+{
+    return fr->proto == 0 &&
+           fr->src_port == 0  &&
+           fr->dst_port == 0  &&
+           fr->d_addr.addr == 0 &&
+           fr->s_addr.addr == 0;
+}
 
 typedef struct filter_rule{
     unsigned char	h_dest[ETH_ALEN];

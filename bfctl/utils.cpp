@@ -17,11 +17,11 @@ static const char * prog_vers = "0.0.1a";
 namespace cmd_utils {
 int
 get_proto(char* proto) {
-    if (strcmp(proto, "ALL") == 0) {
+    if (strcasecmp(proto, "ALL") == 0) {
         return IPPROTO_ALL;
-    } else if (strcmp(proto, "TCP") == 0) {
+    } else if (strcasecmp(proto, "TCP") == 0) {
         return IPPROTO_TCP;
-    } else if (strcmp(proto, "UDP") == 0) {
+    } else if (strcasecmp(proto, "UDP") == 0) {
         return IPPROTO_UDP;
     }
     return IPPROTO_NOTEXIST;
@@ -29,9 +29,9 @@ get_proto(char* proto) {
 
 int
 get_switch(char* off) {
-    if (strcmp(off, "NO") == 0) {
+    if (strcasecmp(off, "NO") == 0) {
         return SW_NO;
-    } else if (strcmp(off, "YES") == 0) {
+    } else if (strcasecmp(off, "YES") == 0) {
         return SW_YES;
     }
 
@@ -40,11 +40,11 @@ get_switch(char* off) {
 
 int
 get_chain(char* dir) {
-    if (strcmp(dir, "ALL") == 0) {
+    if (strcasecmp(dir, "ALL") == 0) {
         return CHAIN_ALL;
-    } else if (strcmp(dir, "INPUT") == 0) {
+    } else if (strcasecmp(dir, "INPUT") == 0) {
         return CHAIN_INPUT;
-    } else if (strcmp(dir, "OUTPUT") == 0) {
+    } else if (strcasecmp(dir, "OUTPUT") == 0) {
         return CHAIN_OUTPUT;
     }
     return CHAIN_NONE;
@@ -54,9 +54,9 @@ get_chain(char* dir) {
 
 int
 get_policy(char* policy) {
-    if (strcmp(policy, "DROP") == 0) {
+    if (strcasecmp(policy, "DROP") == 0) {
     return POLICY_DROP;
-    } else if (strcmp(policy, "ACCEPT") == 0) {
+    } else if (strcasecmp(policy, "ACCEPT") == 0) {
     return POLICY_ACCEPT;
     }
     return POLICY_NONE;
@@ -141,7 +141,6 @@ parse_cmd_args(int argc, char *argv[], cmd_args& ca )
                    std::cerr << "Пропущен обязательный параметр название цепочки " << std::endl ;
                    command = CMD_PRINT_HELP;
                 }
-                //printf("chain in_out = %d\n", fr->base.chain);
               break;
             case 'D':
               command = CMD_DELETE;       //delete
@@ -187,9 +186,6 @@ parse_cmd_args(int argc, char *argv[], cmd_args& ca )
                 }
             }
             break;
-            //case 'm':
-              //mf_rule.src_netmask = optarg; //srcnetmask:
-            //  break;
             case 'o':
               fr->off = get_switch(optarg); //switch
               if (fr->off==SW_NONE){
@@ -204,18 +200,16 @@ parse_cmd_args(int argc, char *argv[], cmd_args& ca )
               break;
             case 'd':
               {
-              //printf("converted value  d_addr.addr\n");
               int s = inet_pton(AF_INET, optarg, &ipvalue);
                    switch(s) {
                    case 1:
-                  //printf("converted value = %x \n", ipvalue.s_addr);
                   fr->base.d_addr.addr = ipvalue.s_addr;
                   break;
                    case 0:
-                  printf("invalid input: %s\n", optarg);
+                   std::cerr << "invalid input: %s\n" << optarg;
                   break;
                    default:
-                  printf("inet_pton conversion error \n");
+                  std::cerr << "inet_pton conversion error \n";
                   break;
                     }
               }

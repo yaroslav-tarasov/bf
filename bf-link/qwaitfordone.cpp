@@ -1,14 +1,14 @@
 #include "qwaitfordone.h"
 
-QWaitForDone::QWaitForDone(QObject *obj,con_t con)// :
+QWaitForDone::QWaitForDone(QObject *obj,con_t con) : reason (RES_NONE)
     //QObject(obj)
 {
     timer.setSingleShot(true);
 
-    QObject::connect(&timer, SIGNAL(timeout()), &wait_for_done, SLOT(quit()));
+    QObject::connect(&timer, SIGNAL(timeout()), this, SLOT(timeout()));
 
     if(con == CONNECT_DONE)
-         QObject::connect(obj, SIGNAL(done()), &wait_for_done, SLOT(quit()));
+         QObject::connect(obj, SIGNAL(done()), this, SLOT(quit()));
 }
 
 
@@ -23,8 +23,15 @@ void QWaitForDone::start(int timeout)
     }
 }
 
+void QWaitForDone::timeout()
+{
+    wait_for_done.quit();
+    reason = RES_TIMEOUT;
+}
+
 void QWaitForDone::quit()
 {
     wait_for_done.quit();
+    reason = RES_EVENTDONE;
 }
 

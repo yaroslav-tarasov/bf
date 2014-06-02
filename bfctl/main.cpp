@@ -61,9 +61,6 @@ int processCommand(int action,cmd_utils::cmd_args& ca)
     } else if (action == CMD_LIST) {
         //qDebug() <<"CMD_LIST";
 
-#ifdef TEST_ASYNC_GET_RULES
-        bfc->getRulesAsync(fr);
-#else
         QList<filter_rule_ptr > ruleslst;
         int ret =  bfc.getRulesSync(fr,  ruleslst);
         if(ret>=0)
@@ -74,7 +71,20 @@ int processCommand(int action,cmd_utils::cmd_args& ca)
             // qout.setPadChar('-');
 
             bf_chain_t chains[2] = {CHAIN_INPUT,CHAIN_OUTPUT};
-            bf_policy_t policies[2] = {static_cast<bf_policy_t>(ruleslst[0]->policy),static_cast<bf_policy_t>(ruleslst[1]->policy)};
+            bf_policy_t policies[2] = {POLICY_NONE,POLICY_NONE};
+
+            foreach (filter_rule_ptr rule,ruleslst){
+                filter_rule_t fr_out = *static_cast<filter_rule_t*>(rule.data());
+                if (policy_rule(&fr_out.base))
+                {
+                   if(fr_out.base.chain == CHAIN_INPUT)
+                       policies[0] = static_cast<bf_policy_t>(fr_out.policy);
+                   else if(fr_out.base.chain == CHAIN_OUTPUT)
+                       policies[1] = static_cast<bf_policy_t>(fr_out.policy);
+
+                }
+            }
+
             const int ch_num = sizeof(chains)/sizeof(chains[0]);
             for(int ch = 0; ch < ch_num; ++ch )
             {
@@ -84,19 +94,18 @@ int processCommand(int action,cmd_utils::cmd_args& ca)
                     printHeader(qout);
                 }
 
-                i=0;
-
+                i = 0;
             foreach (filter_rule_ptr rule,ruleslst){
                 filter_rule_t fr_out = *static_cast<filter_rule_t*>(rule.data());
-                if (i<ch_num)
+                if (policy_rule(&fr_out.base))
                 {
-                    i++;continue;
+                   continue;
                 }
 
                 {
                     if (fr_out.base.chain==chains[ch] && (fr.base.chain==chains[ch] || fr.base.chain==CHAIN_ALL ) )
                     {
-                        qout  << qSetFieldWidth(fieldWidth) << i++ - ch_num << fr_out;
+                        qout  << qSetFieldWidth(fieldWidth) << i++ << fr_out;
                         qout << qSetFieldWidth(fieldWidthSaved) << endl;
                     }
                 }
@@ -105,8 +114,6 @@ int processCommand(int action,cmd_utils::cmd_args& ca)
             }
             qout << qSetFieldWidth(fieldWidthSaved) << endl;
         }
-#endif
-
 
     } else if (action == CMD_DELETE) {
         //qDebug() << "CMD_DELETE";
@@ -185,7 +192,6 @@ int processCommand(int action,cmd_utils::cmd_args& ca)
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
-
 
     QStringList cmdline_args = QCoreApplication::arguments();
 

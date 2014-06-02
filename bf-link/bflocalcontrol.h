@@ -40,6 +40,7 @@ signals:
     void log (filter_rule_t);
     void done();
     void error (quint16);
+    void error (msg_err_t);
 
 private:
     class BFLocalControlPrivate;

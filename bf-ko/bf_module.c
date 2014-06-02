@@ -280,6 +280,7 @@ void list_rules(struct sock * nl_sk, int destpid, filter_rule_t* pfr_pattern)
 //            }
 //        }
 //    }
+    // Сначала отправляем политику для цепочки INPUT
     {
         filter_rule_t fr;
         memset(&fr,0,sizeof(filter_rule_t));
@@ -290,6 +291,7 @@ void list_rules(struct sock * nl_sk, int destpid, filter_rule_t* pfr_pattern)
              return;
     }
 
+    // Далее отправляем политику для цепочки OUTPUT
     {
         filter_rule_t fr;
         memset(&fr,0,sizeof(filter_rule_t));
@@ -299,6 +301,8 @@ void list_rules(struct sock * nl_sk, int destpid, filter_rule_t* pfr_pattern)
         if(ret<0)
              return;
     }
+
+    // Далее правила цепочки INPUT
 
     list_for_each_entry(a_rule, &lst_fr_in.chain_list, chain_list) {
         if(pfr_pattern->base.chain==CHAIN_ALL?true:fr_pattern(&a_rule->fr,pfr_pattern)){
@@ -320,13 +324,7 @@ void list_rules(struct sock * nl_sk, int destpid, filter_rule_t* pfr_pattern)
         }
     }
 
-#if 0
-    {
-        msg_err_t msg;
-        msg.code = 777;
-        nl_send_msg(nl_sk,destpid, MSG_ERR, 0, (char*)&msg,sizeof(msg_err_t));
-    }
-#endif
+    // Далее правила цепочки OUTPUT
 
     list_for_each_entry(a_rule, &lst_fr_out.chain_list, chain_list) {
         if(pfr_pattern->base.chain==CHAIN_ALL?true:fr_pattern(&a_rule->fr,pfr_pattern)){

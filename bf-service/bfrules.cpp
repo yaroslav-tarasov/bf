@@ -7,13 +7,16 @@
 #include <QFile>
 
 
-QHash<filter_rule_base,filter_rule_ptr> BfRules::sRules;
+// QHash<filter_rule_base,filter_rule_ptr> BfRules::sRules;
+QList</*filter_rule_base,*/filter_rule_ptr> BfRules::sRules;
 QMutex BfRules::mMux;
 
+#if 0
 uint qHash(const filter_rule_base& s)
 {
     return utils::__hash(reinterpret_cast<const char*>(&s),sizeof(filter_rule_base));
 }
+#endif
 
 BfRules::BfRules(QObject *parent) :
     QObject(parent)
@@ -57,8 +60,10 @@ QList<filter_rule_ptr > BfRules::loadFromFile(const QString &thename)
         in >>  fr;
         filter_rule_ptr p = filter_rule_ptr(new filter_rule_t(fr));
         ruleslst.append(p);
-        sRules[fr.base]= p;
+        // sRules[fr.base]= p;
+        sRules.append(p);
     }
+
     file.close();
 
     config_t cfg;
@@ -131,8 +136,8 @@ bool BfRules::saveToFile(const QString &thename)
      sRules.clear();
      foreach(filter_rule_ptr p,list)
      {
-         sRules[p->base]= p;
-
+         // sRules[p->base]= p;
+         sRules.append(p);
      }
      //qDebug()<< "Leave BfRules::getFromList";
  }

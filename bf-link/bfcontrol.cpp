@@ -112,7 +112,7 @@ void BFControl::close()
 int BFControl::getRulesSync(const filter_rule_t& pattern, QList<filter_rule_ptr >& ruleslst,int timeout_ms)
 {
     QWaitForDone w(this);
-    ErrorReciever errr(this);
+    ErrorReciever errr(NULL/*this*/);
 
     QObject::connect(this, SIGNAL(data(filter_rule_t)), &w, SLOT(restart()));
     QObject::connect(this, SIGNAL(error(quint16)), &errr, SLOT(setError(quint16)));
@@ -137,6 +137,7 @@ int BFControl::getRulesSync(const filter_rule_t& pattern, QList<filter_rule_ptr 
 
     if (errr.getError()>0)
         ret = -errr.getError();
+
     QObject::disconnect(this, SIGNAL(error(quint16)), &errr, SLOT(setError(quint16)));
 
     d->ruleslst = NULL;
@@ -174,7 +175,7 @@ int BFControl::getRulesAsync(const filter_rule_t &pattern)
 int BFControl::deleteRule(const filter_rule_t &pattern)
 {
     QWaitForDone w(this,QWaitForDone::DISCONNECT_DONE);
-    ErrorReciever errr(this);
+    ErrorReciever errr(NULL/*this*/);
     QObject::connect(this, SIGNAL(error(quint16)), &errr, SLOT(setError(quint16)));
     QObject::connect(this, SIGNAL(error(quint16)), &w, SLOT(quit()));
     int ret = this->sendMsg(MSG_DELETE_RULE, &pattern, sizeof(filter_rule_t));
@@ -218,7 +219,7 @@ int BFControl::deleteRules(const filter_rule_t &pattern)
 int BFControl::addRule(const filter_rule_t &pattern)
 {
     QWaitForDone w(this,QWaitForDone::DISCONNECT_DONE);
-    ErrorReciever errr(this);
+    ErrorReciever errr(NULL/*this*/);
     QObject::connect(this, SIGNAL(error(quint16)), &errr, SLOT(setError(quint16)));
     QObject::connect(this, SIGNAL(error(quint16)), &w, SLOT(quit()));
     int ret = this->sendMsg(MSG_ADD_RULE, &pattern, sizeof(filter_rule_t));
@@ -243,7 +244,7 @@ int BFControl::addRule(const filter_rule_t &pattern)
 int BFControl::updateRule(const filter_rule_t &pattern)
 {
      QWaitForDone w(this,QWaitForDone::DISCONNECT_DONE);
-     ErrorReciever errr(this);
+     ErrorReciever errr(NULL/*this*/);
      QObject::connect(this, SIGNAL(error(quint16)), &errr, SLOT(setError(quint16)));
      QObject::connect(this, SIGNAL(error(quint16)), &w, SLOT(quit()));
      int ret = this->sendMsg(MSG_UPDATE_RULE, &pattern, sizeof(filter_rule_t));
@@ -267,6 +268,11 @@ int BFControl::updateRule(const filter_rule_t &pattern)
 
 int BFControl::setChainPolicy(const filter_rule_t &pattern)
 {
+    QWaitForDone w(this,QWaitForDone::DISCONNECT_DONE);
+    ErrorReciever errr(NULL/*this*/);
+    QObject::connect(this, SIGNAL(error(quint16)), &errr, SLOT(setError(quint16)));
+    QObject::connect(this, SIGNAL(error(quint16)), &w, SLOT(quit()));
+
     filter_rule_t p;
     memset(&p,0,sizeof(filter_rule_t));
     p.policy = pattern.policy;
@@ -281,7 +287,9 @@ int BFControl::setChainPolicy(const filter_rule_t &pattern)
         return -BF_ERR_SOCK;
     }
 
-    return BF_ERR_OK;
+    w.start(commandWaitTime);
+
+    return -errr.getError();
 }
 
 ///////////////////////////////////////
@@ -319,7 +327,7 @@ int BFControl::sendRulesSync(const QList<filter_rule_ptr> &ruleslst)
         filter_rule_t fr = *static_cast<filter_rule_t*>(rule.data());
         int ret = addRule(fr);
 
-        if (ret < 0) {
+        if (ret < 0 && ret == -BF_ERR_SOCK) {
             d->ruleslst = NULL;
             return ret;
         }

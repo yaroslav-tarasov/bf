@@ -280,6 +280,11 @@ int BFLocalControl::BFLocalControlPrivate::getRulesSync(const filter_rule_t& pat
 
 int BFLocalControl::BFLocalControlPrivate::setChainPolicy(const filter_rule_t &pattern)
 {
+    QWaitForDone w(this,QWaitForDone::DISCONNECT_DONE);
+    ErrorReciever errr(NULL/*this*/);
+    QObject::connect(this, SIGNAL(error(quint16)), &errr, SLOT(setError(quint16)));
+    QObject::connect(this, SIGNAL(error(quint16)), &w, SLOT(quit()));
+
     filter_rule_t p;
     memset(&p,0,sizeof(filter_rule_t));
     p.policy = pattern.policy;
@@ -294,7 +299,9 @@ int BFLocalControl::BFLocalControlPrivate::setChainPolicy(const filter_rule_t &p
         return -BF_ERR_SOCK;
     }
 
-    return BF_ERR_OK;
+    w.start(commandWaitTime);
+
+    return -errr.getError();
 }
 
 ///////////////////////////////////////

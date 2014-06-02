@@ -263,7 +263,13 @@ int BFLocalServer::sendResponse(bf::BfCmd& res)
                        << "(" << s->error() << ")";
             return rv;
         }
+
+        return 0;
+
     } else {
         qWarning() << "WARNING: No sender local socket available for cmd seq." << res.mSequence;
     }
+
+// TODO
+    return -1;
 }

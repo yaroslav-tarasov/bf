@@ -84,12 +84,21 @@ nl_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
     type = nlh->nlmsg_type;
     thrd_params.pid = nlh->nlmsg_pid;
 
-    PRINTK_DBG("%s nlh->nlmsg_type = %d ",__func__,type);
+    PRINTK_DBG("%s recieve message nlmsg_type = %d \n",__func__,type);
     
     switch (type)
     {
 	case MSG_ADD_RULE:
         data = NLMSG_DATA(nlh);
+
+        // TODO Попытка установить правило цепочки
+        // Пока только брейк
+
+        if(policy_rule(&((filter_rule_t*)data)->base))
+        {
+            PRINTK_DBG("%s  MSG_ADD_RULE  break on policy rule\n",__func__);
+            break;
+        }
 
         if(find_rule((unsigned char*)&((filter_rule_t*)data)->base,NULL)==0){
             msg_err_t msg;
@@ -177,6 +186,7 @@ nl_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
 		break;
     case MSG_CHAIN_POLICY:
         data = NLMSG_DATA(nlh);
+        PRINTK_DBG("%s  --------------MSG_CHAIN_POLICY\n",__func__);
         if(data)
             set_chain_policy(((filter_rule_t*)data));
 

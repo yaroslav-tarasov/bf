@@ -16,7 +16,7 @@ public:
     static QList<filter_rule_ptr > getByPattern (const filter_rule_t  &fr);
 
 public:
-    static QHash<filter_rule_base,filter_rule_ptr> sRules;
+    static QList</*filter_rule_base,*/filter_rule_ptr> sRules;
 signals:
     
 public slots:

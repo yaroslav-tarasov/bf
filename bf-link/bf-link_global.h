@@ -10,6 +10,6 @@
 #endif
 
 
-const int commandWaitTime = 500; // в миллисекундах
+const int commandWaitTime = 1000; // в миллисекундах
 
 #endif // BFLINK_GLOBAL_H

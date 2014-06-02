@@ -47,6 +47,7 @@ signals:
     void log (filter_rule_t);
     void done();
     void error (quint16);
+    void error (msg_err_t);
 public slots:
 private slots:
     void process(QByteArray ba);

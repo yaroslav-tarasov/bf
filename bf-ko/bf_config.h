@@ -35,6 +35,7 @@ typedef struct filter_rule_list {
 } filter_rule_list_t;
 
 
+
 struct sock * get_nl_sock(void);
 void  wfc(void);
 pid_t get_client_pid(void);
