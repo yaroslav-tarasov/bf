@@ -4,9 +4,11 @@
 #
 #-------------------------------------------------
 
-QT       += core
+QT       += core xml
 
 QT       -= gui
+
+include(../../common/base.pri)
 
 TARGET = log_test
 CONFIG   += console

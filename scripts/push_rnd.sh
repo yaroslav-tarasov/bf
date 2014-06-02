@@ -10,7 +10,7 @@ fi
 
 echo "Put some rules to bf"
 
-
+tt=`date +%
 while [ "$n" -gt 0 ]
 do
     ./bfctl --append INPUT --sport $(( ( RANDOM % 1500  )  + 1 ))  --proto UDP
@@ -22,4 +22,6 @@ do
     n=$(( $n - 1 ))
 done
 
+tt1=`date +%s`
 
+echo time:  $(( $tt1 - $tt ))
