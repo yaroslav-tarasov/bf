@@ -339,8 +339,6 @@ int  BFLocalControl::BFLocalControlPrivate::sendMsg(bf_cmd_t type,const T& msg,s
 int  BFLocalControl::BFLocalControlPrivate::packCommand(const bf_cmd_ptr_t& cmd, QDataStream& ds)
 {
     qint32 baSize =0;
-    qint32 baSize2 =0;
-    BfCmd c;
     QByteArray ba;
     QBuffer bu(&ba);
     bu.open(QIODevice::ReadWrite);
@@ -353,8 +351,6 @@ int  BFLocalControl::BFLocalControlPrivate::packCommand(const bf_cmd_ptr_t& cmd,
 
     s << (qint32)baSize;
     s.device()->seek(0);
-    s >> baSize2;
-    s >> c;
     ds << ba;
 
     return 0;

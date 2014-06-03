@@ -72,6 +72,10 @@ void BFLocalServer::onLocalReadyRead() {
 
                 processMessage(cmd);
                 mReadSizes[s] = 0;
+                if(s->bytesAvailable() > 0) {
+                    qDebug() << "There are some data (" << s->bytesAvailable() << "bytes after reading. Read again...";
+                    onLocalReadyRead();
+                }
             }
         }
     }
