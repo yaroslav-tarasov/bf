@@ -14,7 +14,8 @@ QMAKE_CXXFLAGS += -std=c++0x
 
 HEADERS +=  ../bf-ko/trx_data.h \
     ../common/barrier_integration.h \
-    ../common/bf_defs.h
+    ../common/bf_defs.h \
+    ../common/trx_data.h
 
 INCLUDEPATH+= ../exts
 INCLUDEPATH+= $$PWD

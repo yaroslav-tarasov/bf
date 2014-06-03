@@ -16,11 +16,13 @@ KDIR = /lib/modules/$(BUILD_KERNEL)/build
 PWD = $(shell pwd)
 INSTDIR := $(DESTDIR)/lib/modules/$(BUILD_KERNEL)/kernel/net/bf
 TARGETDIR := $(DESTDIR)/usr/src/$(BUILD_KERNEL)/include/linux/
+INC= $(PWD)/../common/
 
 #DEST = /lib/modules/$(BUILD_KERNEL)/misc
 #EXTRA_CFLAGS += -O3 -std=gnu99 --no-warnings
 CMD_SRC = bf_cmd.c 
 CMD_OBJ = $(patsubst %.c,obj/%.o,$(CMD_SRC)) 
+
 
 TARGET = bf_filter
 OBJS = bf_module.o nl_int.o 
@@ -31,6 +33,7 @@ $(TARGET)-objs := $(OBJS)
 all: default cmd
 
 default:
+	@echo include $(INC)
 	$(MAKE) -C $(KDIR) M=$(PWD) modules
 
 $(TARGET).o: $(OBJS)
@@ -38,7 +41,7 @@ $(TARGET).o: $(OBJS)
 
 
 cmd:    $(CMD_SRC)
-	$(CC) $(CMD_SRC) -o bf_cmd  -lnl  -g
+	$(CC) $(CMD_SRC) -I $(INC) -o bf_cmd  -lnl  -g
 
 
 clean:
@@ -55,6 +58,6 @@ install:
 	@if test -d ${TARGETDIR}; then \
 		cp trx_data.h ${TARGETDIR}; \
 	fi
-ifeq (,$(DESTDIR))
-	/sbin/depmod $(BUILD_KERNEL)
-endif
+#ifeq (,$(DESTDIR))
+#	/sbin/depmod $(BUILD_KERNEL)
+#endif

@@ -4,7 +4,7 @@
 #include <net/netlink.h>
 #include "nl_int.h"
 #include "base/hash_table.h"
-#include "trx_data.h"
+#include "../common/trx_data.h"
 #include "bf_config.h"
 
 static struct sock *_nl_sock=NULL;
@@ -73,6 +73,13 @@ set_chain_policy(filter_rule_t* fr )
         printk(KERN_ERR "%s Have no such chain\n",__func__);
 }
 
+static inline void send_err_ok()
+{
+    msg_err_t msg;
+    msg.code = BF_ERR_OK;
+    nl_send_msg(get_nl_sock(),thrd_params.pid, MSG_ERR, 0, (char*)&msg,sizeof(msg_err_t));
+}
+
 static int
 nl_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
 {
@@ -110,9 +117,7 @@ nl_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
 
         }
         else{
-            msg_err_t msg;
-            msg.code = BF_ERR_OK;
-            nl_send_msg(get_nl_sock(),thrd_params.pid, MSG_ERR, 0, (char*)&msg,sizeof(msg_err_t));
+            send_err_ok();
 
             PRINTK_DBG("seq = %d %s new rule added ",nlh->nlmsg_seq,__func__);
 			add_rule((filter_rule_t*)data);
@@ -136,11 +141,7 @@ nl_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
              if (((filter_rule_t*)data)->policy != POLICY_NONE)
                  fl->fr.policy = ((filter_rule_t*)data)->policy;
 
-             {
-                 msg_err_t msg;
-                 msg.code = BF_ERR_OK;
-                 nl_send_msg(get_nl_sock(),thrd_params.pid, MSG_ERR, 0, (char*)&msg,sizeof(msg_err_t));
-             }
+             send_err_ok();
         }
         else{
             msg_err_t msg;
@@ -163,11 +164,8 @@ nl_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
                 if(find_rule((unsigned char*)&((filter_rule_t*)data)->base,NULL)==0){
             PRINTK_DBG("%s delete rule ",__func__);
             delete_rule((filter_rule_t*)data);
-            {
-                msg_err_t msg;
-                msg.code = BF_ERR_OK;
-                nl_send_msg(get_nl_sock(),thrd_params.pid, MSG_ERR, 0, (char*)&msg,sizeof(msg_err_t));
-            }
+
+            send_err_ok();
         }
         else{
             msg_err_t msg;
@@ -183,13 +181,17 @@ nl_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
         PRINTK_DBG("%s  --------------MSG_DELETE_ALL_RULES\n",__func__);
 		delete_rules();
 
+        send_err_ok();
+
 		break;
     case MSG_CHAIN_POLICY:
         data = NLMSG_DATA(nlh);
         PRINTK_DBG("%s  --------------MSG_CHAIN_POLICY\n",__func__);
-        if(data)
+        if(data) {
             set_chain_policy(((filter_rule_t*)data));
+            send_err_ok();
 
+        }
         break;
     case MSG_LOG_SUBSCRIBE:
         PRINTK_DBG("%s  --------------MSG_LOG_SUBSCRIBE",__func__);

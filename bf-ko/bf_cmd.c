@@ -7,7 +7,7 @@
 #include <netlink/netlink.h>
 //#include <netlink/version.h>
 
-#include "trx_data.h"
+#include "../common/trx_data.h"
 
 enum commands_t {
        CMD_NONE,
