@@ -54,10 +54,10 @@ install:
 	mkdir -p $(INSTDIR)
 	cp *.ko $(INSTDIR)	
 	ln -sf $(INSTDIR)/$(TARGET).ko /lib/modules/$(BUILD_KERNEL)/extra
-	cp trx_data.h $(DESTDIR)/usr/include/linux
-	@if test -d ${TARGETDIR}; then \
-		cp trx_data.h ${TARGETDIR}; \
-	fi
+#	cp trx_data.h $(DESTDIR)/usr/include/linux
+#@if test -d ${TARGETDIR}; then \
+#	cp trx_data.h ${TARGETDIR}; \
+#fi
 #ifeq (,$(DESTDIR))
 #	/sbin/depmod $(BUILD_KERNEL)
 #endif

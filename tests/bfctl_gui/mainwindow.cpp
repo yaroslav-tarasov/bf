@@ -44,17 +44,51 @@ MainWindow::MainWindow(QWidget *parent) :
 
 MainWindow::~MainWindow()
 {
-    QSettings s;
-    s.setValue("mainwindow/pos", pos());
-    s.setValue("rulestable/horizontalheader", ui->tableView->horizontalHeader()->saveState());
-    delete ui;
+     delete ui;
 }
+
+void MainWindow::writePositionSettings()
+{
+    QSettings s;
+
+    s.beginGroup( "mainwindow" );
+
+    s.setValue( "geometry", saveGeometry() );
+    s.setValue( "savestate", saveState() );
+    s.setValue( "maximized", isMaximized() );
+    if ( !isMaximized() ) {
+        s.setValue( "pos", pos() );
+        s.setValue( "size", size() );
+    }
+
+    s.endGroup();
+    s.setValue("rulestable/horizontalheader", ui->tableView->horizontalHeader()->saveState());
+
+}
+
+void MainWindow::readPositionSettings()
+{
+    QSettings s;
+
+    s.beginGroup( "mainwindow" );
+
+    restoreGeometry(s.value( "geometry", saveGeometry() ).toByteArray());
+    restoreState(s.value( "savestate", saveState() ).toByteArray());
+    move(s.value( "pos", pos() ).toPoint());
+    resize(s.value( "size", size() ).toSize());
+    if ( s.value( "maximized", isMaximized() ).toBool() )
+        showMaximized();
+
+    s.endGroup();
+
+}
+
 
 void MainWindow::showEvent(QShowEvent *ev)
 {
     QSettings s;
     if(!mGuiStateRestored) {
-        move(s.value("mainwindow/pos").toPoint());
+        readPositionSettings();
         ui->tableView->horizontalHeader()->restoreState(s.value("rulestable/horizontalheader").toByteArray());
         mGuiStateRestored = true;
     }
@@ -72,11 +106,15 @@ void MainWindow::closeEvent(QCloseEvent* ev) {
             //TODO// m_ExitScheduled = true;
             ev->ignore();
         } else if(reply == QMessageBox::No) {
+            writePositionSettings();
             QMainWindow::closeEvent(ev);
         } else {
             ev->ignore();
         }
     } else {
+        writePositionSettings();
         QMainWindow::closeEvent(ev);
     }
+
+
 }
