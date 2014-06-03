@@ -1,4 +1,5 @@
-#pragma once
+#ifndef TRX_DATA_H
+#define TRX_DATA_H
 
 #if defined(__cplusplus) && defined(QT_VERSION)
 #include <QtGlobal>
@@ -147,7 +148,7 @@ typedef struct _ip_addr
 //  но опять же нужны ли мак адреса? И сетевые маски?
 typedef struct {
   u_int8_t smac[ETH_ALEN], dmac[ETH_ALEN]; /* Use '0' (zero-ed MAC address) for any MAC address.
-					      This is applied to both source and destination. */
+                          This is applied to both source and destination. */
   u_int16_t vlan_id;                   /* Use '0' for any vlan */
   u_int8_t  proto;                     /* Use 0 for 'any' protocol */
   ip_addr_t   shost, dhost;              /* User '0' for any host. This is applied to both source and destination. */
@@ -195,8 +196,8 @@ typedef struct filter_rule{
     unsigned char	h_dest[ETH_ALEN];
     unsigned char	h_source[ETH_ALEN];
    filter_rule_base_t base;
-   __u8  off;	    
-   __u8  policy; 
+   __u8  off;
+   __u8  policy;
    __u32 id;
 #ifdef __cplusplus
    explicit  filter_rule(__u16 proto=0, __u16 src_port=0, __u16 dst_port=0,__u8  chain=0,__u8  policy=0)
@@ -432,38 +433,37 @@ inline QDebug operator<<(QDebug dbg, const filter_rule_t &fr)
 
 inline QTextStream& operator<<(QTextStream &out, const filter_rule_t &fr)
 {
-       return out << QHostAddress(static_cast<quint32>(htonl(fr.base.s_addr.addr))).toString()
-                  << fr.base.src_port
-                  << QHostAddress(static_cast<quint32>(htonl(fr.base.d_addr.addr))).toString()
-                  << fr.base.dst_port
-                  << get_proto_name(fr.base.proto)
+       int width = out.fieldWidth();
+       return out << qSetFieldWidth(15) << QHostAddress(static_cast<quint32>(htonl(fr.base.s_addr.addr))).toString()
+                  << qSetFieldWidth(10) << fr.base.src_port
+                  << qSetFieldWidth(15) << QHostAddress(static_cast<quint32>(htonl(fr.base.d_addr.addr))).toString()
+                  << qSetFieldWidth(10) << fr.base.dst_port
+                  << qSetFieldWidth(7) << get_proto_name(fr.base.proto)
                   << get_chain_name(static_cast<bf_chain_t>(fr.base.chain))
                   << get_policy_name(static_cast<bf_policy_t>(fr.policy))
-                  << get_sw_name(static_cast<bf_switch_rules_t>(fr.off)) ;
+                  << qSetFieldWidth(5) << get_sw_name(static_cast<bf_switch_rules_t>(fr.off)) << qSetFieldWidth(width) ;
+}
+
+inline void printHeader2(QTextStream &out,int w = -1)
+{
+   int width = w>0?w:out.fieldWidth();
+    out << qSetFieldWidth(15) << "s_addr"
+        << qSetFieldWidth(10) << "src_port"
+        << qSetFieldWidth(15) << "d_addr" << qSetFieldWidth(10) << "dst_port"
+        << qSetFieldWidth(7)  << "proto"
+        << "chain"
+        << "policy"
+        << qSetFieldWidth(5) << "off" << qSetFieldWidth(width) << endl ;
 }
 
 inline void printHeader(QTextStream &out)
 {
     int width = out.fieldWidth();
-    out << qSetFieldWidth(10) << "rule #" << "s_addr" <<  "src_port"
-         << "d_addr" << "dst_port"
-         << "proto"
-         << "chain"
-         << "policy"
-         << "off" << qSetFieldWidth(width) << endl ;
-
+    out << qSetFieldWidth(7)  << "rule #";
+    printHeader2(out,width);
 }
 
-inline void printHeader2(QTextStream &out)
-{
-    int width = out.fieldWidth();
-    out << qSetFieldWidth(10) << "s_addr" <<  "src_port"
-         << "d_addr" << "dst_port"
-         << "proto"
-         << "chain"
-         << "policy"
-         << "off" << qSetFieldWidth(width) << endl ;
-}
+
 
 #ifdef  BOOST_REFLECTION
 
@@ -507,4 +507,4 @@ REFL_END()
 #endif
 
 
-
+#endif // TRX_DATA_H

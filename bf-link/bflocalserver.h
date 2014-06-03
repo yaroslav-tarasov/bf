@@ -42,7 +42,7 @@ private slots:
 private:
      QHash<quint32, QLocalSocket*> mClientCommands;
      QLocalServer *                mLocalServer;
-     QHash<QLocalSocket*, int>     mReadSizes;
+     QHash<QLocalSocket*, qint32>     mReadSizes;
      BFControl* mBfc;
 };
 

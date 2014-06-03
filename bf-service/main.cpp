@@ -9,7 +9,6 @@ int main(int argc, char **argv)
 	// QCoreApplication::setApplicationVersion(QString("%1").arg(VERSION_FULL));
 
 
-    // BfService::installSignalHandlers();
     BfService service(argc, argv, "bf-service");
 
     return service.exec();

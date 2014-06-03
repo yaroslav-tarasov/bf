@@ -52,9 +52,9 @@ void BFLocalServer::onLocalReadyRead() {
         QLocalSocket *s = qobject_cast<QLocalSocket*>(o);
         if(s) {
             if(mReadSizes[s] <= 0) {
-                if(s->bytesAvailable() >= (qint64)sizeof(int)) {
+                if(s->bytesAvailable() >= (qint64)sizeof(qint32)) {
                     int msgSize;
-                    s->read((char *)&msgSize, sizeof(int));
+                    s->read((char *)&msgSize, sizeof(qint32));
                     mReadSizes[s] = msgSize;
                 }
             }
@@ -72,6 +72,10 @@ void BFLocalServer::onLocalReadyRead() {
 
                 processMessage(cmd);
                 mReadSizes[s] = 0;
+                if(s->bytesAvailable() > 0) {
+                    qDebug() << "There are some data (" << s->bytesAvailable() << "bytes after reading. Read again...";
+                    onLocalReadyRead();
+                }
             }
         }
     }
@@ -245,7 +249,7 @@ int BFLocalServer::sendResponse(bf::BfCmd& res)
 
     s << res;
 
-    int baSize = ba.size();
+    quint32 baSize = ba.size();
 
     if(mClientCommands.contains(res.mSequence)) {
         QLocalSocket *s = mClientCommands[res.mSequence];
@@ -263,6 +267,8 @@ int BFLocalServer::sendResponse(bf::BfCmd& res)
                        << "(" << s->error() << ")";
             return rv;
         }
+
+        s->flush();
 
         return 0;
 

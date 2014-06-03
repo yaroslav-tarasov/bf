@@ -39,6 +39,7 @@ private:
     template<typename T>
     inline int  sendMsg(bf::bf_cmd_t type,const T& msg,size_t size = sizeof(T));
     int         sendCommand(const bf::bf_cmd_ptr_t& cmd);
+    int         packCommand(const bf::bf_cmd_ptr_t& cmd, QDataStream& ds);
 
 signals:
     void data(filter_rule_t);

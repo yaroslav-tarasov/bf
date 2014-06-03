@@ -58,7 +58,7 @@ void BfService::createApplication(int &argc, char **argv)
 
     StatusValueType state = StatusValueOk;
     int8_t opCode = BAU_OP_SUCCESS;
-    BAu_sendMessage(BAU_FW_RULE_ADD, opCode, "woooooooot" );
+    BAu_sendMessage(BAU_FW_RULE_ADDED, opCode, "woooooooot" );
 
 
 

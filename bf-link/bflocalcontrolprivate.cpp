@@ -143,7 +143,7 @@ int BFLocalControl::BFLocalControlPrivate::deleteRule(const filter_rule_t &patte
     int ret = this->sendMsg(BF_CMD_DELETE_RULE, pattern, sizeof(filter_rule_t));
     if(ret<0)
     {
-        qWarning() << "Can't send command MSG_DELETE_RULE socket error:"
+        qWarning() << "Can't send command BF_CMD_DELETE_RULE socket error:"
                    << "(" << ret << ")";
                // <<  mNS->errorString()
                // << "(" <<  mNS->error() << ")";
@@ -168,7 +168,7 @@ int BFLocalControl::BFLocalControlPrivate::deleteRules(const filter_rule_t &patt
     int ret = this->sendMsg(BF_CMD_DELETE_ALL_RULES, pattern, sizeof(filter_rule_t));
     if(ret<0)
     {
-        qWarning() << "Can't send command MSG_DELETE_ALL_RULES socket error:"
+        qWarning() << "Can't send command BF_CMD_DELETE_ALL_RULES socket error:"
                    << "(" << ret << ")";
                // <<  mNS->errorString()
                // << "(" <<  mNS->error() << ")";
@@ -195,7 +195,7 @@ int BFLocalControl::BFLocalControlPrivate::addRule(const filter_rule_t &pattern)
     int ret = this->sendMsg(BF_CMD_ADD_RULE, pattern, sizeof(filter_rule_t));
     if(ret<0)
     {
-        qWarning() << "Can't send command MSG_ADD_RULE socket error:"
+        qWarning() << "Can't send command BF_CMD_ADD_RULE socket error:"
                    << "(" << ret << ")";
                // <<  mNS->errorString()
                // << "(" <<  mNS->error() << ")";
@@ -220,7 +220,7 @@ int BFLocalControl::BFLocalControlPrivate::updateRule(const filter_rule_t &patte
      int ret = this->sendMsg(BF_CMD_UPDATE_RULE, pattern, sizeof(filter_rule_t));
      if(ret<0)
      {
-         qWarning() << "Can't send command MSG_UPDATE_RULE socket error:"
+         qWarning() << "Can't send command BF_CMD_UPDATE_RULE socket error:"
                     << "(" << ret << ")";
                 // <<  mNS->errorString()
                 // << "(" <<  mNS->error() << ")";
@@ -252,7 +252,7 @@ int BFLocalControl::BFLocalControlPrivate::getRulesSync(const filter_rule_t& pat
 
     if(ret<0)
     {
-        qWarning() << "Can't send command MSG_GET_RULES socket error:"
+        qWarning() << "Can't send command BF_CMD_GET_RULES socket error:"
                    << "(" << ret << ")";
                // << d->mNS->errorString()
                // << "(" << d->mNS->error() << ")";
@@ -281,7 +281,7 @@ int BFLocalControl::BFLocalControlPrivate::getRulesSync(const filter_rule_t& pat
 int BFLocalControl::BFLocalControlPrivate::setChainPolicy(const filter_rule_t &pattern)
 {
     QWaitForDone w(this,QWaitForDone::DISCONNECT_DONE);
-    ErrorReciever errr(NULL/*this*/);
+    ErrorReciever errr(this);
     QObject::connect(this, SIGNAL(error(quint16)), &errr, SLOT(setError(quint16)));
     QObject::connect(this, SIGNAL(error(quint16)), &w, SLOT(quit()));
 
@@ -292,7 +292,7 @@ int BFLocalControl::BFLocalControlPrivate::setChainPolicy(const filter_rule_t &p
     int ret = this->sendMsg(BF_CMD_CHAIN_POLICY, p, sizeof(filter_rule_t));
     if(ret<0)
     {
-        qWarning() << "Can't send command MSG_CHAIN_POLICY socket error:"
+        qWarning() << "Can't send command BF_CMD_CHAIN_POLICY socket error:"
                    << "(" << ret << ")";
                // << d->mNS->errorString()
                // << "(" << d->mNS->error() << ")";
@@ -336,6 +336,26 @@ int  BFLocalControl::BFLocalControlPrivate::sendMsg(bf_cmd_t type,const T& msg,s
 }
 
 
+int  BFLocalControl::BFLocalControlPrivate::packCommand(const bf_cmd_ptr_t& cmd, QDataStream& ds)
+{
+    qint32 baSize =0;
+    QByteArray ba;
+    QBuffer bu(&ba);
+    bu.open(QIODevice::ReadWrite);
+    QDataStream s(&bu);
+
+    s << (qint32)baSize;
+    s << *(cmd.data());
+    baSize = ba.size() - sizeof(baSize);
+    s.device()->seek(0);
+
+    s << (qint32)baSize;
+    s.device()->seek(0);
+    ds << ba;
+
+    return 0;
+}
+
 int  BFLocalControl::BFLocalControlPrivate::sendCommand(const bf_cmd_ptr_t& cmd)
 {
     if(mLocalSocket->state() != QLocalSocket::ConnectedState)
@@ -352,7 +372,8 @@ int  BFLocalControl::BFLocalControlPrivate::sendCommand(const bf_cmd_ptr_t& cmd)
 
     s << *(cmd.data());
 
-    int baSize = ba.size();
+    qint32 baSize = ba.size();
+
     int ret = mLocalSocket->write((char*)&baSize, sizeof(baSize));
     if(ret < 0) {
         qWarning() << "Can't send command size: socket error:"
@@ -360,6 +381,8 @@ int  BFLocalControl::BFLocalControlPrivate::sendCommand(const bf_cmd_ptr_t& cmd)
                    << "(" << mLocalSocket->error() << ")";
         return ret;
     }
+
+
     ret = mLocalSocket->write(ba);
     if(ret < 0) {
         qWarning() << "Can't send command body: socket error:"
@@ -369,6 +392,7 @@ int  BFLocalControl::BFLocalControlPrivate::sendCommand(const bf_cmd_ptr_t& cmd)
         return ret;
     }
 
+    mLocalSocket->flush();
     mSentCommands[cmd->mSequence] = cmd;
     return 0;
 }

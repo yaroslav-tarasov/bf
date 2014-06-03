@@ -18,7 +18,7 @@
 #include <asm/uaccess.h>	/* For copy_from_user  */
 #include "base/hash_table.h"
 #include "nl_int.h"
-#include "trx_data.h"
+#include "../common/trx_data.h"
 #include "bf_config.h"
 
 

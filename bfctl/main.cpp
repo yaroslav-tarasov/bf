@@ -22,7 +22,7 @@
 
 
 namespace {
-const int fieldWidth = 10;
+const int fieldWidth = 7;
 int fieldWidthSaved;
 
 template<typename T>
@@ -66,7 +66,7 @@ int processCommand(int action,cmd_utils::cmd_args& ca)
         if(ret>=0)
         {
             int i;
-            qout.setFieldAlignment(QTextStream::AlignLeft);
+            qout.setFieldAlignment(QTextStream::AlignCenter);
 
             // qout.setPadChar('-');
 
@@ -146,11 +146,11 @@ int processCommand(int action,cmd_utils::cmd_args& ca)
         int ret = bfc.setChainPolicy(fr);
         if(ret>=0)
         {
-            printMessage(qout,"Set policy for chain:",fr);
+            qout <<"Set policy for chain (" << get_chain_name(static_cast<bf_chain_t>(fr.base.chain))<< "): " << get_policy_name(static_cast<bf_policy_t>(fr.policy));
         }
         else if(ret==-BF_ERR_SOCK)
         {
-            printMessage(qout,"Can not set policy for  chain:",fr);
+            qout <<"Can not set policy for chain (" << get_chain_name(static_cast<bf_chain_t>(fr.base.chain))<< "): " << get_policy_name(static_cast<bf_policy_t>(fr.policy));
         }
 
     } else if (action == CMD_LOAD_FROM_FILE) {
