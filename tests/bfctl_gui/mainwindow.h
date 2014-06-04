@@ -20,12 +20,17 @@ public:
     ~MainWindow();
     void showEvent(QShowEvent *ev);
     void closeEvent(QCloseEvent *ev);
+    void changeEvent(QEvent* event);
+private slots:
+
+
 private:
     void writePositionSettings();
     void readPositionSettings();
 private:
     Ui::MainWindow * ui;
     RulesTableModel* mRulesModel;
+    QList<QAction*>  mRuleTableActions;
     bool             mGuiStateRestored;
     bool             mUncommitted;
 };

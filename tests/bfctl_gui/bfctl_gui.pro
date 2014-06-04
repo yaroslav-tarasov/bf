@@ -16,10 +16,12 @@ include(../../common/base.pri)
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-        rulestablemodel.cpp
+        rulestablemodel.cpp \
+    ruledelegate.cpp
 
 HEADERS  += mainwindow.h \
-            rulestablemodel.h
+            rulestablemodel.h \
+    ruledelegate.h
 
 FORMS    += mainwindow.ui
 
@@ -30,3 +32,6 @@ DESTDIR = ../../../bin
 LIBS += -L../../../lib -lbf-link -lnl
 OBJECTS_DIR = ./tmp
 MOC_DIR = ./moc
+
+
+TRANSLATIONS = translations/bfctl_gui_ru.ts

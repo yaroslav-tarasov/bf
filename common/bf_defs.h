@@ -9,5 +9,6 @@
 #define BARRIER_CONFIG_BF_LOG_MAX_SIZE  200000000
 #define BARRIER_BF_LOCAL_SOCK           "bf.service"
 #define BARRIER_BF_BOOTTIMEFILE         "/tmp/bf.boottime"
+#define BACS_DEFAULT_TRANSLATIONS_DIR   "/usr/local/share/barrier/translations/"
 
 #endif // BF_DEFS_H

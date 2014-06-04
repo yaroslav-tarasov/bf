@@ -2,9 +2,11 @@
 #include "ui_mainwindow.h"
 #include "bflocalcontrol.h"
 #include "rulestablemodel.h"
+#include "ruledelegate.h"
 
 #include <QSettings>
 #include <QMessageBox>
+#include <QAction>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -15,7 +17,30 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
     BFLocalControl bfc(this);
 
+//    QAction* addAct = new QAction(tr("Add"), this);
+//    QAction* deleteAct = new QAction(tr("Delete"), this);
+//    QAction* deleteAllAct = new QAction(tr("Delete"), this);
+
+//    connect(addAct, SIGNAL(triggered()), SLOT(onAddRuleAct()));
+//    connect(deleteAct, SIGNAL(triggered()), SLOT(onDeleteRuleAct()));
+//    connect(deleteAllAct, SIGNAL(triggered()), SLOT(onDeleteAllRulesAct()));
+
+//    mRuleTableActions << addAct;
+//    mRuleTableActions << deleteAct;
+//    mRuleTableActions << deleteAllAct;
+
+//    QMenu *fileMenu = menuBar()->addMenu(tr("&File"));
+//    fileMenu->addAction(tr("Commit changes")
+//                        , this
+//                        , SLOT(onCommitChangesAct()));
+//    fileMenu->addSeparator();
+//    fileMenu->addAction(tr("Exit")
+//                        , this
+//                        , SLOT(close()));
+
+
     mRulesModel = new RulesTableModel(this);
+    ui->tableView->setItemDelegate(new RuleDelegate);
     ui->tableView->setModel(mRulesModel);
 
     if(bfc.init()==0)
@@ -32,7 +57,7 @@ MainWindow::MainWindow(QWidget *parent) :
             {
                 if(!policy_rule(&p->base) )
                 {
-                    model_list.append(RuleEntry(*p));
+                    model_list.append(p);
                 }
             }
 
@@ -118,3 +143,19 @@ void MainWindow::closeEvent(QCloseEvent* ev) {
 
 
 }
+
+void MainWindow::changeEvent(QEvent* event)
+{
+    if (event->type() == QEvent::LanguageChange)
+    {
+        // retranslate designer form (single inheritance approach)
+        ui->retranslateUi(this);
+
+        // retranslate other widgets which weren't added in designer
+        // retranslate();
+    }
+
+    // remember to call base class implementation
+    QMainWindow::changeEvent(event);
+}
+

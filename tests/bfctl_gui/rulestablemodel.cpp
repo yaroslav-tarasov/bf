@@ -31,23 +31,36 @@ QVariant RulesTableModel::data(const QModelIndex& index, int role) const
         return QVariant();
     }
 
-    const RuleEntry& item = mItems[index.row()];
-    if(Qt::DisplayRole == role || Qt::ToolTipRole == role) {
+    const RuleEntry& item = *mItems[index.row()];
+    if(Qt::DisplayRole == role || Qt::ToolTipRole == role || role == Qt::EditRole) {
         switch(index.column()) {
             case 0: return QHostAddress(static_cast<quint32>(htonl(item.base.s_addr.addr))).toString();
             case 1: return item.base.src_port;
             case 2: return QHostAddress(static_cast<quint32>(htonl(item.base.d_addr.addr))).toString();
             case 3: return item.base.dst_port;
-            case 4: return get_proto_name(item.base.proto);
-            case 5: return get_chain_name(static_cast<bf_chain_t>(item.base.chain));
-            case 6: return get_policy_name(static_cast<bf_policy_t>(item.policy));
-            case 7: return get_sw_name(static_cast<bf_switch_rules_t>(item.off));
+            case 4: return item.base.proto; // get_proto_name(item.base.proto);
+            case 5: return item.base.chain; // get_chain_name(static_cast<bf_chain_t>(item.base.chain));
+            case 6: return item.policy; // get_policy_name(static_cast<bf_policy_t>(item.policy));
+            case 7: return item.off;// get_sw_name(static_cast<bf_switch_rules_t>(item.off));
 
             default: return QVariant();
         }
     }
 
     return QVariant();
+}
+
+bool RulesTableModel::setData(const QModelIndex &index, const QVariant &value, int role)
+{
+    if (index.isValid() && role == Qt::EditRole) {
+        // записываем данные из каждого столбца
+        if(index.column()==7){
+           mItems.at(index.row())->off = value.toInt();
+        }
+
+        return true;
+    }
+    return false;
 }
 
 QVariant RulesTableModel::headerData(int section, Qt::Orientation orientation, int role) const
@@ -96,7 +109,7 @@ const RuleEntry &RulesTableModel::rule(const QModelIndex& index) const
     if(index.row() < 0 || index.row() >= mItems.size()) {
         return invalidAcl;
     }
-    return mItems[index.row()];
+    return *mItems[index.row()];
 }
 
 void RulesTableModel::removeItems(const QModelIndexList& indexes)
@@ -131,8 +144,20 @@ void RulesTableModel::removeItem(const QModelIndex& index)
     endRemoveRows();
 }
 
-void RulesTableModel::setRules(const QList<RuleEntry>& items) {
+void RulesTableModel::setRules(const rules_list_t& items) {
     beginResetModel();
     mItems = items;
     endResetModel();
+}
+
+Qt::ItemFlags RulesTableModel::flags(const QModelIndex &index) const
+{
+    if(!index.isValid()) {
+        return QAbstractTableModel::flags(index);
+    }
+
+    if(index.column() == 7) {
+        return (QAbstractTableModel::flags(index) | Qt::ItemIsEditable);
+    }
+    return QAbstractTableModel::flags(index);
 }
