@@ -325,6 +325,26 @@ int BFLocalControl::BFLocalControlPrivate::sendRulesSync(const QList<filter_rule
 
 }
 
+int BFLocalControl::BFLocalControlPrivate::getRulesAsync(const filter_rule_t &pattern)
+{
+    BFLocalControlPrivate::ruleslst = new QList<filter_rule_ptr >;
+    int ret = this->sendMsg(BF_CMD_GET_RULES,pattern,sizeof(filter_rule_t));
+
+    if(ret<0)
+    {
+        BFLocalControlPrivate::ruleslst = NULL;
+        qWarning() << "Can't send command MSG_GET_RULES socket error:"
+                   << "(" << ret << ")";
+               // << d->mNS->errorString()
+               // << "(" << d->mNS->error() << ")";
+        return -BF_ERR_SOCK;
+    }
+
+
+    return ret;
+
+}
+
 template<typename T>
 int  BFLocalControl::BFLocalControlPrivate::sendMsg(bf_cmd_t type,const T& msg,size_t size)
 {

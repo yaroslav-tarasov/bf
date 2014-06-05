@@ -23,7 +23,7 @@ void BfServicePrivate::started()
     connect(&SignalCatcher::instance(),SIGNAL(sigTerm()),SLOT(onSignalTERM()));
     connect(&SignalCatcher::instance(),SIGNAL(sigUsr()),SLOT(onSignalUSR()));
 
-    if(mBfc->create()==0)
+    if(mBfc->init()==0)
     {
         QObject::connect(mBfc,SIGNAL(log(filter_rule_t)),this,SLOT(gotLog(filter_rule_t)));
 

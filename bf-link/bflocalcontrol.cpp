@@ -2,16 +2,16 @@
 #include "bflocalcontrolprivate.h"
 
 BFLocalControl::BFLocalControl(QObject *parent) :
-    QObject(parent),d (new BFLocalControlPrivate)
+    BFControlBase(parent),d (new BFLocalControlPrivate)
 {
     registerBfTypes();
     connect(d,SIGNAL(error (quint16)),SIGNAL(error (quint16)));
 }
 
 
-int  BFLocalControl::init(const QString& serverName)
+int  BFLocalControl::init(init_params_t serverName)
 {
-    return d->init(serverName);
+    return d->init(serverName.toString());
 }
 
 void BFLocalControl::close()
@@ -74,6 +74,14 @@ int BFLocalControl::updateRule(const filter_rule_t &pattern)
 int BFLocalControl::getRulesSync(const filter_rule_t& pattern, QList<filter_rule_ptr >& ruleslst,int timeout_ms)
 {
     return d->getRulesSync(pattern,ruleslst,timeout_ms);
+}
+
+///////////////////////////////////////
+//  По окончании процесса получения будет прислано событие rules(QList<filter_rules_t>)
+//
+int BFLocalControl::getRulesAsync(const filter_rule_t &pattern)
+{
+    return d->getRulesAsync(pattern);
 }
 
 ///////////////////////////////////////

@@ -18,7 +18,7 @@ struct BFControlPrivate
 
 
 BFControl::BFControl(QObject *parent) :
-    QObject(parent)
+    BFControlBase(parent)
 {
 
     registerBfTypes();
@@ -86,8 +86,9 @@ void BFControl::process(QByteArray ba)
 }
 
 
-int BFControl::create()
+int BFControl::init(init_params_t p)
 {
+    Q_UNUSED(p);
     return d->mNS->create(NETLINK_USERSOCK);
 }
 

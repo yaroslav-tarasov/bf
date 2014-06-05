@@ -16,10 +16,12 @@ CONFIG   += console thread
 CONFIG   -= app_bundle
 
 HEADERS += \
-    utils.h
+    utils.h \
+    cmds.h
 
 SOURCES += main.cpp \
-    utils.cpp
+    utils.cpp \
+    cmds.cpp
 
 
 #############

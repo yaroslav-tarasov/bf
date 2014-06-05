@@ -27,7 +27,8 @@ HEADERS += \
         qwaitfordone.h \
         bflocalserver.h \
     bflocalcontrolprivate.h \
-    bfremotecontrolprivate.h
+    bfremotecontrolprivate.h \
+    bfcontrolbase.h
 
 SOURCES += \
         bfcontrol.cpp \
@@ -37,7 +38,8 @@ SOURCES += \
         qwaitfordone.cpp \
         bflocalserver.cpp \
     bflocalcontrolprivate.cpp \
-    bfremotecontrolprivate.cpp
+    bfremotecontrolprivate.cpp \
+    bfcontrolbase.cpp
 
 #############
 # include paths

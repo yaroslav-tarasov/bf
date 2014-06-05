@@ -7,6 +7,8 @@
 #include <QDebug>
 #include <QHostAddress>
 #include <QSharedPointer>
+#include <QMetaEnum>
+
 #include <arpa/inet.h>
 #endif
 
@@ -36,6 +38,7 @@ enum bf_policy_t {
              POLICY_NONE                        //!< Отсутствие наличия политики
 };
 
+
 /**
 @brief
     Включение отключение правил
@@ -46,6 +49,8 @@ enum bf_switch_rules_t {                        //!<  Для поля off YES - 
              SW_YES,                            //!<  Правило отключено
              SW_NONE                            //!<  Отсутствие наличия правила выключения
 };
+
+
 
 /**
 @brief
