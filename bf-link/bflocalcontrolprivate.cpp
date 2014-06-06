@@ -118,7 +118,7 @@ void BFLocalControl::BFLocalControlPrivate::onDisconnected() {
 void BFLocalControl::BFLocalControlPrivate::onSocketError(QLocalSocket::LocalSocketError err) {
     qWarning() << "WARNING: Socket error:"
                <<  mLocalSocket->errorString() << "(" << err << ")";
-     mLocalSocket->disconnectFromServer();
+    mLocalSocket->disconnectFromServer();
     mSocketWantedData = 0;
 }
 

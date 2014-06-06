@@ -1,6 +1,5 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include "bflocalcontrol.h"
 #include "rulestablemodel.h"
 #include "ruledelegate.h"
 
@@ -15,7 +14,7 @@ MainWindow::MainWindow(QWidget *parent) :
     mUncommitted(false)
 {
     ui->setupUi(this);
-    BFLocalControl bfc(this);
+    mBfc = new BFLocalControl(this);
 
 //    QAction* addAct = new QAction(tr("Add"), this);
 //    QAction* deleteAct = new QAction(tr("Delete"), this);
@@ -43,14 +42,15 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->tableView->setItemDelegate(new RuleDelegate);
     ui->tableView->setModel(mRulesModel);
 
-    if(bfc.init()==0)
+
+    if(mBfc->init()==0)
     {
         filter_rule_t fr;
 
         RulesTableModel::rules_list_t  model_list;
         QList<filter_rule_ptr > ruleslst;
 
-        int ret =  bfc.getRulesSync(fr,  ruleslst);
+        int ret =  mBfc->getRulesSync(fr,  ruleslst);
         if(ret>=0)
         {
             foreach (filter_rule_ptr p,ruleslst)
@@ -62,8 +62,14 @@ MainWindow::MainWindow(QWidget *parent) :
             }
 
             mRulesModel->setRules(model_list);
+
+            connect( mRulesModel, SIGNAL( dataChanged(QModelIndex,QModelIndex)),
+                     this, SLOT( dataChanged(QModelIndex,QModelIndex)) );
         }
     }
+
+    // mRulesModel->getDirty();
+
 
 }
 
@@ -159,3 +165,9 @@ void MainWindow::changeEvent(QEvent* event)
     QMainWindow::changeEvent(event);
 }
 
+// {SRCIP,SRCPORT,DSTIP,DSTPORT,PROTO,CHAIN,POLICY,OFF};
+void MainWindow::dataChanged(QModelIndex i1,QModelIndex i2)
+{
+    const filter_rule_t& fr =  mRulesModel->rule(i1);
+    mBfc->updateRule(fr);
+}

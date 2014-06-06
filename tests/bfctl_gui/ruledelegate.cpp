@@ -25,6 +25,8 @@ RuleDelegate::RuleDelegate()
 
 QWidget *RuleDelegate::createEditor(QWidget *editor, const QStyleOptionViewItem &option, const QModelIndex &index) const
 {
+    if (!index.isValid()) return editor;
+
     if (index.column() == 7) {
         QComboBox *pe = new QComboBox(editor);
         int current = index.model()->data(index, Qt::DisplayRole).toUInt();
@@ -55,6 +57,8 @@ QWidget *RuleDelegate::createEditor(QWidget *editor, const QStyleOptionViewItem 
 
 void RuleDelegate::setEditorData(QWidget *editor, const QModelIndex &index) const
 {
+    if (!index.isValid()) return;
+
     if (index.column() == 7 || index.column() == 6 ) {
         QComboBox *pe = qobject_cast<QComboBox *>(editor);
         if (pe) {
@@ -67,6 +71,8 @@ void RuleDelegate::setEditorData(QWidget *editor, const QModelIndex &index) cons
 
 void RuleDelegate::setModelData(QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const
 {
+    if (!index.isValid()) return;
+
     if (index.column() == 7 || index.column() == 6 ) {
         QComboBox *pe = qobject_cast<QComboBox *>(editor);
         if (pe) {
@@ -84,10 +90,13 @@ void RuleDelegate::updateEditorGeometry(QWidget *editor, const QStyleOptionViewI
 void RuleDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
 {
   QStyleOptionViewItemV4 o = option;
-  // QString text = Items[index.row()].c_str();
-  o.text = index.model()->data(index, Qt::DisplayRole).toString();
-
   int value = index.model()->data(index, Qt::DisplayRole).toUInt();
+
+  o.text = index.model()->data(index, Qt::DisplayRole).toString();
+  o.displayAlignment = Qt::AlignCenter;
+
+//  if (index.column() < 6) o.state = QStyle::State_ReadOnly;
+//  if (index.column() > 5) o.font.setBold(true);
 
   switch(index.column())
   {
@@ -95,11 +104,12 @@ void RuleDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option, 
       case 1: if(value ==0) o.text = "ALL"; break;
       case 2: if(value ==0) o.text = "ALL"; break;
       case 3: if(value ==0) o.text = "ALL"; break;
+
       case 4: o.text = get_proto_name(value); break;
       case 5: o.text = get_chain_name(static_cast<bf_chain_t>(value));  break;
       case 6: o.text = get_policy_name(static_cast<bf_policy_t>(value));  break;
       case 7: o.text = get_sw_name(static_cast<bf_switch_rules_t>(value));  break;
   }
 
-  QApplication::style()->drawControl(QStyle::CE_ShapedFrame/*CE_ItemViewItem*/, &o, painter);
+  QApplication::style()->drawControl(QStyle::CE_ItemViewItem, &o, painter);
 }

@@ -34,14 +34,14 @@ QVariant RulesTableModel::data(const QModelIndex& index, int role) const
     const RuleEntry& item = *mItems[index.row()];
     if(Qt::DisplayRole == role || Qt::ToolTipRole == role || role == Qt::EditRole) {
         switch(index.column()) {
-            case 0: return QHostAddress(static_cast<quint32>(htonl(item.base.s_addr.addr))).toString();
-            case 1: return item.base.src_port;
-            case 2: return QHostAddress(static_cast<quint32>(htonl(item.base.d_addr.addr))).toString();
-            case 3: return item.base.dst_port;
-            case 4: return item.base.proto; // get_proto_name(item.base.proto);
-            case 5: return item.base.chain; // get_chain_name(static_cast<bf_chain_t>(item.base.chain));
-            case 6: return item.policy; // get_policy_name(static_cast<bf_policy_t>(item.policy));
-            case 7: return item.off;// get_sw_name(static_cast<bf_switch_rules_t>(item.off));
+            case SRCIP:   return QHostAddress(static_cast<quint32>(htonl(item.base.s_addr.addr))).toString();
+            case SRCPORT: return item.base.src_port;
+            case DSTIP:   return QHostAddress(static_cast<quint32>(htonl(item.base.d_addr.addr))).toString();
+            case DSTPORT: return item.base.dst_port;
+            case PROTO:   return item.base.proto; // get_proto_name(item.base.proto);
+            case CHAIN:   return item.base.chain; // get_chain_name(static_cast<bf_chain_t>(item.base.chain));
+            case POLICY:  return item.policy; // get_policy_name(static_cast<bf_policy_t>(item.policy));
+            case OFF:     return item.off;// get_sw_name(static_cast<bf_switch_rules_t>(item.off));
 
             default: return QVariant();
         }
@@ -54,8 +54,23 @@ bool RulesTableModel::setData(const QModelIndex &index, const QVariant &value, i
 {
     if (index.isValid() && role == Qt::EditRole) {
         // записываем данные из каждого столбца
-        if(index.column()==7){
-           mItems.at(index.row())->off = value.toInt();
+        if(index.column()==OFF){
+
+           if (mItems.at(index.row())->off != value.toInt())
+           {
+               mItems.at(index.row())->off = value.toInt();
+               emit dataChanged(index, index);
+           }
+
+        }
+        else if (index.column()==POLICY){
+
+          if (mItems.at(index.row())->policy != value.toInt())
+          {
+              mItems.at(index.row())->policy = value.toInt();
+              emit dataChanged(index, index);
+
+          }
         }
 
         return true;
@@ -70,14 +85,14 @@ QVariant RulesTableModel::headerData(int section, Qt::Orientation orientation, i
     }
     if(orientation == Qt::Horizontal) {
         switch(section) {
-            case 0: return tr("Source address");
-            case 1: return tr("Source port");
-            case 2: return tr("Destination address");
-            case 3: return tr("Destination port");
-            case 4: return tr("Protocol");
-            case 5: return tr("Chain");
-            case 6: return tr("Policy");
-            case 7: return tr("Off");
+            case SRCIP:       return tr("Source address");
+            case SRCPORT:     return tr("Source port");
+            case DSTIP:       return tr("Destination address");
+            case DSTPORT:     return tr("Destination port");
+            case PROTO:       return tr("Protocol");
+            case CHAIN:       return tr("Chain");
+            case POLICY:      return tr("Policy");
+            case OFF:         return tr("Off");
 
             default: return "";
         }
@@ -85,6 +100,21 @@ QVariant RulesTableModel::headerData(int section, Qt::Orientation orientation, i
     return QVariant();
 }
 
+
+RulesTableModel::rules_list_t RulesTableModel::getDirty() const
+{
+    rules_list_t as;
+    const QModelIndexList& indexes = persistentIndexList();
+    foreach(const QModelIndex& index, indexes) {
+        if(!index.isValid()) continue;
+        if(index.row() < 0) continue;
+        if(index.row() >= mItems.size()) continue;
+        if(!index.data(Qt::UserRole).isValid() || !index.data(Qt::UserRole).toBool()) continue;
+        as << mItems[index.row()];
+    }
+
+    return as;
+}
 
 RulesTableModel::rules_list_t RulesTableModel::rules(const QModelIndexList& indexes) const
 {
@@ -156,7 +186,7 @@ Qt::ItemFlags RulesTableModel::flags(const QModelIndex &index) const
         return QAbstractTableModel::flags(index);
     }
 
-    if(index.column() == 7) {
+    if(index.column() == POLICY || index.column() == OFF) {
         return (QAbstractTableModel::flags(index) | Qt::ItemIsEditable);
     }
     return QAbstractTableModel::flags(index);

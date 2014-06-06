@@ -3,6 +3,9 @@
 
 #include <QMainWindow>
 #include <QCloseEvent>
+#include <QModelIndex>
+
+#include "bflocalcontrol.h"
 
 namespace Ui {
 class MainWindow;
@@ -22,7 +25,7 @@ public:
     void closeEvent(QCloseEvent *ev);
     void changeEvent(QEvent* event);
 private slots:
-
+    void dataChanged(QModelIndex i1,QModelIndex i2);
 
 private:
     void writePositionSettings();
@@ -33,6 +36,7 @@ private:
     QList<QAction*>  mRuleTableActions;
     bool             mGuiStateRestored;
     bool             mUncommitted;
+    BFLocalControl*   mBfc;
 };
 
 #endif // MAINWINDOW_H
