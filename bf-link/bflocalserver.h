@@ -16,14 +16,14 @@ class BFLocalServer : public QObject
 {
     Q_OBJECT
 public:
-    explicit BFLocalServer (QObject *parent = 0);
+    explicit BFLocalServer (BFControl* bfc,QObject *parent = 0);
     virtual ~BFLocalServer();
 
     int      run           (QString path = BARRIER_BF_LOCAL_SOCK);
 
 private:
     void     processMessage(bf::BfCmd& cmd);
-    int sendResponse(bf::BfCmd& res);
+    int      sendResponse  (bf::BfCmd& res);
     void     destroySocket (QLocalSocket *s);
     template<typename T>
     inline   int  sendMsg(bf::bf_cmd_t type,int seq,const T& msg);

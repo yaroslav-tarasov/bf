@@ -5,11 +5,15 @@
 #include <QFile>
 
 
-BFLocalServer::BFLocalServer(QObject *parent) :
+BFLocalServer::BFLocalServer(BFControl *bfc, QObject *parent) :
     QObject(parent)
 {
     mLocalServer = new QLocalServer(this);
-    mBfc = new BFControl();
+    if(!bfc)
+        mBfc = new BFControl();
+    else
+        mBfc = bfc;
+
 }
 
 BFLocalServer::~BFLocalServer()
@@ -201,7 +205,7 @@ void BFLocalServer::processMessage(bf::BfCmd& cmd) {
 
             if(rv>=0)
             {
-                msg_done_t md;
+            msg_done_t md;
                 foreach (filter_rule_ptr rule,ruleslst){
                     sendMsg(BF_CMD_DATA, cmd.mSequence, *rule);
                     md.counter++;

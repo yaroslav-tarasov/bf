@@ -10,7 +10,7 @@ BfServicePrivate::BfServicePrivate(QObject *parent) :
     QObject(parent),mRebooted(false)
 {
     mBfc = new BFControl(this);
-    mLocalServer = new BFLocalServer(this);
+    mLocalServer = new BFLocalServer(mBfc,this);
 }
 
 void BfServicePrivate::started()

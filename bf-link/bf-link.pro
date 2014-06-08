@@ -14,7 +14,7 @@ QT       -= gui
 
 CONFIG   += thread
 
-DEFINES += BFLINK_LIBRARY
+DEFINES += BFLINK_LIBRARY NL_THREAD
 
 HEADERS += \
         bfcontrol.h \
