@@ -35,7 +35,8 @@ int BFLocalServer::run(QString serverName) {
     qDebug() << "Listening on path:" << mLocalServer->fullServerName();
 
 
-    mBfc->init();
+    int rv = mBfc->init();
+
 
     return 0;
 }

@@ -24,15 +24,22 @@ BFLocalControl::BFLocalControlPrivate::~BFLocalControlPrivate() {
 
 int BFLocalControl::BFLocalControlPrivate::init(const QString& serverName) {
 
-    mLocalSocket->connectToServer(serverName);
-
-    if (mLocalSocket->waitForConnected(/*commandWaitTime*/))
+    if(mLocalSocket->state()==QLocalSocket::UnconnectedState)
     {
-        mSocketWantedData = 0;
-        connect( mLocalSocket, SIGNAL(connected()), SLOT(onConnected()));
-        connect( mLocalSocket, SIGNAL(readyRead()), SLOT(onReadyRead()));
-        connect( mLocalSocket, SIGNAL(disconnected()), SLOT(onDisconnected()));
-        connect( mLocalSocket, SIGNAL(error(QLocalSocket::LocalSocketError)), SLOT(onSocketError(QLocalSocket::LocalSocketError)));
+        mLocalSocket->connectToServer(serverName);
+
+        if (mLocalSocket->waitForConnected(/*commandWaitTime*/))
+        {
+            mSocketWantedData = 0;
+            connect( mLocalSocket, SIGNAL(connected()), SLOT(onConnected()));
+            connect( mLocalSocket, SIGNAL(readyRead()), SLOT(onReadyRead()));
+            connect( mLocalSocket, SIGNAL(disconnected()), SLOT(onDisconnected()));
+            connect( mLocalSocket, SIGNAL(error(QLocalSocket::LocalSocketError)), SLOT(onSocketError(QLocalSocket::LocalSocketError)));
+            return 0;
+        }
+    }
+    else
+    {
         return 0;
     }
 
@@ -57,6 +64,8 @@ void BFLocalControl::BFLocalControlPrivate::onConnected() {
 }
 
 void BFLocalControl::BFLocalControlPrivate::onReadyRead() {
+
+    qDebug() << "Enter BFLocalControlPrivate::onReadyRead()";
 
     if(mSocketWantedData <= 0) {
         if( mLocalSocket->bytesAvailable() >= (qint64)sizeof(int)) {
@@ -109,6 +118,7 @@ void BFLocalControl::BFLocalControlPrivate::onReadyRead() {
             onReadyRead();
         }
     }
+    qDebug() << "Leave BFLocalControlPrivate::onReadyRead()";
 }
 
 void BFLocalControl::BFLocalControlPrivate::onDisconnected() {

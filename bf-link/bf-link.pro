@@ -14,29 +14,30 @@ QT       -= gui
 
 CONFIG   += thread
 
-DEFINES += BFLINK_LIBRARY NL_THREAD
+DEFINES += BFLINK_LIBRARY
+# \ NL_THREAD
 
 HEADERS += \
-        bfcontrol.h \
-        bf-link_global.h\
-        netlinksocket.h \
-        bflocalcontrol.h \
-        bfremotecontrol.h \
-        errorreceiver.h \
-        timerproxy.h \
-        qwaitfordone.h \
-        bflocalserver.h \
+    bfcontrol.h \
+    bf-link_global.h\
+    netlinksocket.h \
+    bflocalcontrol.h \
+    bfremotecontrol.h \
+    errorreceiver.h \
+    timerproxy.h \
+    qwaitfordone.h \
+    bflocalserver.h \
     bflocalcontrolprivate.h \
     bfremotecontrolprivate.h \
     bfcontrolbase.h
 
 SOURCES += \
-        bfcontrol.cpp \
-        netlinksocket.cpp \
-        bflocalcontrol.cpp \
-        bfremotecontrol.cpp \
-        qwaitfordone.cpp \
-        bflocalserver.cpp \
+    bfcontrol.cpp \
+    netlinksocket.cpp \
+    bflocalcontrol.cpp \
+    bfremotecontrol.cpp \
+    qwaitfordone.cpp \
+    bflocalserver.cpp \
     bflocalcontrolprivate.cpp \
     bfremotecontrolprivate.cpp \
     bfcontrolbase.cpp

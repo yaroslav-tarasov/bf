@@ -37,7 +37,8 @@ class NetlinkSocketPrivate
 public:
     explicit NetlinkSocketPrivate(NetlinkSocket * pp):
         nlSocket(NULL),
-        mpp(pp)
+        mpp(pp),
+        init(false)
 #ifdef NL_THREAD
         ,mRunning(true)
 #endif
@@ -108,6 +109,7 @@ public:
     int             nlFd;
     QSocketNotifier* nlSn;
 #endif
+    bool init;
 };
 
 
@@ -128,7 +130,7 @@ int NetlinkSocket::create(int proto)
 {
     d->mProto = proto;
     int ret=0;
-    if((ret = d->create())==0)
+    if(!d->init && (ret = d->create())==0)
     {
 
        if((ret = d->connect(d->mProto))==0)
@@ -140,6 +142,7 @@ int NetlinkSocket::create(int proto)
            d->nlSn = new QSocketNotifier(d->nlFd,QSocketNotifier::Read,this);
            connect(d->nlSn,SIGNAL(activated(int)), this, SLOT(readyRead(void)));
 #endif
+           d->init = true;
        }
        else
        {
@@ -215,7 +218,7 @@ void NetlinkSocket::threadStart(NetlinkSocket *p)
 void NetlinkSocket::readyRead()
 {
     int ret=0;
-     unsigned char *nl_msg;
+    unsigned char *nl_msg;
     if( (ret = d->recv (NULL, &nl_msg, NULL)) > 0)
     {
         int n = ret;
@@ -232,6 +235,7 @@ void NetlinkSocket::readyRead()
             }
             hdr = nlmsg_next(hdr, &n);
         }
+        qDebug() <<  __PRETTY_FUNCTION__ << "  d->recv (NULL, &nl_msg, NULL))";
     }
     else
     {

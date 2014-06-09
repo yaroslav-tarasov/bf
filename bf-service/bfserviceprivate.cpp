@@ -9,13 +9,14 @@
 BfServicePrivate::BfServicePrivate(QObject *parent) :
     QObject(parent),mRebooted(false)
 {
-    mBfc = new BFControl(this);
-    mLocalServer = new BFLocalServer(mBfc,this);
 }
 
 void BfServicePrivate::started()
 {
     T_INFO("BfServicePrivate::started()");
+
+    mBfc = new BFControl(this);
+    mLocalServer = new BFLocalServer(mBfc,this);
 
     SignalCatcher::init();
     connect(&SignalCatcher::instance(),SIGNAL(sigHup()),SLOT(onSignalHUP()));

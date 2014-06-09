@@ -42,13 +42,13 @@ private:
     int         packCommand(const bf::bf_cmd_ptr_t& cmd, QDataStream& ds);
 
 signals:
-    void data(filter_rule_t);
-    void data(QByteArray);
-    void data(QList <filter_rule_ptr > );
-    void log (filter_rule_t);
-    void done();
-    void error (quint16);
-    void error (msg_err_t);
+    void        data(filter_rule_t);
+    void        data(QByteArray);
+    void        data(QList <filter_rule_ptr > );
+    void        log (filter_rule_t);
+    void        done();
+    void        error (quint16);
+    void        error (msg_err_t);
 
 public slots:
 
