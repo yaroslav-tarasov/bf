@@ -8,6 +8,7 @@
 
 
 class BfServicePrivate;
+class QTranslator;
 
 class BfService : public QObject,public QtService<QCoreApplication>
 {
@@ -25,7 +26,7 @@ protected:
 private:
     QThread*          privateThread;
     BfServicePrivate *d;
-
+    QTranslator*      translator;
 signals:
     
 public slots:

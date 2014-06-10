@@ -57,6 +57,7 @@ inline  level translateLevel(QtMsgType type) {
         case QtFatalMsg:
             return L_FATAL;
     }
+    return L_TRACE; // И никогда сюда не попадем
 }
 
 class Logger : public QObject

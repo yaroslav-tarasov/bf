@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/">
+        <file>images/add.svg</file>
+        <file>images/remove.svg</file>
+        <file>images/exit.xpm</file>
+    </qresource>
+</RCC>

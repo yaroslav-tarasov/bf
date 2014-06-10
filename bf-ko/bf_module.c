@@ -261,25 +261,7 @@ void list_rules(struct sock * nl_sk, int destpid, filter_rule_t* pfr_pattern)
 #if 1
     struct filter_rule_list *a_rule;
     int i=0,flags = 0;
-//    list_for_each_entry(a_rule, &lst_fr.full_list, full_list) {
-//        if(pfr_pattern->base.chain==CHAIN_ALL?true:fr_pattern(&a_rule->fr,pfr_pattern)){
 
-//            if(++i%ACK_EVERY_N_MSG==0) { flags = NLM_F_ACK; };
-
-//            PRINTK_DBG(KERN_INFO "#%d Src_addr: %X; dst_addr: %X; proto: %d; src_port: %d dst_port: %d\n", i,
-//                    a_rule->fr.base.s_addr.addr, a_rule->fr.base.d_addr.addr,
-//                    a_rule->fr.base.proto, a_rule->fr.base.src_port, a_rule->fr.base.dst_port);
-
-//            a_rule->fr.id = i;
-//            ret=nl_send_msg(nl_sk,destpid, MSG_DATA, flags,(char*)&a_rule->fr,sizeof(a_rule->fr));
-//            if(ret<0)
-//                 return;
-
-//            if(flags == NLM_F_ACK) {
-//                flags = 0; wfc();
-//            }
-//        }
-//    }
     // Сначала отправляем политику для цепочки INPUT
     {
         filter_rule_t fr;

@@ -25,7 +25,7 @@ class BFControlBase : public QObject
 public:
     explicit BFControlBase(QObject *parent = 0);
     virtual  ~BFControlBase()=0;
-    virtual  int  init           (init_params_t p = init_params_t(QVariant()) )=0;
+    virtual  int  init           (init_params_t const &p = init_params_t(QVariant()) )=0;
     virtual  void close          ()=0;
     virtual  int  getRulesSync   (const filter_rule_t& pattern, QList<filter_rule_ptr >& ruleslst,int timeout_ms=3000)=0;
     virtual  int  getRulesAsync  (const filter_rule_t& pattern)=0;

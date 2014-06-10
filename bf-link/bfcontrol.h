@@ -25,8 +25,8 @@ class BFLINKSHARED_EXPORT BFControl : public BFControlBase
     Q_OBJECT
 public:
 
-    explicit BFControl(QObject *parent = 0);
-    int  init           (init_params_t p = init_params_t(QVariant()) );
+    explicit BFControl  (QObject *parent = 0);
+    int  init           (init_params_t   const &p = init_params_t(QVariant()) );
     void close          ();
     int  getRulesSync   (const filter_rule_t& pattern, QList<filter_rule_ptr >& ruleslst,int timeout_ms=3000);
     int  getRulesAsync  (const filter_rule_t& pattern);

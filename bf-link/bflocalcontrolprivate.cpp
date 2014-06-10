@@ -65,7 +65,7 @@ void BFLocalControl::BFLocalControlPrivate::onConnected() {
 
 void BFLocalControl::BFLocalControlPrivate::onReadyRead() {
 
-    qDebug() << "Enter BFLocalControlPrivate::onReadyRead()";
+//  qDebug() << "Enter BFLocalControlPrivate::onReadyRead()";
 
     if(mSocketWantedData <= 0) {
         if( mLocalSocket->bytesAvailable() >= (qint64)sizeof(int)) {
@@ -118,7 +118,7 @@ void BFLocalControl::BFLocalControlPrivate::onReadyRead() {
             onReadyRead();
         }
     }
-    qDebug() << "Leave BFLocalControlPrivate::onReadyRead()";
+//  qDebug() << "Leave BFLocalControlPrivate::onReadyRead()";
 }
 
 void BFLocalControl::BFLocalControlPrivate::onDisconnected() {

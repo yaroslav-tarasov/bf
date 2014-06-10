@@ -9,7 +9,7 @@ BFLocalControl::BFLocalControl(QObject *parent) :
 }
 
 
-int  BFLocalControl::init(init_params_t serverName)
+int  BFLocalControl::init(const init_params_t &serverName)
 {
     return d->init(serverName.toString());
 }

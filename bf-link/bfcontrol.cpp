@@ -86,7 +86,7 @@ void BFControl::process(QByteArray ba)
 }
 
 
-int BFControl::init(init_params_t p)
+int BFControl::init(const init_params_t &p)
 {
     Q_UNUSED(p);
     return d->mNS->create(NETLINK_USERSOCK);

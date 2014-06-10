@@ -235,7 +235,7 @@ void NetlinkSocket::readyRead()
             }
             hdr = nlmsg_next(hdr, &n);
         }
-        qDebug() <<  __PRETTY_FUNCTION__ << "  d->recv (NULL, &nl_msg, NULL))";
+        // qDebug() <<  __PRETTY_FUNCTION__ << "  d->recv (NULL, &nl_msg, NULL))";
     }
     else
     {

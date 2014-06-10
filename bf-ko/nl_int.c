@@ -21,7 +21,6 @@ DEFINE_MUTEX(nl_mutex);
 static int s_rules_counter = 0;  
 
 typedef struct thrd_params{
-	// struct sock * nl_sk;
 	pid_t pid;
     filter_rule_t fr;
 } tp_t;
@@ -52,11 +51,13 @@ thread( void * data ) {
 	return 0;
 }
 
+// Ожидание примерно в дну секунду
 void 
 wfc(void){
 	wait_for_completion_timeout(&comp,1 * HZ);
 }
 
+// Устанавливаем правило для цепочки
 static inline void
 set_chain_policy(filter_rule_t* fr )
 {
@@ -73,6 +74,7 @@ set_chain_policy(filter_rule_t* fr )
         printk(KERN_ERR "%s Have no such chain\n",__func__);
 }
 
+// Подтверждение без ошибки
 static inline void send_err_ok()
 {
     msg_err_t msg;

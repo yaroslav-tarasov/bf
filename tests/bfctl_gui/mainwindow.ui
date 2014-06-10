@@ -77,9 +77,9 @@
     <property name="title">
      <string>Edit</string>
     </property>
-    <addaction name="action"/>
-    <addaction name="action_2"/>
-    <addaction name="actionDelete_All"/>
+    <addaction name="actionAdd"/>
+    <addaction name="actionDelete"/>
+    <addaction name="actionDeleteAll"/>
    </widget>
    <addaction name="menuFule"/>
    <addaction name="menuEdit"/>
@@ -91,31 +91,47 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
+   <addaction name="actionAdd"/>
+   <addaction name="actionDelete"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionExit">
+   <property name="icon">
+    <iconset resource="bfctl_gui.qrc">
+     <normaloff>:/images/exit.xpm</normaloff>:/images/exit.xpm</iconset>
+   </property>
    <property name="text">
     <string>Exit</string>
    </property>
   </action>
-  <action name="action">
+  <action name="actionAdd">
+   <property name="icon">
+    <iconset resource="bfctl_gui.qrc">
+     <normaloff>:/images/add.svg</normaloff>:/images/add.svg</iconset>
+   </property>
    <property name="text">
     <string>Add</string>
    </property>
   </action>
-  <action name="action_2">
+  <action name="actionDelete">
+   <property name="icon">
+    <iconset resource="bfctl_gui.qrc">
+     <normaloff>:/images/remove.svg</normaloff>:/images/remove.svg</iconset>
+   </property>
    <property name="text">
     <string>Delete</string>
    </property>
   </action>
-  <action name="actionDelete_All">
+  <action name="actionDeleteAll">
    <property name="text">
     <string>Delete All</string>
    </property>
   </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
- <resources/>
+ <resources>
+  <include location="bfctl_gui.qrc"/>
+ </resources>
  <connections>
   <connection>
    <sender>actionExit</sender>

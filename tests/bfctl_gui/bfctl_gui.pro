@@ -15,12 +15,12 @@ TEMPLATE = app
 include(../../common/base.pri)
 
 SOURCES += main.cpp\
-        mainwindow.cpp \
-        rulestablemodel.cpp \
+    mainwindow.cpp \
+    rulestablemodel.cpp \
     ruledelegate.cpp
 
 HEADERS  += mainwindow.h \
-            rulestablemodel.h \
+    rulestablemodel.h \
     ruledelegate.h
 
 FORMS    += mainwindow.ui
@@ -35,3 +35,7 @@ MOC_DIR = ./moc
 
 
 TRANSLATIONS = translations/bfctl_gui_ru.ts
+
+RESOURCES += \
+    bfctl_gui.qrc
+

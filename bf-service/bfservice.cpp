@@ -1,5 +1,7 @@
 #include <QDebug>
-//
+#include <QDir>
+#include <QTranslator>
+
 #include "bfservice.h"
 #include "bfserviceprivate.h"
 #include "qsyslog.h"
@@ -62,12 +64,12 @@ void BfService::createApplication(int &argc, char **argv)
 
 
 
-//    if (QDir("translations:").exists("adpService_ru.qm"))
-//    {
-//        translator = new QTranslator(this);
-//        translator->load("adpService_ru.qm", QDir("translations:").absolutePath());
-//        QCoreApplication::installTranslator(translator);
-//    }
+    if (QDir("translations:").exists("bfservice_ru.qm"))
+    {
+        translator = new QTranslator(this);
+        translator->load("bfservice_ru.qm", QDir("translations:").absolutePath());
+        QCoreApplication::installTranslator(translator);
+    }
 
 }
 

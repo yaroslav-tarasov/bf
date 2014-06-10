@@ -166,7 +166,7 @@ void MainWindow::changeEvent(QEvent* event)
 }
 
 // {SRCIP,SRCPORT,DSTIP,DSTPORT,PROTO,CHAIN,POLICY,OFF};
-void MainWindow::dataChanged(QModelIndex i1,QModelIndex i2)
+void MainWindow::dataChanged(QModelIndex i1,QModelIndex )
 {
     const filter_rule_t& fr =  mRulesModel->rule(i1);
     mBfc->updateRule(fr);

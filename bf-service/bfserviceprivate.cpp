@@ -9,6 +9,7 @@
 BfServicePrivate::BfServicePrivate(QObject *parent) :
     QObject(parent),mRebooted(false)
 {
+
 }
 
 void BfServicePrivate::started()
@@ -114,7 +115,7 @@ bool     BfServicePrivate::event (QEvent *e)
 {
     if (e->type() == QEvent::ThreadChange)
     {
-
+        // mBfc->moveToThread(this->thread());
     }
 
     return QObject::event(e);

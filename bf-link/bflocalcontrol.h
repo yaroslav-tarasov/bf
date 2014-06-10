@@ -21,7 +21,7 @@ class BFLINKSHARED_EXPORT BFLocalControl : public BFControlBase
 public:
 
     explicit    BFLocalControl (QObject *parent = 0);
-    int         init           (init_params_t p = init_params_t(QString(BARRIER_BF_LOCAL_SOCK)));
+    int         init           (init_params_t  const &p = init_params_t(QString(BARRIER_BF_LOCAL_SOCK)));
     void        close();
     int         getRulesSync   (const filter_rule_t& pattern, QList<filter_rule_ptr >& ruleslst,int timeout_ms=3000);
     int         getRulesAsync  (const filter_rule_t& pattern);
