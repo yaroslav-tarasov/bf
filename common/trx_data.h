@@ -207,6 +207,11 @@ typedef struct filter_rule{
 #ifdef __cplusplus
    explicit  filter_rule(__u16 proto=0, __u16 src_port=0, __u16 dst_port=0,__u8  chain=0,__u8  policy=0)
        :base(proto,src_port,dst_port,0,0,chain),off(0),policy(policy){}
+
+   bool operator==(const filter_rule& s) const
+   {
+       return (base == s.base);
+   }
 #endif
 } filter_rule_t;
 

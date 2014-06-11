@@ -4,7 +4,7 @@
 #include <QApplication>
 
 #include "trx_data.h"
-
+#include "bfctl_gui_defs.h"
 
 // TODO разобраться и применить
 //// get the QMetaEnum object
@@ -27,7 +27,7 @@ QWidget *RuleDelegate::createEditor(QWidget *editor, const QStyleOptionViewItem 
 {
     if (!index.isValid()) return editor;
 
-    if (index.column() == 7) {
+    if (index.column() ==  bfmodel::OFF) {
         QComboBox *pe = new QComboBox(editor);
         int current = index.model()->data(index, Qt::DisplayRole).toUInt();
         QStringList lst;
@@ -38,7 +38,7 @@ QWidget *RuleDelegate::createEditor(QWidget *editor, const QStyleOptionViewItem 
         }
         return pe;
     }
-    else if (index.column() == 6) {
+    else if (index.column() ==  bfmodel::POLICY) {
         QComboBox *pe = new QComboBox(editor);
         int current = index.model()->data(index, Qt::DisplayRole).toUInt();
         QStringList lst;
@@ -59,7 +59,7 @@ void RuleDelegate::setEditorData(QWidget *editor, const QModelIndex &index) cons
 {
     if (!index.isValid()) return;
 
-    if (index.column() == 7 || index.column() == 6 ) {
+    if (index.column() == bfmodel::POLICY || index.column() == bfmodel::OFF ) {
         QComboBox *pe = qobject_cast<QComboBox *>(editor);
         if (pe) {
             int value = index.model()->data(index, Qt::EditRole).toUInt();
@@ -73,7 +73,7 @@ void RuleDelegate::setModelData(QWidget *editor, QAbstractItemModel *model, cons
 {
     if (!index.isValid()) return;
 
-    if (index.column() == 7 || index.column() == 6 ) {
+    if (index.column() == bfmodel::POLICY || index.column() == bfmodel::OFF ) {
         QComboBox *pe = qobject_cast<QComboBox *>(editor);
         if (pe) {
             model->setData(index, pe->currentIndex());
@@ -96,19 +96,21 @@ void RuleDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option, 
   o.displayAlignment = Qt::AlignCenter;
 
 //  if (index.column() < 6) o.state = QStyle::State_ReadOnly;
-//  if (index.column() > 5) o.font.setBold(true);
+   QVariantList l = index.model()->data(index, bfmodel::DirtyRole).toList();
+
+   if (l.contains(index.column()))
+      o.font.setBold(true);
 
   switch(index.column())
   {
-      case 0: if(value ==0) o.text = "ALL"; break;
-      case 1: if(value ==0) o.text = "ALL"; break;
-      case 2: if(value ==0) o.text = "ALL"; break;
-      case 3: if(value ==0) o.text = "ALL"; break;
-
-      case 4: o.text = get_proto_name(value); break;
-      case 5: o.text = get_chain_name(static_cast<bf_chain_t>(value));  break;
-      case 6: o.text = get_policy_name(static_cast<bf_policy_t>(value));  break;
-      case 7: o.text = get_sw_name(static_cast<bf_switch_rules_t>(value));  break;
+      case bfmodel::SRCIP:     if(value ==0) o.text = "ALL"; break;
+      case bfmodel::SRCPORT:   if(value ==0) o.text = "ALL"; break;
+      case bfmodel::DSTIP:     if(value ==0) o.text = "ALL"; break;
+      case bfmodel::DSTPORT:   if(value ==0) o.text = "ALL"; break;
+      case bfmodel::PROTO:     o.text = get_proto_name(value); break;
+      case bfmodel::CHAIN:     o.text = get_chain_name(static_cast<bf_chain_t>(value));  break;
+      case bfmodel::POLICY:    o.text = get_policy_name(static_cast<bf_policy_t>(value));   break;
+      case bfmodel::OFF:       o.text = get_sw_name(static_cast<bf_switch_rules_t>(value));  break;
   }
 
   QApplication::style()->drawControl(QStyle::CE_ItemViewItem, &o, painter);

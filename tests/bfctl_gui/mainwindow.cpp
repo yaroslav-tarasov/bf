@@ -16,27 +16,6 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
     mBfc = new BFLocalControl(this);
 
-//    QAction* addAct = new QAction(tr("Add"), this);
-//    QAction* deleteAct = new QAction(tr("Delete"), this);
-//    QAction* deleteAllAct = new QAction(tr("Delete"), this);
-
-//    connect(addAct, SIGNAL(triggered()), SLOT(onAddRuleAct()));
-//    connect(deleteAct, SIGNAL(triggered()), SLOT(onDeleteRuleAct()));
-//    connect(deleteAllAct, SIGNAL(triggered()), SLOT(onDeleteAllRulesAct()));
-
-//    mRuleTableActions << addAct;
-//    mRuleTableActions << deleteAct;
-//    mRuleTableActions << deleteAllAct;
-
-//    QMenu *fileMenu = menuBar()->addMenu(tr("&File"));
-//    fileMenu->addAction(tr("Commit changes")
-//                        , this
-//                        , SLOT(onCommitChangesAct()));
-//    fileMenu->addSeparator();
-//    fileMenu->addAction(tr("Exit")
-//                        , this
-//                        , SLOT(close()));
-
 
     mRulesModel = new RulesTableModel(this);
     ui->tableView->setItemDelegate(new RuleDelegate);
@@ -47,7 +26,7 @@ MainWindow::MainWindow(QWidget *parent) :
     {
         filter_rule_t fr;
 
-        RulesTableModel::rules_list_t  model_list;
+        RulesTableModel::rules_list_ptr_t  model_list;
         QList<filter_rule_ptr > ruleslst;
 
         int ret =  mBfc->getRulesSync(fr,  ruleslst);
@@ -68,9 +47,8 @@ MainWindow::MainWindow(QWidget *parent) :
         }
     }
 
-    // mRulesModel->getDirty();
-
-
+    connect(ui->pbApply,SIGNAL(clicked()),SLOT(applyChanges()));
+    ui->pbApply->setEnabled(mUncommitted);
 }
 
 MainWindow::~MainWindow()
@@ -168,6 +146,19 @@ void MainWindow::changeEvent(QEvent* event)
 // {SRCIP,SRCPORT,DSTIP,DSTPORT,PROTO,CHAIN,POLICY,OFF};
 void MainWindow::dataChanged(QModelIndex i1,QModelIndex )
 {
-    const filter_rule_t& fr =  mRulesModel->rule(i1);
-    mBfc->updateRule(fr);
+    mUncommitted = !mRulesModel->getDirty().isEmpty();
+    ui->pbApply->setEnabled(mUncommitted);
+}
+
+
+void MainWindow::applyChanges()
+{
+   RulesTableModel::rules_list_ptr_t dirty_rules = mRulesModel->getDirty();
+   foreach(const filter_rule_ptr& item, dirty_rules) {
+        mBfc->updateRule(*item);
+   }
+
+   mRulesModel->clearDirty();
+   mUncommitted = false;
+   ui->pbApply->setEnabled(mUncommitted);
 }

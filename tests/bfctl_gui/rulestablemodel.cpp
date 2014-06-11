@@ -1,4 +1,7 @@
 #include "rulestablemodel.h"
+#include "bfctl_gui_defs.h"
+
+using namespace bfmodel;
 
 RulesTableModel::RulesTableModel(QObject *parent) :
     QAbstractTableModel(parent)
@@ -46,6 +49,31 @@ QVariant RulesTableModel::data(const QModelIndex& index, int role) const
             default: return QVariant();
         }
     }
+    else if(DirtyRole == role)
+    {
+        int ind;
+        if ((ind = mOldItems.indexOf(*mItems.at(index.row()))) < 0 )
+        {
+            return QVariantList();
+        }
+        else
+        {
+            QVariantList l;
+            if(mOldItems[ind].off != mItems.at(index.row())->off )
+            {
+                l.append(OFF);
+            }
+
+            if (mOldItems[ind].policy != mItems.at(index.row())->policy)
+            {
+                l.append(POLICY);
+            }
+
+            return l;
+        }
+
+    }
+
 
     return QVariant();
 }
@@ -58,6 +86,18 @@ bool RulesTableModel::setData(const QModelIndex &index, const QVariant &value, i
 
            if (mItems.at(index.row())->off != value.toInt())
            {
+               int ind;
+               if ((ind = mOldItems.indexOf(*mItems.at(index.row()))) < 0 )
+               {
+                    mOldItems.push_back(*mItems.at(index.row()));
+               }
+               else
+               {
+                    if(mOldItems[ind].off == value.toInt() &&
+                            mOldItems[ind].policy== mItems.at(index.row())->policy)
+                        mOldItems.removeAt(ind);
+               }
+
                mItems.at(index.row())->off = value.toInt();
                emit dataChanged(index, index);
            }
@@ -67,9 +107,20 @@ bool RulesTableModel::setData(const QModelIndex &index, const QVariant &value, i
 
           if (mItems.at(index.row())->policy != value.toInt())
           {
+              int ind;
+              if ((ind = mOldItems.indexOf(*mItems.at(index.row()))) < 0 )
+              {
+                    mOldItems.push_back(*mItems.at(index.row()));
+              }
+              else
+              {
+                  if(mOldItems[ind].policy == value.toInt() &&
+                         mOldItems[ind].off== mItems.at(index.row())->off)
+                      mOldItems.removeAt(ind);
+              }
+
               mItems.at(index.row())->policy = value.toInt();
               emit dataChanged(index, index);
-
           }
         }
 
@@ -101,24 +152,43 @@ QVariant RulesTableModel::headerData(int section, Qt::Orientation orientation, i
 }
 
 
-RulesTableModel::rules_list_t RulesTableModel::getDirty() const
+RulesTableModel::rules_list_ptr_t RulesTableModel::getDirty(const QModelIndexList& indexes) const
 {
-    rules_list_t as;
-    const QModelIndexList& indexes = persistentIndexList();
+    rules_list_ptr_t as;
+
     foreach(const QModelIndex& index, indexes) {
         if(!index.isValid()) continue;
         if(index.row() < 0) continue;
         if(index.row() >= mItems.size()) continue;
-        if(!index.data(Qt::UserRole).isValid() || !index.data(Qt::UserRole).toBool()) continue;
+        if(!index.data(Qt::UserRole).isValid() || index.data(DirtyRole).toList().isEmpty()) continue;
         as << mItems[index.row()];
     }
 
     return as;
 }
 
-RulesTableModel::rules_list_t RulesTableModel::rules(const QModelIndexList& indexes) const
+RulesTableModel::rules_list_ptr_t RulesTableModel::getDirty() const
 {
-    rules_list_t as;
+    rules_list_ptr_t as;
+
+    int ind;
+    foreach(const filter_rule_ptr& item, mItems) {
+
+        if ((ind = mOldItems.indexOf(*item)) < 0 ) continue;
+        as << item;
+    }
+
+    return as;
+}
+
+void   RulesTableModel::clearDirty ()
+{
+    mOldItems.clear();
+}
+
+RulesTableModel::rules_list_ptr_t RulesTableModel::rules(const QModelIndexList& indexes) const
+{
+    rules_list_ptr_t as;
 
     foreach(const QModelIndex& index, indexes) {
         if(!index.isValid()) continue;
@@ -174,7 +244,7 @@ void RulesTableModel::removeItem(const QModelIndex& index)
     endRemoveRows();
 }
 
-void RulesTableModel::setRules(const rules_list_t& items) {
+void RulesTableModel::setRules(const rules_list_ptr_t &items) {
     beginResetModel();
     mItems = items;
     endResetModel();

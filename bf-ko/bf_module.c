@@ -132,13 +132,13 @@ void add_rule(struct filter_rule* fr)
 #ifndef TEST_SORT_ADD    
         list_add_tail_rcu(&(a_new_fr->chain_list), &(lst_fr_in.chain_list));
 #else		
-		add_entry_sort(a_new_fr,&lst_fr_in);
+	add_entry_sort(a_new_fr,&lst_fr_in);
 #endif		
     else if (a_new_fr->fr.base.chain == CHAIN_OUTPUT)
 #ifndef TEST_SORT_ADD     
         list_add_tail_rcu(&(a_new_fr->chain_list), &(lst_fr_out.chain_list));
 #else		
-		add_entry_sort(a_new_fr,&lst_fr_out);
+	add_entry_sort(a_new_fr,&lst_fr_out);
 #endif
 //spin_unlock(&list_mutex);
 	

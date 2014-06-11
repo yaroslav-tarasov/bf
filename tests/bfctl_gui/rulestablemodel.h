@@ -6,13 +6,13 @@
 
 typedef  filter_rule_t  RuleEntry;
 
-
 class RulesTableModel : public QAbstractTableModel
 {
     Q_OBJECT
 public:
-    enum     e_index_t {SRCIP,SRCPORT,DSTIP,DSTPORT,PROTO,CHAIN,POLICY,OFF};
-    typedef  QList<filter_rule_ptr > rules_list_t;
+
+    typedef  QList<filter_rule_ptr >   rules_list_ptr_t;
+    typedef  QList<filter_rule_t >     rules_list_t;
 
     explicit RulesTableModel(QObject *parent = 0);
     virtual ~RulesTableModel();
@@ -24,17 +24,20 @@ public:
     bool             setData    (const QModelIndex &index, const QVariant &value, int role);
 
 
-    void             setRules   (const rules_list_t& items);
+    void             setRules   (const rules_list_ptr_t& items);
     const RuleEntry& rule       (const QModelIndex& index)       const;
-    rules_list_t     rules      (const QModelIndexList& indexes) const;
+    rules_list_ptr_t rules      (const QModelIndexList& indexes) const;
     void             removeItems(const QModelIndexList& indexes);
     void             removeItem (const QModelIndex& index);
-    rules_list_t     getDirty   () const;
+    rules_list_ptr_t getDirty   (const QModelIndexList& indexes) const;
+    rules_list_ptr_t getDirty   () const;
+    void             clearDirty ();
 signals:
     
 public slots:
 private:
-    rules_list_t     mItems;
+    rules_list_ptr_t mItems;
+    rules_list_t     mOldItems;
 };
 
 #endif // RULESTABLEMODEL_H

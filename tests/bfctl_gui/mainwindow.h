@@ -26,6 +26,7 @@ public:
     void changeEvent(QEvent* event);
 private slots:
     void dataChanged(QModelIndex i1,QModelIndex i2);
+    void applyChanges();
 
 private:
     void writePositionSettings();
@@ -36,7 +37,7 @@ private:
     QList<QAction*>  mRuleTableActions;
     bool             mGuiStateRestored;
     bool             mUncommitted;
-    BFLocalControl*   mBfc;
+    BFLocalControl*  mBfc;
 };
 
 #endif // MAINWINDOW_H

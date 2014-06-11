@@ -21,7 +21,8 @@ SOURCES += main.cpp\
 
 HEADERS  += mainwindow.h \
     rulestablemodel.h \
-    ruledelegate.h
+    ruledelegate.h \
+    bfctl_gui_defs.h
 
 FORMS    += mainwindow.ui
 

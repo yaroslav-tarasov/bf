@@ -2,8 +2,17 @@
 
 bfs_pid=`ps -eo comm,pid | awk '$1 == "bf-service" { print $2 }'`
 
-if [ $bfs_pid -gt 0 ]
+echo ------------------------------
+echo --------  bfservice.----------
+echo ------------------------------
+
+if [ "$bfs_pid" -gt 0 ]
 then
+
+echo bfservice is running
+echo pid $bfs_pid
+echo 
+
    service bfservice stop
    while [ -d '/proc/$bfs_pid' ]
    do

@@ -48,9 +48,12 @@
        </spacer>
       </item>
       <item>
-       <widget class="QPushButton" name="pushButton">
+       <widget class="QPushButton" name="pbApply">
+        <property name="cursor">
+         <cursorShape>PointingHandCursor</cursorShape>
+        </property>
         <property name="text">
-         <string>PushButton</string>
+         <string>Apply</string>
         </property>
        </widget>
       </item>
