@@ -24,7 +24,7 @@ CMD_SRC = bf_cmd.c
 CMD_OBJ = $(patsubst %.c,obj/%.o,$(CMD_SRC)) 
 
 
-TARGET = bf_filter
+TARGET = bf-filter
 OBJS = bf_module.o nl_int.o 
 
 obj-m := $(TARGET).o 
