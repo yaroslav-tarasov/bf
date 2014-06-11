@@ -29,7 +29,7 @@ struct nf_bf_filter_config bf_config = { .init = ATOMIC_INIT(0),
 //DEFINE_SPINLOCK(list_mutex);	
 
 #define ACK_EVERY_N_MSG  50
-#define bf_filter_name "bf_filter"
+#define bf_filter_name "bf-filter"
 
 
 int fdebug=1;
