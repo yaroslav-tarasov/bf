@@ -32,6 +32,7 @@ public:
     rules_list_ptr_t getDirty   (const QModelIndexList& indexes) const;
     rules_list_ptr_t getDirty   () const;
     void             clearDirty ();
+    void             cancelChanges();
 signals:
 
 public slots:

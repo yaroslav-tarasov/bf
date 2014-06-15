@@ -26,7 +26,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->tableView->setItemDelegate(new RuleDelegate);
     ui->tableView->setModel(proxyModel);
 
-    proxyModel->setFilterRegExp(QRegExp("3", Qt::CaseInsensitive,QRegExp::FixedString));
+    cbPolicyChanged(0);
 
     proxyModel->setFilterKeyColumn(5);
 
@@ -55,11 +55,18 @@ MainWindow::MainWindow(QWidget *parent) :
         }
     }
 
+    QStringList ar;
+    ar << tr("Inbound") << tr("Outbound");
+    ui->cbPolicy->addItems(ar);
+    connect(ui->cbPolicy,SIGNAL(currentIndexChanged(int)),this,SLOT(cbPolicyChanged(int)));
+
     connect(ui->actionAdd,SIGNAL(triggered()),SLOT(addRule()));
     connect(ui->actionDelete,SIGNAL(triggered()),SLOT(deleteRules()));
     connect(ui->actionDeleteAll,SIGNAL(triggered()),SLOT(deleteAll()));
     connect(ui->pbApply,SIGNAL(clicked()),SLOT(applyChanges()));
+    connect(ui->pbCancel,SIGNAL(clicked()),SLOT(cancelChanges()));
     ui->pbApply->setEnabled(mUncommitted);
+    ui->pbCancel->setEnabled(mUncommitted);
 }
 
 MainWindow::~MainWindow()
@@ -159,6 +166,7 @@ void MainWindow::dataChanged(QModelIndex,QModelIndex )
 {
     mUncommitted = !mRulesModel->getDirty().isEmpty();
     ui->pbApply->setEnabled(mUncommitted);
+    ui->pbCancel->setEnabled(mUncommitted);
 }
 
 
@@ -172,6 +180,16 @@ void MainWindow::applyChanges()
    mRulesModel->clearDirty();
    mUncommitted = false;
    ui->pbApply->setEnabled(mUncommitted);
+   ui->pbCancel->setEnabled(mUncommitted);
+}
+
+void MainWindow::cancelChanges()
+{
+
+   mRulesModel->cancelChanges();
+   mUncommitted = false;
+   ui->pbApply->setEnabled(mUncommitted);
+   ui->pbCancel->setEnabled(mUncommitted);
 }
 
 void MainWindow::addRule()
@@ -184,17 +202,45 @@ void MainWindow::addRule()
 
 void MainWindow::deleteRules()
 {
+    QModelIndexList selectedList = ui->tableView->selectionModel()->selectedRows();
+    if(!selectedList.isEmpty())
+    {
+        QMessageBox::StandardButton reply = QMessageBox::warning(this, tr("Delete rules")
+                             , tr("You try to delete some rules. Continue?")
+                             , QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
+        if(reply == QMessageBox::Yes) {
+//            foreach(const QModelIndex& ind,selectedList) {
+//                const filter_rule_t& item = mRulesModel->rule(ind);
+//                if(mBfc->deleteRule(item)==0)
+//                    mRulesModel->removeItem(ind);
+//            }
+
+            RulesTableModel::rules_list_ptr_t dirty_rules = mRulesModel->rules(selectedList);
+            foreach(const filter_rule_ptr& item, dirty_rules) {
+                 mBfc->deleteRule(*item);
+            }
+
+            mRulesModel->removeItems(selectedList);
+
+
+        } else if(reply == QMessageBox::No) {
+        } else {
+        }
+    }
+}
+
+void MainWindow::deleteAll()
+{
     QMessageBox::StandardButton reply = QMessageBox::warning(this, tr("Delete rules")
-                         , tr("You try to delete some rules. Continue?")
+                         , tr("You try to delete ALL rules. Continue?")
                          , QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
     if(reply == QMessageBox::Yes) {
     } else if(reply == QMessageBox::No) {
     } else {
     }
-
 }
 
-void MainWindow::deleteAll()
+void MainWindow::cbPolicyChanged(int i)
 {
-
+       proxyModel->setFilterRegExp(QRegExp(QString::number(i+CHAIN_INPUT), Qt::CaseInsensitive,QRegExp::FixedString));
 }

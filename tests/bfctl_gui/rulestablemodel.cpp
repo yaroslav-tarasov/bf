@@ -189,7 +189,25 @@ RulesTableModel::rules_list_ptr_t RulesTableModel::getDirty() const
 
 void   RulesTableModel::clearDirty ()
 {
+beginResetModel();
     mOldItems.clear();
+endResetModel();
+}
+
+void   RulesTableModel::cancelChanges()
+{
+beginResetModel();
+
+    int ind;
+    foreach(const filter_rule_ptr& item, mItems) {
+
+        if ((ind = mOldItems.indexOf(*item)) < 0 ) continue;
+        item->off = mOldItems[ind].off;
+        item->policy = mOldItems[ind].policy;
+    }
+
+    mOldItems.clear();
+endResetModel();
 }
 
 RulesTableModel::rules_list_ptr_t RulesTableModel::rules(const QModelIndexList& indexes) const

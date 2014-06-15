@@ -28,10 +28,11 @@ public:
 private slots:
     void dataChanged(QModelIndex i1,QModelIndex i2);
     void applyChanges();
+    void cancelChanges();
     void deleteRules();
     void addRule();
     void deleteAll();
-
+    void cbPolicyChanged(int i);
 private:
     void writePositionSettings();
     void readPositionSettings();
