@@ -1,6 +1,8 @@
 #include "rulestablemodel.h"
 #include "bfctl_gui_defs.h"
 
+#include <QIcon>
+
 using namespace bfmodel;
 
 RulesTableModel::RulesTableModel(QObject *parent) :
@@ -75,6 +77,7 @@ QVariant RulesTableModel::data(const QModelIndex& index, int role) const
     }
 
 
+
     return QVariant();
 }
 
@@ -131,10 +134,8 @@ bool RulesTableModel::setData(const QModelIndex &index, const QVariant &value, i
 
 QVariant RulesTableModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
-    if(role != Qt::DisplayRole && role != Qt::ToolTipRole) {
-        return QVariant();
-    }
-    if(orientation == Qt::Horizontal) {
+
+    if(orientation == Qt::Horizontal && role == Qt::DisplayRole) {
         switch(section) {
             case SRCIP:       return tr("Source address");
             case SRCPORT:     return tr("Source port");
@@ -147,7 +148,12 @@ QVariant RulesTableModel::headerData(int section, Qt::Orientation orientation, i
 
             default: return "";
         }
+    } else  if(role == IdRole) {
+
+       return section;
+
     }
+
     return QVariant();
 }
 
@@ -188,8 +194,8 @@ void   RulesTableModel::clearDirty ()
 
 RulesTableModel::rules_list_ptr_t RulesTableModel::rules(const QModelIndexList& indexes) const
 {
-    rules_list_ptr_t as;
 
+    rules_list_ptr_t as;
     foreach(const QModelIndex& index, indexes) {
         if(!index.isValid()) continue;
         if(index.row() < 0) continue;

@@ -26,8 +26,9 @@ RuleDelegate::RuleDelegate()
 QWidget *RuleDelegate::createEditor(QWidget *editor, const QStyleOptionViewItem &option, const QModelIndex &index) const
 {
     if (!index.isValid()) return editor;
+    int column = index.model()->headerData(index.column(),Qt::Horizontal,bfmodel::IdRole).toInt();
 
-    if (index.column() ==  bfmodel::OFF) {
+    if (column ==  bfmodel::OFF) {
         QComboBox *pe = new QComboBox(editor);
         int current = index.model()->data(index, Qt::DisplayRole).toUInt();
         QStringList lst;
@@ -38,7 +39,7 @@ QWidget *RuleDelegate::createEditor(QWidget *editor, const QStyleOptionViewItem 
         }
         return pe;
     }
-    else if (index.column() ==  bfmodel::POLICY) {
+    else if (column ==  bfmodel::POLICY) {
         QComboBox *pe = new QComboBox(editor);
         int current = index.model()->data(index, Qt::DisplayRole).toUInt();
         QStringList lst;
@@ -58,8 +59,8 @@ QWidget *RuleDelegate::createEditor(QWidget *editor, const QStyleOptionViewItem 
 void RuleDelegate::setEditorData(QWidget *editor, const QModelIndex &index) const
 {
     if (!index.isValid()) return;
-
-    if (index.column() == bfmodel::POLICY || index.column() == bfmodel::OFF ) {
+    int column = index.model()->headerData(index.column(),Qt::Horizontal,bfmodel::IdRole).toInt();
+    if (column == bfmodel::POLICY || column == bfmodel::OFF ) {
         QComboBox *pe = qobject_cast<QComboBox *>(editor);
         if (pe) {
             int value = index.model()->data(index, Qt::EditRole).toUInt();
@@ -72,8 +73,9 @@ void RuleDelegate::setEditorData(QWidget *editor, const QModelIndex &index) cons
 void RuleDelegate::setModelData(QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const
 {
     if (!index.isValid()) return;
+    int column = index.model()->headerData(index.column(),Qt::Horizontal,bfmodel::IdRole).toInt();
 
-    if (index.column() == bfmodel::POLICY || index.column() == bfmodel::OFF ) {
+    if (column == bfmodel::POLICY || column == bfmodel::OFF ) {
         QComboBox *pe = qobject_cast<QComboBox *>(editor);
         if (pe) {
             model->setData(index, pe->currentIndex());
@@ -94,14 +96,16 @@ void RuleDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option, 
 
   o.text = index.model()->data(index, Qt::DisplayRole).toString();
   o.displayAlignment = Qt::AlignCenter;
+  int column = index.model()->headerData(index.column(),Qt::Horizontal,bfmodel::IdRole).toInt();
 
 //  if (index.column() < 6) o.state = QStyle::State_ReadOnly;
    QVariantList l = index.model()->data(index, bfmodel::DirtyRole).toList();
 
-   if (l.contains(index.column()))
+   if (l.contains(column))
       o.font.setBold(true);
 
-  switch(index.column())
+
+  switch(column)
   {
       case bfmodel::SRCIP:     if(value ==0) o.text = "ALL"; break;
       case bfmodel::SRCPORT:   if(value ==0) o.text = "ALL"; break;
@@ -113,5 +117,7 @@ void RuleDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option, 
       case bfmodel::OFF:       o.text = get_sw_name(static_cast<bf_switch_rules_t>(value));  break;
   }
 
+
   QApplication::style()->drawControl(QStyle::CE_ItemViewItem, &o, painter);
 }
+

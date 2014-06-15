@@ -17,14 +17,19 @@ include(../../common/base.pri)
 SOURCES += main.cpp\
     mainwindow.cpp \
     rulestablemodel.cpp \
-    ruledelegate.cpp
+    ruledelegate.cpp \
+    adddialog.cpp \
+    rulefilterproxymodel.cpp
 
 HEADERS  += mainwindow.h \
     rulestablemodel.h \
     ruledelegate.h \
-    bfctl_gui_defs.h
+    bfctl_gui_defs.h \
+    adddialog.h \
+    rulefilterproxymodel.h
 
-FORMS    += mainwindow.ui
+FORMS    += mainwindow.ui \
+    adddialog.ui
 
 
 INCLUDEPATH += ../../bf-ko ../../bf-link ../../bfctl

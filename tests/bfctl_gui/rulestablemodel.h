@@ -33,7 +33,7 @@ public:
     rules_list_ptr_t getDirty   () const;
     void             clearDirty ();
 signals:
-    
+
 public slots:
 private:
     rules_list_ptr_t mItems;

@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QCloseEvent>
 #include <QModelIndex>
+#include <QSortFilterProxyModel>
 
 #include "bflocalcontrol.h"
 
@@ -27,6 +28,9 @@ public:
 private slots:
     void dataChanged(QModelIndex i1,QModelIndex i2);
     void applyChanges();
+    void deleteRules();
+    void addRule();
+    void deleteAll();
 
 private:
     void writePositionSettings();
@@ -34,6 +38,7 @@ private:
 private:
     Ui::MainWindow * ui;
     RulesTableModel* mRulesModel;
+    QSortFilterProxyModel *proxyModel;
     QList<QAction*>  mRuleTableActions;
     bool             mGuiStateRestored;
     bool             mUncommitted;

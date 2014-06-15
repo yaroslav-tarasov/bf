@@ -2,6 +2,7 @@
 #define RULEDELEGATE_H
 
 #include <QItemDelegate>
+#include <QPixmap>
 
 class RuleDelegate : public QItemDelegate
 {

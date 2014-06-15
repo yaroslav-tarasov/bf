@@ -3,6 +3,9 @@
 #include "rulestablemodel.h"
 #include "ruledelegate.h"
 
+#include "adddialog.h"
+#include "rulefilterproxymodel.h"
+
 #include <QSettings>
 #include <QMessageBox>
 #include <QAction>
@@ -18,9 +21,14 @@ MainWindow::MainWindow(QWidget *parent) :
 
 
     mRulesModel = new RulesTableModel(this);
+    proxyModel = new RuleFilterProxyModel(this);
+    proxyModel->setSourceModel(mRulesModel);
     ui->tableView->setItemDelegate(new RuleDelegate);
-    ui->tableView->setModel(mRulesModel);
+    ui->tableView->setModel(proxyModel);
 
+    proxyModel->setFilterRegExp(QRegExp("3", Qt::CaseInsensitive,QRegExp::FixedString));
+
+    proxyModel->setFilterKeyColumn(5);
 
     if(mBfc->init()==0)
     {
@@ -47,6 +55,9 @@ MainWindow::MainWindow(QWidget *parent) :
         }
     }
 
+    connect(ui->actionAdd,SIGNAL(triggered()),SLOT(addRule()));
+    connect(ui->actionDelete,SIGNAL(triggered()),SLOT(deleteRules()));
+    connect(ui->actionDeleteAll,SIGNAL(triggered()),SLOT(deleteAll()));
     connect(ui->pbApply,SIGNAL(clicked()),SLOT(applyChanges()));
     ui->pbApply->setEnabled(mUncommitted);
 }
@@ -144,7 +155,7 @@ void MainWindow::changeEvent(QEvent* event)
 }
 
 // {SRCIP,SRCPORT,DSTIP,DSTPORT,PROTO,CHAIN,POLICY,OFF};
-void MainWindow::dataChanged(QModelIndex i1,QModelIndex )
+void MainWindow::dataChanged(QModelIndex,QModelIndex )
 {
     mUncommitted = !mRulesModel->getDirty().isEmpty();
     ui->pbApply->setEnabled(mUncommitted);
@@ -161,4 +172,29 @@ void MainWindow::applyChanges()
    mRulesModel->clearDirty();
    mUncommitted = false;
    ui->pbApply->setEnabled(mUncommitted);
+}
+
+void MainWindow::addRule()
+{
+    AddDialog add(this);
+    add.setModal(true);
+    if(add.exec() == QDialog::Accepted)
+    {}
+}
+
+void MainWindow::deleteRules()
+{
+    QMessageBox::StandardButton reply = QMessageBox::warning(this, tr("Delete rules")
+                         , tr("You try to delete some rules. Continue?")
+                         , QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
+    if(reply == QMessageBox::Yes) {
+    } else if(reply == QMessageBox::No) {
+    } else {
+    }
+
+}
+
+void MainWindow::deleteAll()
+{
+
 }
