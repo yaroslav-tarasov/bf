@@ -15,52 +15,7 @@ static const char * prog_name = "bf_ctrl";
 static const char * prog_vers = "0.0.1a";
 
 namespace cmd_utils {
-int
-get_proto(char* proto) {
-    if (strcasecmp(proto, "ALL") == 0) {
-        return IPPROTO_ALL;
-    } else if (strcasecmp(proto, "TCP") == 0) {
-        return IPPROTO_TCP;
-    } else if (strcasecmp(proto, "UDP") == 0) {
-        return IPPROTO_UDP;
-    }
-    return IPPROTO_NOTEXIST;
-}
 
-int
-get_switch(char* off) {
-    if (strcasecmp(off, "NO") == 0) {
-        return SW_NO;
-    } else if (strcasecmp(off, "YES") == 0) {
-        return SW_YES;
-    }
-
-    return SW_NONE;
-}
-
-int
-get_chain(char* dir) {
-    if (strcasecmp(dir, "ALL") == 0) {
-        return CHAIN_ALL;
-    } else if (strcasecmp(dir, "INPUT") == 0) {
-        return CHAIN_INPUT;
-    } else if (strcasecmp(dir, "OUTPUT") == 0) {
-        return CHAIN_OUTPUT;
-    }
-    return CHAIN_NONE;
-}
-
-
-
-int
-get_policy(char* policy) {
-    if (strcasecmp(policy, "DROP") == 0) {
-    return POLICY_DROP;
-    } else if (strcasecmp(policy, "ACCEPT") == 0) {
-    return POLICY_ACCEPT;
-    }
-    return POLICY_NONE;
-}
 
 int
 parse_cmd_args(int argc, char *argv[], cmd_args& ca )

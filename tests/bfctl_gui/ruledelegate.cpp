@@ -104,13 +104,13 @@ void RuleDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option, 
    if (l.contains(column))
       o.font.setBold(true);
 
-  int value = index.model()->data(index, Qt::DisplayRole).toUInt();
+  int value = index.model()->data(index, Qt::DisplayRole).toInt();
 
   switch(column)
   {
-      case bfmodel::SRCIP:     if(value ==0) o.text = index.model()->data(index, Qt::DisplayRole).toString()/*"ALL"*/; break;
+      case bfmodel::SRCIP:     if(value ==0) o.text = "ALL"; else o.text = QHostAddress(static_cast<quint32>(value)).toString(); break;
       case bfmodel::SRCPORT:   if(value ==0) o.text = "ALL"; break;
-      case bfmodel::DSTIP:     if(value ==0) o.text = index.model()->data(index, Qt::DisplayRole).toString()/*"ALL"*/; break;
+      case bfmodel::DSTIP:     if(value ==0) o.text = "ALL"; else o.text = QHostAddress(static_cast<quint32>(value)).toString(); break;
       case bfmodel::DSTPORT:   if(value ==0) o.text = "ALL"; break;
       case bfmodel::PROTO:     o.text = get_proto_name(value); break;
       case bfmodel::CHAIN:     o.text = get_chain_name(static_cast<bf_chain_t>(value));  break;

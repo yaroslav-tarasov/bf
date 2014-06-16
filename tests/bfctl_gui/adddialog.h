@@ -13,9 +13,10 @@ class AddDialog : public QDialog
     Q_OBJECT
     
 public:
-    explicit AddDialog(QWidget *parent = 0);
+    explicit AddDialog(QWidget *parent = 0,bf_chain_t chain=CHAIN_INPUT);
     ~AddDialog();
     const filter_rule_t& getRule() const { return mFr;}
+private:
     void  setChain(bf_chain_t chain);
 signals:
     void accept_rule(filter_rule_t);

@@ -4,7 +4,7 @@
 #include <QHostAddress>
 #include <QMessageBox>
 
-AddDialog::AddDialog(QWidget *parent) :
+AddDialog::AddDialog(QWidget *parent, bf_chain_t chain) :
     QDialog(parent),
     ui(new Ui::AddDialog)
 {
@@ -12,6 +12,7 @@ AddDialog::AddDialog(QWidget *parent) :
     ui->leSourceHostIP->setEnabled(false);
     ui->leSourcePort->setValidator(new QIntValidator(0,65535));
 
+    setChain(chain);
     // QRegExp rx("\\b(([01]?\\d?\\d|2[0-4]\\d|25[0-5])\\.){3}([01]?\\d?\\d|2[0-4]\\d|25[0-5])\\b");
 
     QString Octet = "(?:[0-1]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])";
@@ -21,6 +22,8 @@ AddDialog::AddDialog(QWidget *parent) :
     connect(ui->rbAnyone,SIGNAL(toggled(bool)),SLOT(rbAnyone_toggled(bool)));
     connect(ui->rbHostname,SIGNAL(toggled(bool)),SLOT(rbHostname_toggled(bool)));
 
+    QString title = QString("Add new %1 rule").arg(chain==CHAIN_INPUT?"inbound":"outbound");
+    setWindowTitle(title);
     QStringList sl;
     sl << "UDP" << "TCP";
     ui->cbProto->addItems(sl);
@@ -62,6 +65,13 @@ void AddDialog::accept()
     {
         /*QMessageBox::StandardButton reply =*/ QMessageBox::critical(this, tr("Data error")
                              , tr("Wrong ip address")
+                             , QMessageBox::Ok );
+
+    }
+    else if( mFr.base.src_port==0 )
+    {
+        /*QMessageBox::StandardButton reply =*/ QMessageBox::critical(this, tr("Data error")
+                             , tr("Wrong port number")
                              , QMessageBox::Ok );
 
     }

@@ -39,9 +39,9 @@ QVariant RulesTableModel::data(const QModelIndex& index, int role) const
     const RuleEntry& item = *mItems[index.row()];
     if(Qt::DisplayRole == role || Qt::ToolTipRole == role || role == Qt::EditRole) {
         switch(index.column()) {
-            case SRCIP:   return QHostAddress(static_cast<quint32>(htonl(item.base.s_addr.addr))).toString();
+            case SRCIP:   return htonl(item.base.s_addr.addr);
             case SRCPORT: return item.base.src_port;
-            case DSTIP:   return QHostAddress(static_cast<quint32>(htonl(item.base.d_addr.addr))).toString();
+            case DSTIP:   return htonl(item.base.d_addr.addr);
             case DSTPORT: return item.base.dst_port;
             case PROTO:   return item.base.proto; // get_proto_name(item.base.proto);
             case CHAIN:   return item.base.chain; // get_chain_name(static_cast<bf_chain_t>(item.base.chain));
@@ -226,12 +226,12 @@ RulesTableModel::rules_list_ptr_t RulesTableModel::rules(const QModelIndexList& 
 
 const RuleEntry &RulesTableModel::rule(const QModelIndex& index) const
 {
-    static RuleEntry invalidAcl;
+    static RuleEntry invalidRule;
     if(!index.isValid()) {
-        return invalidAcl;
+        return invalidRule;
     }
     if(index.row() < 0 || index.row() >= mItems.size()) {
-        return invalidAcl;
+        return invalidRule;
     }
     return *mItems[index.row()];
 }

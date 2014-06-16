@@ -43,39 +43,39 @@ enum commands_t {
 //    return -1;
 //}
 
-int
-get_switch(char* off) {
-    if (strcmp(off, "YES") == 0) {
-        return SW_YES;
-    } else if (strcmp(off, "NO") == 0) {
-        return SW_NO;
-    }
+//int
+//get_switch(char* off) {
+//    if (strcmp(off, "YES") == 0) {
+//        return SW_YES;
+//    } else if (strcmp(off, "NO") == 0) {
+//        return SW_NO;
+//    }
 
-    return SW_NONE;
-}
+//    return SW_NONE;
+//}
 
 
-int 
-get_chain(char* dir) {
-    if (strcmp(dir, "ALL") == 0) {
-        return CHAIN_ALL;
-    } else if (strcmp(dir, "INPUT") == 0) {
-        return CHAIN_INPUT;
-    } else if (strcmp(dir, "OUTPUT") == 0) {
-        return CHAIN_OUTPUT;
-    }
-    return CHAIN_NONE;
-}
+//int
+//get_chain(char* dir) {
+//    if (strcmp(dir, "ALL") == 0) {
+//        return CHAIN_ALL;
+//    } else if (strcmp(dir, "INPUT") == 0) {
+//        return CHAIN_INPUT;
+//    } else if (strcmp(dir, "OUTPUT") == 0) {
+//        return CHAIN_OUTPUT;
+//    }
+//    return CHAIN_NONE;
+//}
  
+//int
+//get_policy(char* policy) {
+//    if (strcmp(policy, "DROP") == 0) {
+//    return POLICY_DROP;
+//    } else if (strcmp(policy, "ACCEPT") == 0) {
+//    return POLICY_ACCEPT;
+//    }
+//}
 
-int 
-get_policy(char* policy) {
-    if (strcmp(policy, "DROP") == 0) {
-    return POLICY_DROP;
-    } else if (strcmp(policy, "ACCEPT") == 0) {
-    return POLICY_ACCEPT;
-    }
-}
 
 int
 parse_cmd_args(int argc, char *argv[],filter_rule_t* fr,const char* file_name)

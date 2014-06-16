@@ -5,10 +5,6 @@
 
 namespace cmd_utils {
 
-int  get_proto(char* proto);
-int  get_chain(char* dir);
-int  get_policy(char* policy);
-
 void exit_printhelp();
 
 

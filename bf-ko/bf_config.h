@@ -50,7 +50,7 @@ int   nl_send_msg(struct sock * nl_sk,int destpid, int type, int flags,char* msg
 void  list_rules(struct sock * nl_sk, int destpid, filter_rule_t* pfr_pattern);
 void  delete_rules(void);
 
-enum bf_policy_t get_policy(int p);
+enum bf_policy_t convert_policy(int p);
 int  apply_policy(enum bf_policy_t p);
 
 extern int fdebug;

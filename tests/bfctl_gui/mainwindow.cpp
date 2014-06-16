@@ -193,8 +193,8 @@ void MainWindow::cancelChanges()
 
 void MainWindow::addRule()
 {
-    AddDialog add(this);
-    add.setChain(CHAIN_INPUT);
+    AddDialog add(this,ui->cbPolicy->currentIndex()==0?CHAIN_INPUT:CHAIN_OUTPUT);
+
     add.setModal(true);
     if(add.exec() == QDialog::Accepted)
     {

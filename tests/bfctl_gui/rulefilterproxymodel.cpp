@@ -6,7 +6,7 @@ RuleFilterProxyModel::RuleFilterProxyModel(QObject *parent) :
 {
 }
 
-bool	RuleFilterProxyModel::filterAcceptsColumn ( int source_column, const QModelIndex & source_parent ) const
+bool	RuleFilterProxyModel::filterAcceptsColumn ( int source_column, const QModelIndex & /*source_parent*/ ) const
 {
     if( source_column == bfmodel::CHAIN )
         return false;

@@ -115,6 +115,27 @@ static inline const char* get_proto_name(int proto) {
     return proto_names[3];
 }
 
+
+static inline int get_switch(char* off) {
+    if (strcasecmp(off, "NO") == 0) {
+        return SW_NO;
+    } else if (strcasecmp(off, "YES") == 0) {
+        return SW_YES;
+    }
+
+    return SW_NONE;
+}
+
+
+static inline enum bf_policy_t get_policy(char* policy) {
+    if (strcasecmp(policy, "DROP") == 0) {
+    return POLICY_DROP;
+    } else if (strcasecmp(policy, "ACCEPT") == 0) {
+    return POLICY_ACCEPT;
+    }
+    return POLICY_NONE;
+}
+
 static inline const char* get_chain_name(enum bf_chain_t chain) {
     static const char* chain_names[]=
     {"ALL","INPUT","OUTPUT","NONE"};
@@ -126,6 +147,17 @@ static inline const char* get_chain_name(enum bf_chain_t chain) {
         return chain_names[2];
     }
     return chain_names[3];
+}
+
+static inline int get_chain(char* dir) {
+    if (strcasecmp(dir, "ALL") == 0) {
+        return CHAIN_ALL;
+    } else if (strcasecmp(dir, "INPUT") == 0) {
+        return CHAIN_INPUT;
+    } else if (strcasecmp(dir, "OUTPUT") == 0) {
+        return CHAIN_OUTPUT;
+    }
+    return CHAIN_NONE;
 }
 
 /**

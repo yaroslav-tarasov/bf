@@ -266,7 +266,7 @@ void list_rules(struct sock * nl_sk, int destpid, filter_rule_t* pfr_pattern)
     {
         filter_rule_t fr;
         memset(&fr,0,sizeof(filter_rule_t));
-        fr.policy = get_policy(bf_config.chain_policy[INPUT]);
+        fr.policy = convert_policy(bf_config.chain_policy[INPUT]);
         fr.base.chain = CHAIN_INPUT;
         ret=nl_send_msg(nl_sk,destpid, MSG_DATA, 0,(char*)&fr,sizeof(fr));
         if(ret<0)
@@ -277,7 +277,7 @@ void list_rules(struct sock * nl_sk, int destpid, filter_rule_t* pfr_pattern)
     {
         filter_rule_t fr;
         memset(&fr,0,sizeof(filter_rule_t));
-        fr.policy = get_policy(bf_config.chain_policy[OUTPUT]);
+        fr.policy = convert_policy(bf_config.chain_policy[OUTPUT]);
         fr.base.chain = CHAIN_OUTPUT;
         ret=nl_send_msg(nl_sk,destpid, MSG_DATA, 0,(char*)&fr,sizeof(fr));
         if(ret<0)
@@ -468,7 +468,7 @@ int apply_policy(enum bf_policy_t p)
     }
 }
 
-enum bf_policy_t get_policy(int p)
+enum bf_policy_t convert_policy(int p)
 {
     switch(p)
     {
