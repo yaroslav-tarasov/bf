@@ -5,12 +5,6 @@
 #include <QSharedPointer>
 #include <QList>
 
-//#include <arpa/inet.h>
-//#include <netinet/ip.h>
-//#include <linux/if_ether.h>
-//#include <linux/netlink.h>
-
-//#include "trx_data.h"
 #include "bf-link_global.h"
 #include "bf_defs.h"
 #include "bfcontrolbase.h"

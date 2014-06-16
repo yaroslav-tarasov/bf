@@ -25,6 +25,7 @@ public:
 
 
     void             setRules   (const rules_list_ptr_t& items);
+    void             addRule    (const filter_rule_t& rule);
     const RuleEntry& rule       (const QModelIndex& index)       const;
     rules_list_ptr_t rules      (const QModelIndexList& indexes) const;
     void             removeItems(const QModelIndexList& indexes);

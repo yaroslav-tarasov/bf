@@ -31,17 +31,17 @@ enum commands_t {
        CMD_PRINT_HELP=      0x20000U
 };
 
-int 
-get_proto(char* proto) {
-    if (strcmp(proto, "ALL") == 0) {
-        return IPPROTO_NOTEXIST;
-    } else if (strcmp(proto, "TCP") == 0) {
-        return IPPROTO_TCP;
-    } else if (strcmp(proto, "UDP") == 0) {
-        return IPPROTO_UDP;
-    }
-    return -1;
-}
+//int
+//get_proto(char* proto) {
+//    if (strcmp(proto, "ALL") == 0) {
+//        return IPPROTO_NOTEXIST;
+//    } else if (strcmp(proto, "TCP") == 0) {
+//        return IPPROTO_TCP;
+//    } else if (strcmp(proto, "UDP") == 0) {
+//        return IPPROTO_UDP;
+//    }
+//    return -1;
+//}
 
 int
 get_switch(char* off) {

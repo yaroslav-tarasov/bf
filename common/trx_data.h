@@ -91,6 +91,17 @@ static inline const char* get_policy_name(enum bf_policy_t p) {
     return p_names[2];
 }
 
+static inline int get_proto(const char* proto) {
+    if (strcasecmp(proto, "ALL") == 0) {
+        return IPPROTO_ALL;
+    } else if (strcasecmp(proto, "TCP") == 0) {
+        return IPPROTO_TCP;
+    } else if (strcasecmp(proto, "UDP") == 0) {
+        return IPPROTO_UDP;
+    }
+    return IPPROTO_NOTEXIST;
+}
+
 static inline const char* get_proto_name(int proto) {
     static const char* proto_names[]=
     {"ALL","TCP","UDP","NONE"};

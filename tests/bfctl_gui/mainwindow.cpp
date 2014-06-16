@@ -19,23 +19,22 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
     mBfc = new BFLocalControl(this);
 
-
     mRulesModel = new RulesTableModel(this);
     proxyModel = new RuleFilterProxyModel(this);
     proxyModel->setSourceModel(mRulesModel);
     ui->tableView->setItemDelegate(new RuleDelegate);
     ui->tableView->setModel(proxyModel);
 
-    cbPolicyChanged(0);
-
     proxyModel->setFilterKeyColumn(5);
+
+    cbPolicyChanged(0);
 
     if(mBfc->init()==0)
     {
         filter_rule_t fr;
 
         RulesTableModel::rules_list_ptr_t  model_list;
-        QList<filter_rule_ptr > ruleslst;
+        QList<filter_rule_ptr >            ruleslst;
 
         int ret =  mBfc->getRulesSync(fr,  ruleslst);
         if(ret>=0)
@@ -195,9 +194,22 @@ void MainWindow::cancelChanges()
 void MainWindow::addRule()
 {
     AddDialog add(this);
+    add.setChain(CHAIN_INPUT);
     add.setModal(true);
     if(add.exec() == QDialog::Accepted)
-    {}
+    {
+        int rv = mBfc->addRule(add.getRule());
+        if(rv>=0)
+        {
+            mRulesModel->addRule(add.getRule());
+        }
+        else
+        {
+            QMessageBox::critical(this, tr("Add Rule")
+                                         , tr("Rule already exist")
+                                         , QMessageBox::Ok );
+        }
+    }
 }
 
 void MainWindow::deleteRules()

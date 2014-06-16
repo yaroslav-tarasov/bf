@@ -2,6 +2,7 @@
 #define ADDDIALOG_H
 
 #include <QDialog>
+#include "bfcontrolbase.h"
 
 namespace Ui {
 class AddDialog;
@@ -14,10 +15,18 @@ class AddDialog : public QDialog
 public:
     explicit AddDialog(QWidget *parent = 0);
     ~AddDialog();
+    const filter_rule_t& getRule() const { return mFr;}
+    void  setChain(bf_chain_t chain);
+signals:
+    void accept_rule(filter_rule_t);
+    void reject_rule();
 private slots:
-    void rdIPHost();
-    void rbAnyone();
+    void rbHostname_toggled(bool);
+    void rbAnyone_toggled(bool);
+    void accept();
+    void reject();
 private:
+    filter_rule_t  mFr;
     Ui::AddDialog *ui;
 };
 

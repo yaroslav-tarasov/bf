@@ -236,6 +236,13 @@ const RuleEntry &RulesTableModel::rule(const QModelIndex& index) const
     return *mItems[index.row()];
 }
 
+void RulesTableModel::addRule(const filter_rule_t& rule)
+{
+    beginResetModel();
+        mItems.append(*(new filter_rule_ptr(new filter_rule_t(rule))));
+    endResetModel();
+}
+
 void RulesTableModel::removeItems(const QModelIndexList& indexes)
 {
     QList<int> rowsToRemove;

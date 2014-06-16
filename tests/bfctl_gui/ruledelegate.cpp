@@ -92,7 +92,7 @@ void RuleDelegate::updateEditorGeometry(QWidget *editor, const QStyleOptionViewI
 void RuleDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
 {
   QStyleOptionViewItemV4 o = option;
-  int value = index.model()->data(index, Qt::DisplayRole).toUInt();
+
 
   o.text = index.model()->data(index, Qt::DisplayRole).toString();
   o.displayAlignment = Qt::AlignCenter;
@@ -104,12 +104,13 @@ void RuleDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option, 
    if (l.contains(column))
       o.font.setBold(true);
 
+  int value = index.model()->data(index, Qt::DisplayRole).toUInt();
 
   switch(column)
   {
-      case bfmodel::SRCIP:     if(value ==0) o.text = "ALL"; break;
+      case bfmodel::SRCIP:     if(value ==0) o.text = index.model()->data(index, Qt::DisplayRole).toString()/*"ALL"*/; break;
       case bfmodel::SRCPORT:   if(value ==0) o.text = "ALL"; break;
-      case bfmodel::DSTIP:     if(value ==0) o.text = "ALL"; break;
+      case bfmodel::DSTIP:     if(value ==0) o.text = index.model()->data(index, Qt::DisplayRole).toString()/*"ALL"*/; break;
       case bfmodel::DSTPORT:   if(value ==0) o.text = "ALL"; break;
       case bfmodel::PROTO:     o.text = get_proto_name(value); break;
       case bfmodel::CHAIN:     o.text = get_chain_name(static_cast<bf_chain_t>(value));  break;
